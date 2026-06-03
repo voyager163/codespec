@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Guide me · Integrate PowerCodex Lifecycle into an existing project</title>
+<style>
+  :root {
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --bg: #0b0d12;
+    --bg-soft: #12151d;
+    --panel: #161a24;
+    --panel-2: #1c2130;
+    --line: #262c3a;
+    --text: #e8ecf4;
+    --muted: #99a2b8;
+    --faint: #6b7488;
+    --accent: #6ea8fe;
+    --accent-2: #a78bfa;
+    --good: #5ad19a;
+    --bad: #f08a8a;
+    --warn: #f5c97b;
+    --radius: 16px;
+    --shadow: 0 20px 60px -20px rgba(0,0,0,0.6);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(167,139,250,0.14), transparent 60%),
+      radial-gradient(900px 500px at -10% 10%, rgba(110,168,254,0.12), transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .rise { opacity: 0; transform: translateY(14px); animation: rise 600ms var(--ease-out) forwards; }
+  @keyframes rise { to { opacity: 1; transform: translateY(0); } }
+  .d1 { animation-delay: 40ms; } .d2 { animation-delay: 90ms; } .d3 { animation-delay: 140ms; }
+
+  nav.top { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(10px); background: rgba(11,13,18,0.72); border-bottom: 1px solid var(--line); }
+  nav.top .inner { max-width: 1080px; margin: 0 auto; padding: 12px 24px; display: flex; align-items: center; gap: 18px; }
+  nav.top .brand { font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; gap: 9px; }
+  nav.top .brand .mark { width: 22px; height: 22px; border-radius: 7px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: 0 0 18px rgba(110,168,254,0.5); }
+  nav.top .links { margin-left: auto; display: flex; gap: 18px; font-size: 14px; }
+  nav.top .links a { color: var(--muted); }
+  nav.top .links a:hover { color: var(--text); text-decoration: none; }
+
+  /* layout: sidebar + content */
+  .shell { max-width: 1080px; margin: 0 auto; padding: 40px 24px 120px; display: grid; grid-template-columns: 220px 1fr; gap: 44px; }
+  @media (max-width: 900px) { .shell { grid-template-columns: 1fr; gap: 0; } aside { display: none; } }
+  aside { position: sticky; top: 72px; align-self: start; height: max-content; }
+  aside .toc-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--faint); margin: 0 0 12px; }
+  aside ol { list-style: none; counter-reset: t; margin: 0; padding: 0; }
+  aside ol li { counter-increment: t; margin-bottom: 4px; }
+  aside ol li a { display: flex; gap: 10px; align-items: baseline; color: var(--muted); font-size: 14px; padding: 6px 10px; border-radius: 8px; border: 1px solid transparent; }
+  aside ol li a::before { content: counter(t); color: var(--faint); font-variant-numeric: tabular-nums; font-size: 12px; }
+  aside ol li a:hover { color: var(--text); text-decoration: none; background: var(--panel-2); border-color: var(--line); }
+
+  header.intro { margin-bottom: 8px; }
+  .eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); background: rgba(110,168,254,0.1); border: 1px solid rgba(110,168,254,0.25); padding: 6px 14px; border-radius: 999px; margin-bottom: 18px; }
+  .eyebrow .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+  h1 { font-size: clamp(30px, 4.5vw, 42px); line-height: 1.1; margin: 0 0 14px; letter-spacing: -0.02em; background: linear-gradient(180deg, #fff, #b9c2d8); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .sub { color: var(--muted); font-size: 17px; max-width: 720px; }
+
+  .step { margin-top: 48px; scroll-margin-top: 80px; }
+  .step .num { display: inline-flex; align-items: center; gap: 10px; font-size: 13px; color: var(--accent-2); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 8px; }
+  .step .num .b { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; color: #0b0d12; background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+  h2 { font-size: 25px; margin: 0 0 12px; letter-spacing: -0.01em; }
+  h3 { font-size: 16px; margin: 22px 0 8px; }
+  p { color: var(--muted); font-size: 15.5px; max-width: 760px; }
+  p.lead { color: var(--muted); }
+
+  pre { background: #0c0f16; border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; overflow-x: auto; font-size: 13.5px; line-height: 1.7; font-family: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace; color: #d7def0; margin: 12px 0 0; }
+  pre .c { color: var(--faint); }
+  pre .k { color: var(--accent); }
+  pre .s { color: var(--good); }
+  pre .n { color: var(--warn); }
+  code.inl { background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 1px 7px; font-size: 13px; font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace; color: #cdd6ea; }
+
+  .callout { border-left: 3px solid var(--accent); background: rgba(110,168,254,0.06); padding: 14px 16px; border-radius: 0 10px 10px 0; color: var(--muted); font-size: 14.5px; margin-top: 16px; max-width: 760px; }
+  .callout.warn { border-left-color: var(--warn); background: rgba(245,201,123,0.06); }
+  .callout.good { border-left-color: var(--good); background: rgba(90,209,154,0.06); }
+  .callout b { color: var(--text); }
+
+  .panel { background: linear-gradient(180deg, var(--panel), var(--bg-soft)); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; box-shadow: var(--shadow); margin-top: 16px; max-width: 760px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table th, table td { text-align: left; padding: 11px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table th { color: var(--faint); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+  table td code { font-size: 12.5px; }
+
+  ul.clean { list-style: none; padding: 0; margin: 12px 0 0; max-width: 760px; }
+  ul.clean li { position: relative; padding: 6px 0 6px 26px; color: var(--muted); font-size: 15px; }
+  ul.clean li::before { content: "›"; position: absolute; left: 6px; top: 6px; color: var(--accent); font-weight: 700; }
+
+  .filetree { font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace; font-size: 13px; color: var(--muted); line-height: 1.8; }
+  .filetree .dir { color: var(--accent); }
+  .filetree .hl { color: var(--good); }
+
+  .checks { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; max-width: 760px; }
+  @media (max-width: 600px) { .checks { grid-template-columns: 1fr; } }
+  .check { display: flex; gap: 10px; align-items: flex-start; background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 14px; color: var(--muted); }
+  .check .tick { color: var(--good); flex: none; font-weight: 700; }
+
+  footer { margin-top: 80px; padding-top: 26px; border-top: 1px solid var(--line); color: var(--faint); font-size: 13px; }
+  footer a { color: var(--muted); }
+
+  @media (prefers-reduced-motion: reduce) { .rise { animation: none; opacity: 1; transform: none; } *, *::before, *::after { transition-duration: 0.01ms !important; } }
+</style>
+</head>
+<body>
+  <nav class="top">
+    <div class="inner">
+      <div class="brand"><span class="mark"></span> PowerCodex</div>
+      <div class="links">
+        <a href="./index.html">← Overview</a>
+        <a href="#step1">Get started</a>
+        <a href="./plans/powercodex-master-plan.html">Master plan</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="shell">
+    <aside class="rise d1">
+      <p class="toc-title">Guide me</p>
+      <ol>
+        <li><a href="#step1">Check prerequisites</a></li>
+        <li><a href="#step2">Copy the tool in</a></li>
+        <li><a href="#step3">Add the npm scripts</a></li>
+        <li><a href="#step4">Initialize &amp; ignore</a></li>
+        <li><a href="#step5">Grant rights</a></li>
+        <li><a href="#step6">Watch it run</a></li>
+        <li><a href="#step7">Point it at your goal</a></li>
+        <li><a href="#step8">Go real</a></li>
+        <li><a href="#step9">Verify</a></li>
+      </ol>
+    </aside>
+
+    <main>
+      <header class="intro rise d1">
+        <div class="eyebrow"><span class="dot"></span> Integration guide</div>
+        <h1>Add the Lifecycle to an existing project</h1>
+        <p class="sub">A nine-step walkthrough to drop the PowerCodex autonomous lifecycle loop into a codebase you already have — so you get the consent-gated build/run/test/observe loop and the live dashboard without changing how your project is structured. Every step is copy-paste and reversible.</p>
+        <div class="callout good"><b>Zero dependencies.</b> The tool is plain Node — no install, no build step, no lockfile churn. Integration is copying a folder and adding four npm scripts.</div>
+      </header>
+
+      <!-- STEP 1 -->
+      <section id="step1" class="step rise d2">
+        <div class="num"><span class="b">1</span> Check prerequisites</div>
+        <h2>What your project needs</h2>
+        <ul class="clean">
+          <li><b>Node.js 18+</b> — the tool uses <code class="inl">node:</code> core modules only (<code class="inl">fs</code>, <code class="inl">path</code>, <code class="inl">http</code>).</li>
+          <li><b>A <code class="inl">package.json</code></b> — so you can add the four npm scripts. Run <code class="inl">npm init -y</code> first if you don't have one.</li>
+          <li><b>A free port</b> — the dashboard server defaults to <code class="inl">4321</code>; override with <code class="inl">--port</code> if it's taken.</li>
+          <li><b>Optional · a Power Platform tenant</b> — only needed later for the <code class="inl">--real</code> engines. Everything runs in simulation without one.</li>
+        </ul>
+      </section>
+
+      <!-- STEP 2 -->
+      <section id="step2" class="step rise d2">
+        <div class="num"><span class="b">2</span> Copy the tool in</div>
+        <h2>Drop in <code class="inl">tools/lifecycle/</code></h2>
+        <p>Copy the entire <code class="inl">tools/lifecycle/</code> folder from PowerCodex into your project. It's self-contained — keep the internal structure intact.</p>
+        <div class="panel">
+          <div class="filetree">
+<span class="dir">tools/lifecycle/</span><br/>
+├── <span class="dir">bin/</span><br/>
+│   └── powercodex-lifecycle.js   <span style="color:var(--faint)"># the CLI entry point</span><br/>
+├── <span class="dir">lib/</span><br/>
+│   ├── loop.js      <span style="color:var(--faint)"># the 7-stage orchestrator</span><br/>
+│   ├── <span class="hl">engines.js</span>   <span style="color:var(--faint)"># the two engines (swap for real later)</span><br/>
+│   ├── rights.js    <span style="color:var(--faint)"># the consent gate</span><br/>
+│   ├── server.js    <span style="color:var(--faint)"># the live dashboard server</span><br/>
+│   ├── dashboard.js · bus.js · state.js · paths.js · selftest.js<br/>
+├── <span class="dir">assets/</span>dashboard.html<br/>
+└── README.md
+          </div>
+        </div>
+        <pre><span class="c"># from the PowerCodex repo root, copy into your project</span>
+cp -r tools/lifecycle <span class="n">/path/to/your-project/</span>tools/lifecycle</pre>
+        <div class="callout">No <code class="inl">npm install</code> needed — nothing here has third-party dependencies, so it won't touch your lockfile or <code class="inl">node_modules</code>.</div>
+      </section>
+
+      <!-- STEP 3 -->
+      <section id="step3" class="step rise d2">
+        <div class="num"><span class="b">3</span> Add the npm scripts</div>
+        <h2>Wire it into <code class="inl">package.json</code></h2>
+        <p>Add these four scripts. They're thin wrappers over the CLI so your team runs the loop the same way everywhere.</p>
+        <pre><span class="k">"scripts"</span>: {
+  <span class="s">"lifecycle"</span>: <span class="s">"node tools/lifecycle/bin/powercodex-lifecycle.js"</span>,
+  <span class="s">"lifecycle:serve"</span>: <span class="s">"node tools/lifecycle/bin/powercodex-lifecycle.js serve"</span>,
+  <span class="s">"lifecycle:selftest"</span>: <span class="s">"node tools/lifecycle/bin/powercodex-lifecycle.js selftest"</span>,
+  <span class="s">"lifecycle:init"</span>: <span class="s">"node tools/lifecycle/bin/powercodex-lifecycle.js init"</span>
+}</pre>
+        <div class="callout">Pass CLI flags through npm with <code class="inl">--</code>, e.g. <code class="inl">npm run lifecycle -- loop --rotations 3</code>.</div>
+      </section>
+
+      <!-- STEP 4 -->
+      <section id="step4" class="step rise d2">
+        <div class="num"><span class="b">4</span> Initialize &amp; ignore</div>
+        <h2>Create the runtime folders</h2>
+        <p>Run <code class="inl">init</code> once. It scaffolds the live workspace, the consent file, and a first dashboard snapshot.</p>
+        <pre>npm run lifecycle:init</pre>
+        <p>This creates two folders in your project root:</p>
+        <table>
+          <thead><tr><th>Path</th><th>What it holds</th><th>Commit it?</th></tr></thead>
+          <tbody>
+            <tr><td><code class="inl">.powercodex/live/</code></td><td>The append-only status bus + the rendered dashboard snapshot — regenerated on every event.</td><td>No — runtime state</td></tr>
+            <tr><td><code class="inl">Approved_rights/</code></td><td><code class="inl">approval.json</code> — your consent flags.</td><td>Your call*</td></tr>
+          </tbody>
+        </table>
+        <p style="font-size:13.5px;margin-top:6px">*Commit it to share defaults with your team, or ignore it to keep grants per-machine. Never commit it with <code class="inl">allowPush: true</code> by accident.</p>
+        <h3>Add to <code class="inl">.gitignore</code></h3>
+        <pre><span class="c"># PowerCodex Lifecycle runtime state</span>
+.powercodex/</pre>
+      </section>
+
+      <!-- STEP 5 -->
+      <section id="step5" class="step rise d2">
+        <div class="num"><span class="b">5</span> Grant rights</div>
+        <h2>The consent gate is the whole safety model</h2>
+        <p>Open <code class="inl">Approved_rights/approval.json</code>. Every flag defaults to <code class="inl">false</code> — the loop reads this file before it builds, pushes, or launches a browser, and <b>stops and asks</b> when a flag is off. Turn on only what you're comfortable letting it do.</p>
+        <pre>{
+  <span class="k">"browserProfile"</span>: <span class="s">""</span>,              <span class="c">// Edge profile for the managed browser</span>
+  <span class="k">"allowBuild"</span>: <span class="n">false</span>,            <span class="c">// may build app assets</span>
+  <span class="k">"allowPush"</span>: <span class="n">false</span>,             <span class="c">// may push to the tenant</span>
+  <span class="k">"allowAutoRespec"</span>: <span class="n">false</span>,       <span class="c">// may rewrite specs from observations</span>
+  <span class="k">"allowAutoApplyDefects"</span>: <span class="n">false</span>,  <span class="c">// may auto-fix defects it finds</span>
+  <span class="k">"grantedBy"</span>: <span class="s">"user"</span>,
+  <span class="k">"grantedAt"</span>: <span class="s">"2026-06-03"</span>
+}</pre>
+        <div class="callout warn"><b>Start narrow.</b> A good first run sets <code class="inl">allowBuild: true</code> and leaves <code class="inl">allowPush</code> off — you watch it build and test in simulation, with nothing reaching a real tenant.</div>
+      </section>
+
+      <!-- STEP 6 -->
+      <section id="step6" class="step rise d2">
+        <div class="num"><span class="b">6</span> Watch it run</div>
+        <h2>Two terminals: dashboard + loop</h2>
+        <p>This is the daily rhythm. Start the dashboard, leave it open, and drive the loop beside it.</p>
+        <h3>Terminal 1 — the live dashboard</h3>
+        <pre>npm run lifecycle:serve
+<span class="c"># → http://localhost:4321  (polls /api/state every 1.2s)</span></pre>
+        <h3>Terminal 2 — the loop</h3>
+        <pre>npm run lifecycle -- loop --rotations 3
+<span class="c"># the open dashboard follows along live</span></pre>
+        <div class="callout">Want to see it move before pointing it at real work? <code class="inl">npm run lifecycle:serve -- --demo</code> drives a paced simulated loop so the dashboard visibly advances.</div>
+      </section>
+
+      <!-- STEP 7 -->
+      <section id="step7" class="step rise d2">
+        <div class="num"><span class="b">7</span> Point it at your goal</div>
+        <h2>Give it the two inputs</h2>
+        <p>The loop runs around a <b>goal</b> (what the app should do, in plain language) and an approved <b>MVP</b> (the first slice). It measures everything against them with a live goal&#8596;MVP compliance meter. As observations accumulate, each rotation's <b>Observe</b> stage authors defect / gap / improvement specs that feed the next <b>Intake</b> — that's the self-improving part.</p>
+        <p>To enhance an <i>existing</i> build, describe the goal as the next increment you want (the feature you're adding, the bug class you're hunting), let the loop plan and test against it, and read the authored specs as a prioritized worklist on the dashboard.</p>
+        <div class="callout good"><b>It composes with your existing setup.</b> No Dataverse? The Build Executor falls back to running your app locally via <code class="inl">npm run dev</code>. Dataverse connected? It uses <code class="inl">npx power-apps push</code> + the app link. You don't restructure anything.</div>
+      </section>
+
+      <!-- STEP 8 -->
+      <section id="step8" class="step rise d2">
+        <div class="num"><span class="b">8</span> Go real</div>
+        <h2>Swap two functions, change nothing else</h2>
+        <p>By default both engines run in <b>simulation</b> — they emit the real event stream with simulated outcomes, so the whole loop and dashboard work without a tenant. When you're ready for the real thing, edit <code class="inl">tools/lifecycle/lib/engines.js</code> and replace the bodies of two functions with your Playwright-for-MDM adapters:</p>
+        <ul class="clean">
+          <li><code class="inl">buildExecutor()</code> — <b>Engine 1</b>: turns task contracts into portal assets via the managed Edge browser.</li>
+          <li><code class="inl">e2eTester()</code> — <b>Engine 2</b>: runs end-to-end tests against the live app and drives the self-heal loop.</li>
+        </ul>
+        <p>Keep the same signatures — both receive an <code class="inl">emit</code> callback and return the same result shape — and the orchestrator, gate, bus, and dashboard need no changes. Then run with <code class="inl">--real</code>:</p>
+        <pre>npm run lifecycle -- loop --rotations 2 --real
+<span class="c"># requires a tenant + the matching Approved_rights/ flags</span></pre>
+        <div class="callout warn"><b>The seam is deliberate.</b> <code class="inl">--real</code> only does what the rights file allows — an un-approved build is blocked at the gate even in real mode.</div>
+      </section>
+
+      <!-- STEP 9 -->
+      <section id="step9" class="step rise d2">
+        <div class="num"><span class="b">9</span> Verify</div>
+        <h2>Prove the integration is sound</h2>
+        <p>Run the self-test. It executes the full loop in a throwaway workspace and asserts the product does what the plan promises — <b>16/16 checks</b>.</p>
+        <pre>npm run lifecycle:selftest</pre>
+        <div class="checks">
+          <div class="check"><span class="tick">✓</span> All 7 stages emit</div>
+          <div class="check"><span class="tick">✓</span> Build assets created</div>
+          <div class="check"><span class="tick">✓</span> push-vs-dev rule honored</div>
+          <div class="check"><span class="tick">✓</span> A self-heal triggers</div>
+          <div class="check"><span class="tick">✓</span> An observation is authored</div>
+          <div class="check"><span class="tick">✓</span> Dashboard renders with brand</div>
+          <div class="check"><span class="tick">✓</span> <code class="inl">/api/state</code> returns 200 + JSON</div>
+          <div class="check"><span class="tick">✓</span> Rights gate blocks un-approved build</div>
+        </div>
+        <p style="margin-top:18px">If all checks pass, the Lifecycle is wired in correctly. From here it's just the two-terminal rhythm from step 6, against whatever goal you're building toward.</p>
+      </section>
+
+      <footer>
+        Done? Head back to the <a href="./index.html">overview</a> or read the <a href="./plans/powercodex-master-plan.html">full master plan</a>.<br/>
+        PowerCodex Lifecycle · the autonomous app loop, as files, with a live monitor.
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

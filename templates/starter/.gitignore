@@ -25,3 +25,13 @@ dist-ssr
 
 # Claude Code
 .claude/settings.local.json
+
+# PowerCodex lifecycle (generated live view + consent gate)
+.powercodex
+Approved_rights
+
+# PowerCodex automation runtime (sessions, profiles, results — never commit)
+automation/.auth
+automation/.profiles
+automation/build-executor/results
+automation/e2e-suite/reports

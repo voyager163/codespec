@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PowerCodex · Workspace Organization Plan</title>
+<style>
+  :root{
+    --ease:cubic-bezier(0.23,1,0.32,1);
+    --bg:#0b0d12;--bg-soft:#12151d;--panel:#161a24;--panel2:#1c2130;--line:#262c3a;--line2:#313a4d;
+    --text:#e8ecf4;--muted:#99a2b8;--faint:#6b7488;--accent:#6ea8fe;--accent2:#a78bfa;
+    --good:#5ad19a;--bad:#f08a8a;--warn:#f5c97b;--radius:16px;
+  }
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1100px 560px at 85% -12%,rgba(167,139,250,.13),transparent 60%),radial-gradient(900px 500px at -10% 8%,rgba(110,168,254,.11),transparent 55%),var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .mono{font-family:"SF Mono","JetBrains Mono",Consolas,Menlo,monospace}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 22px 90px}
+  a{color:var(--accent)}
+  h1{font-size:27px;letter-spacing:-.01em;margin:0 0 6px}
+  .topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 22px;background:rgba(11,13,18,.82);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);margin-bottom:26px}
+  .brand{display:flex;align-items:center;gap:11px;font-weight:700}
+  .mark{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#06203f;font-weight:900}
+  .brand small{display:block;font-weight:500;font-size:11.5px;color:var(--faint)}
+  .sp{flex:1}
+  .pill{font-size:11.5px;font-weight:700;padding:5px 12px;border-radius:999px;border:1px solid var(--line);display:inline-flex;align-items:center;gap:7px}
+  .pill.pick{color:var(--good);border-color:rgba(90,209,154,.35);background:rgba(90,209,154,.08)}
+
+  .lead{color:var(--muted);font-size:15px;max-width:820px;margin:0 0 8px}
+  .principle{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:12px;background:rgba(110,168,254,.05);padding:14px 16px;margin:18px 0 30px;max-width:820px}
+  .principle b{color:var(--text)}
+  .principle .ic{font-size:20px}
+
+  .head{margin:34px 0 12px;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2);font-weight:700}
+
+  /* now/after trees */
+  .ba{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:840px){.ba{grid-template-columns:1fr}}
+  .tree{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:0;overflow:hidden}
+  .tree .cap{display:flex;align-items:center;gap:9px;padding:11px 16px;font-size:12px;font-weight:700;border-bottom:1px solid var(--line)}
+  .tree.now .cap{color:var(--warn)}.tree.after .cap{color:var(--good)}
+  .tree .cap .dot{width:8px;height:8px;border-radius:50%}.tree.now .dot{background:var(--warn)}.tree.after .dot{background:var(--good)}
+  .tree pre{margin:0;padding:14px 16px;font-family:"SF Mono","JetBrains Mono",Consolas,monospace;font-size:12.5px;line-height:1.7;color:var(--muted);overflow:auto}
+  .tree .dir{color:var(--accent)}
+  .tree .keep{color:var(--good)}
+  .tree .move{color:var(--warn)}
+  .tree .new{color:var(--accent2)}
+  .tree .bad{color:var(--bad)}
+  .tree .c{color:var(--faint)}
+
+  table{width:100%;border-collapse:collapse;border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:13px}
+  th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--panel2);color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+  td:first-child{white-space:nowrap}
+  tr:last-child td{border-bottom:0}
+  .tag{font-size:10px;font-weight:800;border-radius:5px;padding:2px 7px}
+  .tag.move{color:#06203f;background:var(--warn)}.tag.new{color:#06203f;background:var(--accent2)}.tag.keep{color:#06203f;background:var(--good)}.tag.del{color:#fff;background:var(--bad)}
+
+  .flowcard{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:18px;margin-bottom:16px}
+  .flowcard h3{margin:0 0 4px;font-size:15px}
+  .flowcard .sub{color:var(--faint);font-size:12.5px;margin:0 0 14px}
+  .steps{display:flex;flex-direction:column;gap:0}
+  .step{display:grid;grid-template-columns:30px 1fr;gap:12px;padding:10px 0;border-bottom:1px dashed var(--line)}
+  .step:last-child{border-bottom:0}
+  .step .num{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font-size:12px;font-weight:800;background:rgba(110,168,254,.12);color:var(--accent);border:1px solid rgba(110,168,254,.3)}
+  .step .t{font-size:13.5px}.step .t b{color:var(--text)}
+  .step .t .m{color:var(--muted)}
+  .step code{font-size:12px;background:#0a0c11;border:1px solid var(--line);border-radius:5px;padding:1px 6px}
+  .safe{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--good);background:rgba(90,209,154,.1);border:1px solid rgba(90,209,154,.3);border-radius:999px;padding:3px 10px}
+
+  .q{border:1px solid var(--line);border-left:3px solid var(--accent2);border-radius:12px;background:var(--panel);padding:14px 16px;margin-bottom:12px}
+  .q .head2{font-size:13px;font-weight:700;margin-bottom:5px}
+  .q .ans{font-size:13px;color:var(--muted)}
+  .q .ans b{color:var(--good)}
+
+  .check{list-style:none;margin:0;padding:0}
+  .check li{display:flex;gap:11px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px;color:var(--muted)}
+  .check li:last-child{border-bottom:0}
+  .check .n{flex:none;width:22px;height:22px;border-radius:6px;display:grid;place-items:center;font-size:11px;font-weight:800;background:var(--panel2);border:1px solid var(--line);color:var(--faint)}
+  .check b{color:var(--text)}
+  .check code{font-size:12px;background:#0a0c11;border:1px solid var(--line);border-radius:5px;padding:1px 6px}
+
+  .ready{margin:34px 0 0;border:1px solid rgba(90,209,154,.3);background:rgba(90,209,154,.06);border-radius:12px;padding:16px;text-align:center;font-weight:700;color:var(--good)}
+  .note{color:var(--faint);font-size:12px;text-align:center;margin-top:18px}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand"><span class="mark">P</span><span>PowerCodex <small>plan · workspace organization</small></span></div>
+    <div class="sp"></div>
+    <span class="pill pick">layout: this repo IS the workspace</span>
+    <span class="pill pick">profile: pointer + gitignored</span>
+  </div>
+
+  <div class="wrap">
+    <h1>Organize the workspace</h1>
+    <p class="lead">Today the <span class="mono">codespec</span> repo mixes three things at its root: the <b>tool</b>, the tool's <b>own dev specs</b>, and <b>project + runtime data</b> that belongs to specific apps. This plan separates them so PowerCodex carries no stray project code, every project owns its own <span class="mono">openspec</span>, and there is exactly one shared <span class="mono">Learning_Experience</span> brain.</p>
+
+    <div class="principle">
+      <span class="ic">🧠</span>
+      <div><b>The rule.</b> <b>One</b> shared <span class="mono">Learning_Experience/</span> at the workspace root — every project reads & writes it, so a lesson from project A helps project B. <b>Everything else is per-project</b>: each app under <span class="mono">projects/</span> owns its <span class="mono">openspec/</span>, its <span class="mono">.powercodex/</span> runtime, and its <span class="mono">Approved_rights/</span> consent. The root <span class="mono">openspec/</span> stays — it is the tool's own dev project.</div>
+    </div>
+
+    <div class="head">Now → After</div>
+    <div class="ba">
+      <div class="tree now">
+        <div class="cap"><span class="dot"></span>NOW — everything piled at the root</div>
+<pre><span class="dir">codespec/</span>
+  bin/ tools/ templates/ scripts/   <span class="c"># tool</span>
+  <span class="dir">openspec/</span>
+    specs/open-source-project-readiness
+    specs/powercodex-initializer
+    changes/add-lifecycle-loop
+    changes/<span class="bad">matflow-code-app-rebuild</span>  <span class="c"># a PROJECT</span>
+  <span class="bad">.powercodex/</span> live/ mvp/        <span class="c"># runtime at root</span>
+  <span class="bad">Approved_rights/</span> approval.json  <span class="c"># consent at root</span>
+  Learning_Experience/              <span class="c"># shared (ok)</span>
+  package.json  README.md  LICENSE
+</pre>
+      </div>
+      <div class="tree after">
+        <div class="cap"><span class="dot"></span>AFTER — tool clean, projects self-contained</div>
+<pre><span class="dir">codespec/</span>  <span class="new">(.powercodex-workspace.json)</span>
+  bin/ tools/ templates/ scripts/   <span class="keep"># tool (unchanged)</span>
+  <span class="dir">openspec/</span>                        <span class="keep"># tool's OWN dev specs</span>
+    specs/open-source-project-readiness
+    specs/powercodex-initializer
+    changes/add-lifecycle-loop …
+  <span class="keep">Learning_Experience/</span>              <span class="keep"># ONE shared brain</span>
+  <span class="new">projects/</span>
+    <span class="dir">matflow/</span>
+      <span class="move">openspec/</span>        <span class="c"># moved here</span>
+      <span class="new">.powercodex/</span>     <span class="c"># per-project runtime</span>
+      <span class="new">Approved_rights/</span> <span class="c"># consent+profile+url</span>
+      &lt;app source&gt;
+  .powercodex/  <span class="c"># root: demo only, gitignored</span>
+</pre>
+      </div>
+    </div>
+
+    <div class="head">What moves where</div>
+    <table>
+      <tr><th>Item</th><th>Action</th><th>Destination</th></tr>
+      <tr><td class="mono">openspec/changes/matflow-code-app-rebuild</td><td><span class="tag move">MOVE</span></td><td class="mono">projects/matflow/openspec/changes/…</td></tr>
+      <tr><td class="mono">openspec/specs/powercodex-initializer<br/>openspec/specs/open-source-project-readiness</td><td><span class="tag keep">KEEP</span></td><td>Root — these are the tool's own dev specs</td></tr>
+      <tr><td class="mono">openspec/changes/add-lifecycle-loop<br/>add-template-dual-tool-skills</td><td><span class="tag keep">KEEP</span></td><td>Root — tool development changes</td></tr>
+      <tr><td class="mono">Learning_Experience/</td><td><span class="tag keep">KEEP</span></td><td>Root — the single shared brain (already correct)</td></tr>
+      <tr><td class="mono">.powercodex/live, .powercodex/mvp</td><td><span class="tag move">MOVE</span></td><td>Per project: <span class="mono">projects/&lt;p&gt;/.powercodex/</span>. Root stays for demo only and is gitignored.</td></tr>
+      <tr><td class="mono">Approved_rights/approval.json</td><td><span class="tag move">MOVE</span></td><td>Per project: <span class="mono">projects/&lt;p&gt;/Approved_rights/</span> (consent is project-scoped)</td></tr>
+      <tr><td class="mono">.powercodex-workspace.json</td><td><span class="tag new">NEW</span></td><td>Root marker listing <span class="mono">projects/*</span> — makes the shared-brain resolver light up</td></tr>
+    </table>
+    <p class="lead" style="margin-top:12px;font-size:13px">The runtime already supports this: <span class="mono">workspace.js</span> walks up to the marker and resolves the shared brain, and <span class="mono">paths.js</span> computes <span class="mono">.powercodex/</span> + <span class="mono">Approved_rights/</span> relative to whatever <span class="mono">root</span> the lifecycle runs in. Running it with a project dir as root already produces per-project runtime — the reorg is mostly moving files + adding the marker.</p>
+
+    <div class="head">Runtime ask 1 — verify the MDM browser profile once</div>
+    <div class="flowcard">
+      <h3>Profile is confirmed one time, then reused</h3>
+      <p class="sub">The pointer is committed; the session data is gitignored — credentials never enter git.</p>
+      <div class="steps">
+        <div class="step"><span class="num">1</span><div class="t"><b>First MDM run</b> for a project: runtime reads <code>Approved_rights/approval.json</code> → <code>browserProfile</code> is empty.</div></div>
+        <div class="step"><span class="num">2</span><div class="t"><b>Verify once.</b> <span class="m">Launch managed Edge with a named profile; you sign in / clear MFA in that window once.</span></div></div>
+        <div class="step"><span class="num">3</span><div class="t"><b>Persist a pointer.</b> <span class="m">Write</span> <code>browserProfile:"mdm-edge"</code> <span class="m">and</span> <code>profilePath:"./.profiles/mdm-edge"</code> <span class="m">to approval.json. The real profile dir lives in</span> <code>.profiles/</code> <span class="m">which is gitignored.</span> <span class="safe">● cookies never committed</span></div></div>
+        <div class="step"><span class="num">4</span><div class="t"><b>Every later run</b> reuses the stored profile path — no re-login. <span class="m">It re-checks validity first; if the session expired it re-verifies once and moves on.</span></div></div>
+      </div>
+    </div>
+
+    <div class="head">Runtime ask 2 — capture the app URL after push</div>
+    <div class="flowcard">
+      <h3>Grab the URL from <span class="mono">npx power-apps push</span> and store it</h3>
+      <p class="sub">So the E2E tester always knows where the live app is, without you pasting it each run.</p>
+      <div class="steps">
+        <div class="step"><span class="num">1</span><div class="t"><b>Runner pushes</b> with <code>npx power-apps push</code> <span class="m">(Dataverse connected) and parses the returned app link.</span></div></div>
+        <div class="step"><span class="num">2</span><div class="t"><b>Persist it</b> to the project: <code>Approved_rights/approval.json</code> → <code>appUrl</code> <span class="m">(safe to commit — it is not a secret), plus a push history line in</span> <code>.powercodex/runtime.json</code>.</div></div>
+        <div class="step"><span class="num">3</span><div class="t"><b>E2E tester reads</b> <code>appUrl</code> <span class="m">as the base URL for every spec — replacing the hard-coded</span> <code>127.0.0.1:5173</code> <span class="m">assumption.</span></div></div>
+        <div class="step"><span class="num">4</span><div class="t"><b>Today's gap:</b> the runner emits "got app link" but <b>never stores the URL</b>. This wires that through.</div></div>
+      </div>
+    </div>
+
+    <div class="head">.gitignore additions</div>
+    <table>
+      <tr><th>Pattern</th><th>Why</th></tr>
+      <tr><td class="mono">**/.profiles/</td><td>Real browser profiles — session cookies/tokens must never be committed</td></tr>
+      <tr><td class="mono">/.powercodex/</td><td>Root runtime is demo-only & ephemeral; per-project <span class="mono">.powercodex/</span> is kept</td></tr>
+      <tr><td class="mono">projects/*/.powercodex/live/status.json</td><td>Optional — the append-only event log is regenerated each run (keep if you want run history in git)</td></tr>
+    </table>
+
+    <div class="head">Decisions locked</div>
+    <div class="q"><div class="head2">Layout</div><div class="ans">This repo <b>is</b> the workspace: tool at root, projects nested under <span class="mono">projects/</span>, one shared <span class="mono">Learning_Experience/</span> at root.</div></div>
+    <div class="q"><div class="head2">Profile storage</div><div class="ans">Commit a <b>pointer</b> (name + path) in <span class="mono">Approved_rights/</span>; the actual profile session is <b>gitignored</b>. App URL is committed (not secret).</div></div>
+
+    <div class="head">Migration checklist (on your go-ahead)</div>
+    <ul class="check">
+      <li><span class="n">1</span><div>Add <b><span class="mono">.powercodex-workspace.json</span></b> at the root with <span class="mono">{ name, projects:["projects/matflow"] }</span>.</div></li>
+      <li><span class="n">2</span><div>Create <b><span class="mono">projects/matflow/</span></b> and <span class="mono">git mv</span> <span class="mono">openspec/changes/matflow-code-app-rebuild</span> into <span class="mono">projects/matflow/openspec/changes/</span> (with its own <span class="mono">config.yaml</span> + <span class="mono">specs/</span>).</div></li>
+      <li><span class="n">3</span><div>Move root <b><span class="mono">.powercodex/</span></b> + <b><span class="mono">Approved_rights/</span></b> runtime into <span class="mono">projects/matflow/</span>; leave root <span class="mono">.powercodex/</span> as gitignored demo space.</div></li>
+      <li><span class="n">4</span><div>Extend <b><span class="mono">rights.js</span></b>: <span class="mono">profilePath</span> + <span class="mono">appUrl</span> fields; add a <b>verify-once</b> profile flow and an <b>app-URL capture</b> in <span class="mono">loop.js</span>/runner.</div></li>
+      <li><span class="n">5</span><div>Point the <b>E2E tester</b> at the stored <span class="mono">appUrl</span> instead of a hard-coded localhost.</div></li>
+      <li><span class="n">6</span><div>Update <b><span class="mono">.gitignore</span></b> (<span class="mono">**/.profiles/</span>, root <span class="mono">.powercodex/</span>) and the templates so generated projects start with this layout.</div></li>
+      <li><span class="n">7</span><div>Run <span class="mono">npm run lifecycle</span> from <span class="mono">projects/matflow/</span> to confirm the shared brain resolves and runtime writes per-project.</div></li>
+    </ul>
+
+    <div class="ready">"I am completely ready, I have no more questions to ask."</div>
+    <p class="note">Review artifact — no files have been moved yet. Approve and I'll run the migration checklist as a single reviewable change.</p>
+  </div>
+</body>
+</html>

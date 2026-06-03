@@ -149,7 +149,7 @@ If the user mentions a change or you detect one is relevant:
 
 There's no required ending. Discovery might:
 
-- **Flow into a proposal**: "Ready to start? I can create a change proposal."
+- **Flow into a proposal**: "Ready to start? I can create a change proposal." When you do, also render the HTML review artifact (`openspec/changes/<name>/preview.html`) per [`_html-artifact.md`](./_html-artifact.md): Now→After, a recommendation with pros/cons, all questions asked once, a suggested proposal, the `/emil-design-eng` pass, and the readiness line when truly ready.
 - **Result in artifact updates**: "Updated design.md with these decisions"
 - **Just provide clarity**: User has what they need, moves on
 - **Continue later**: "We can pick this up anytime"

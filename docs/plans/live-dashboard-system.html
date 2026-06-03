@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PowerCodex · Live Agent Dashboard — System Demo</title>
+<style>
+  :root {
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+
+    --bg: #0b0d12;
+    --bg-soft: #12151d;
+    --panel: #161a24;
+    --panel-2: #1c2130;
+    --line: #262c3a;
+    --line-2: #313a4d;
+    --text: #e8ecf4;
+    --muted: #99a2b8;
+    --faint: #6b7488;
+    --accent: #6ea8fe;
+    --accent-2: #a78bfa;
+    --good: #5ad19a;
+    --bad: #f08a8a;
+    --warn: #f5c97b;
+    --radius: 16px;
+    --shadow: 0 20px 60px -20px rgba(0,0,0,0.6);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1100px 560px at 85% -12%, rgba(167,139,250,0.13), transparent 60%),
+      radial-gradient(900px 500px at -10% 8%, rgba(110,168,254,0.11), transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 0 22px 80px; }
+  .mono { font-family: "SF Mono", "JetBrains Mono", Consolas, Menlo, monospace; }
+
+  /* ---------- Top bar ---------- */
+  .topbar {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+    padding: 16px 22px; margin-bottom: 24px;
+    background: rgba(11,13,18,0.78); backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--line);
+  }
+  .brand { display: flex; align-items: center; gap: 11px; font-weight: 700; letter-spacing: -0.01em; }
+  .brand .mark {
+    width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #06203f; font-weight: 900;
+  }
+  .brand small { display: block; font-weight: 500; font-size: 11.5px; color: var(--faint); letter-spacing: 0.02em; }
+  .live {
+    display: inline-flex; align-items: center; gap: 8px; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--good); border: 1px solid rgba(90,209,154,0.35); background: rgba(90,209,154,0.08);
+    padding: 5px 12px; border-radius: 999px; font-weight: 700;
+  }
+  .live .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good);
+    box-shadow: 0 0 0 0 rgba(90,209,154,0.6); animation: pulse 1.8s var(--ease-out) infinite; }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(90,209,154,0.55); }
+    70% { box-shadow: 0 0 0 8px rgba(90,209,154,0); }
+    100% { box-shadow: 0 0 0 0 rgba(90,209,154,0); }
+  }
+  .spacer { flex: 1; }
+  .stat { text-align: right; }
+  .stat .v { font-weight: 700; font-size: 15px; }
+  .stat .l { font-size: 11px; color: var(--faint); text-transform: uppercase; letter-spacing: 0.06em; }
+  .btn {
+    appearance: none; border: 1px solid var(--line); background: var(--panel); color: var(--text);
+    font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; padding: 8px 14px; border-radius: 10px;
+    transition: transform 140ms var(--ease-out), border-color 140ms var(--ease-out), background 140ms var(--ease-out);
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn:active { transform: scale(0.96); }
+  .btn.on { background: rgba(110,168,254,0.14); border-color: rgba(110,168,254,0.4); color: var(--accent); }
+  .btn.primary { background: linear-gradient(180deg, var(--accent), #4f8ef0); color: #06203f; border-color: transparent; box-shadow: 0 12px 30px -12px rgba(110,168,254,0.7); }
+  .btn.primary:hover { box-shadow: 0 16px 40px -12px rgba(110,168,254,0.9); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+  .btn:disabled:active { transform: none; }
+
+  /* ---------- Intake gate ---------- */
+  .intake {
+    border: 1px solid rgba(110,168,254,0.3); border-radius: 16px; padding: 20px;
+    background: linear-gradient(180deg, rgba(110,168,254,0.06), var(--panel));
+    box-shadow: var(--shadow); margin-bottom: 24px;
+  }
+  .intake .ihead { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+  .intake .ihead h2 { font-size: 18px; margin: 0; letter-spacing: -0.01em; }
+  .intake .ihead .step { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); background: rgba(110,168,254,0.12); border: 1px solid rgba(110,168,254,0.3); padding: 4px 10px; border-radius: 999px; }
+  .intake .ihead .gatepill { margin-left: auto; font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 999px; display: inline-flex; align-items: center; gap: 7px; }
+  .gatepill.locked { color: var(--warn); background: rgba(245,201,123,0.1); border: 1px solid rgba(245,201,123,0.3); }
+  .gatepill.ready { color: var(--good); background: rgba(90,209,154,0.1); border: 1px solid rgba(90,209,154,0.3); }
+  .intake .isub { color: var(--muted); font-size: 13.5px; margin: 0 0 16px; }
+  .ifields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 820px) { .ifields { grid-template-columns: 1fr; } }
+  .ifield label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; margin-bottom: 7px; }
+  .ifield label .tagn { font-size: 10.5px; font-weight: 800; color: #06203f; background: var(--accent); border-radius: 6px; padding: 1px 6px; }
+  .ifield label.two .tagn { background: var(--accent-2); }
+  .ifield label .auto { margin-left: auto; font-size: 10.5px; font-weight: 600; color: var(--good); background: rgba(90,209,154,0.1); border: 1px solid rgba(90,209,154,0.3); border-radius: 999px; padding: 2px 8px; text-transform: none; letter-spacing: 0; }
+  .ifield textarea {
+    width: 100%; min-height: 104px; resize: vertical; box-sizing: border-box;
+    background: #0a0c11; color: var(--text); border: 1px solid var(--line); border-radius: 11px;
+    padding: 12px 13px; font: inherit; font-size: 13px; line-height: 1.5;
+    transition: border-color 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
+  }
+  .ifield textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(110,168,254,0.16); }
+  .ifield textarea::placeholder { color: var(--faint); }
+  .mvpmode { display: flex; gap: 8px; margin-bottom: 9px; }
+  .mvpmode button {
+    appearance: none; cursor: pointer; font: inherit; font-size: 12px; font-weight: 600;
+    border: 1px solid var(--line); background: transparent; color: var(--muted); padding: 5px 11px; border-radius: 8px;
+    transition: transform 140ms var(--ease-out), border-color 140ms var(--ease-out), color 140ms var(--ease-out), background 140ms var(--ease-out);
+  }
+  .mvpmode button:active { transform: scale(0.96); }
+  .mvpmode button.sel { color: var(--accent); border-color: rgba(110,168,254,0.45); background: rgba(110,168,254,0.12); }
+
+  /* compliance meter */
+  .compliance { margin-top: 16px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-2); }
+  .compliance .crow { display: flex; align-items: center; gap: 12px; }
+  .compliance .clabel { font-size: 13px; font-weight: 600; }
+  .compliance .cval { margin-left: auto; font-weight: 800; font-size: 15px; }
+  .cmeter { margin-top: 10px; height: 8px; border-radius: 999px; background: #0a0c11; overflow: hidden; border: 1px solid var(--line); }
+  .cmeter > span { display: block; height: 100%; width: 0%; border-radius: 999px; transition: width 400ms var(--ease-out), background 400ms var(--ease-out); }
+  .compliance.aligned .cval, .compliance.aligned .clabel b { color: var(--good); }
+  .compliance.aligned .cmeter > span { background: linear-gradient(90deg, var(--good), #3fb985); }
+  .compliance.drift .cval, .compliance.drift .clabel b { color: var(--warn); }
+  .compliance.drift .cmeter > span { background: linear-gradient(90deg, var(--warn), #e0a94f); }
+  .compliance.empty .cmeter > span { background: var(--line-2); }
+  .cmsg { margin: 10px 0 0; font-size: 12.5px; color: var(--muted); }
+  .cmsg b { color: var(--text); }
+  .compliance.drift .cmsg { color: var(--warn); }
+  .iactions { display: flex; align-items: center; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+  .iactions .hintx { font-size: 12px; color: var(--faint); }
+
+  /* locked overlay on loop while intake not verified */
+  .locked-wrap { position: relative; }
+  .locked-wrap.locked > .loopstrip, .locked-wrap.locked > .cols { opacity: 0.4; pointer-events: none; filter: saturate(0.6); transition: opacity 300ms var(--ease-out); }
+  .lockbanner {
+    display: none; align-items: center; gap: 10px; justify-content: center;
+    padding: 13px 18px; border: 1px dashed rgba(245,201,123,0.4); border-radius: 12px;
+    background: rgba(245,201,123,0.06); color: var(--warn); font-size: 13px; font-weight: 600; margin-bottom: 22px;
+  }
+  .locked-wrap.locked .lockbanner { display: flex; }
+
+  /* ---------- Loop strip ---------- */
+  .loopstrip {
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 26px;
+  }
+  @media (max-width: 880px) { .loopstrip { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 520px) { .loopstrip { grid-template-columns: repeat(2, 1fr); } }
+  .stage {
+    position: relative; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+    background: var(--panel); overflow: hidden;
+    transition: border-color 240ms var(--ease-out), background 240ms var(--ease-out);
+  }
+  .stage .sn { font-size: 11px; color: var(--faint); font-weight: 700; }
+  .stage .st { font-size: 13.5px; font-weight: 600; margin-top: 3px; }
+  .stage .ss { font-size: 11.5px; color: var(--faint); margin-top: 2px; }
+  .stage.done { border-color: rgba(90,209,154,0.3); }
+  .stage.done .sn { color: var(--good); }
+  .stage.active { border-color: rgba(110,168,254,0.55); background: linear-gradient(180deg, rgba(110,168,254,0.10), var(--panel)); }
+  .stage.active::after {
+    content: ""; position: absolute; left: 0; bottom: 0; height: 2px; width: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    animation: sweep 2.2s linear infinite;
+  }
+  @keyframes sweep { 0% { transform: translateX(-100%);} 100% { transform: translateX(100%);} }
+  .stage .check { color: var(--good); font-weight: 800; }
+
+  /* ---------- Grid layout ---------- */
+  .cols { display: grid; grid-template-columns: 1.35fr 1fr; gap: 22px; }
+  @media (max-width: 980px) { .cols { grid-template-columns: 1fr; } }
+  .sectitle { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-2); font-weight: 700; }
+  .sectitle .count { color: var(--faint); font-weight: 600; letter-spacing: 0; text-transform: none; font-size: 12px; }
+
+  /* ---------- Agent cards ---------- */
+  .agents { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 560px) { .agents { grid-template-columns: 1fr; } }
+  .agent {
+    border: 1px solid var(--line); border-radius: 14px; padding: 16px; background: linear-gradient(180deg, var(--panel), var(--bg-soft));
+    transition: border-color 240ms var(--ease-out), box-shadow 240ms var(--ease-out);
+  }
+  .agent.working { border-color: rgba(110,168,254,0.4); box-shadow: 0 16px 40px -26px rgba(110,168,254,0.6); }
+  .agent.blocked { border-color: rgba(245,201,123,0.45); }
+  .agent .head { display: flex; align-items: center; gap: 11px; }
+  .agent .av { width: 36px; height: 36px; border-radius: 10px; flex: none; display: grid; place-items: center; font-size: 17px; background: var(--panel-2); border: 1px solid var(--line); }
+  .agent .nm { font-weight: 700; font-size: 14.5px; }
+  .agent .role { font-size: 11.5px; color: var(--faint); }
+  .agent .badge {
+    margin-left: auto; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.05em;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .badge.working { color: var(--accent); background: rgba(110,168,254,0.12); border: 1px solid rgba(110,168,254,0.3); }
+  .badge.idle { color: var(--faint); background: rgba(107,116,136,0.12); border: 1px solid var(--line); }
+  .badge.blocked { color: var(--warn); background: rgba(245,201,123,0.12); border: 1px solid rgba(245,201,123,0.3); }
+  .badge.done { color: var(--good); background: rgba(90,209,154,0.12); border: 1px solid rgba(90,209,154,0.3); }
+  .badge .bd { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .badge.working .bd { animation: pulse2 1.4s var(--ease-out) infinite; }
+  @keyframes pulse2 { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  .agent .task { margin-top: 12px; font-size: 13px; color: var(--muted); min-height: 36px; }
+  .agent .task b { color: var(--text); font-weight: 600; }
+  .bar { margin-top: 10px; height: 7px; border-radius: 999px; background: var(--panel-2); overflow: hidden; border: 1px solid var(--line); }
+  .bar > span { display: block; height: 100%; width: 0%; border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    transition: width 600ms linear; }
+  .agent.blocked .bar > span { background: linear-gradient(90deg, var(--warn), #e0a94f); }
+  .agent.done .bar > span { background: linear-gradient(90deg, var(--good), #3fb985); }
+  .agent .foot { display: flex; justify-content: space-between; margin-top: 8px; font-size: 11.5px; color: var(--faint); }
+
+  /* ---------- Activity feed ---------- */
+  .panel { border: 1px solid var(--line); border-radius: 14px; background: linear-gradient(180deg, var(--panel), var(--bg-soft)); padding: 16px; }
+  .feed { max-height: 360px; overflow-y: auto; margin: 0; padding: 2px; list-style: none; }
+  .feed::-webkit-scrollbar { width: 8px; }
+  .feed::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 8px; }
+  .feed li {
+    display: grid; grid-template-columns: 64px 18px 1fr; gap: 10px; align-items: start;
+    padding: 9px 6px; border-bottom: 1px solid rgba(38,44,58,0.6); font-size: 13px;
+    animation: feedin 360ms var(--ease-out);
+  }
+  @keyframes feedin { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+  .feed li .ts { color: var(--faint); font-size: 11.5px; }
+  .feed li .ic { font-size: 13px; line-height: 1.3; }
+  .feed li .tx { color: var(--muted); }
+  .feed li .tx b { color: var(--text); font-weight: 600; }
+  .feed li .tx .src { color: var(--accent); font-weight: 600; }
+  .feed li.warn .tx .src { color: var(--warn); }
+  .feed li.good .tx .src { color: var(--good); }
+  .feed li.pur .tx .src { color: var(--accent-2); }
+
+  /* ---------- Observations panel ---------- */
+  .obs { display: flex; flex-direction: column; gap: 12px; margin-top: 4px; }
+  .obscard {
+    border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: var(--panel-2);
+    animation: obsin 420ms var(--ease-out);
+  }
+  @keyframes obsin { from { opacity: 0; transform: translateY(10px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  .obscard.defect { border-left: 3px solid var(--bad); }
+  .obscard.gap { border-left: 3px solid var(--accent); }
+  .obscard.improvement { border-left: 3px solid var(--accent-2); }
+  .obscard .row { display: flex; align-items: center; gap: 8px; }
+  .obscard .sig { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 8px; border-radius: 999px; }
+  .sig.defect { color: var(--bad); background: rgba(240,138,138,0.12); }
+  .sig.gap { color: var(--accent); background: rgba(110,168,254,0.12); }
+  .sig.improvement { color: var(--accent-2); background: rgba(167,139,250,0.12); }
+  .obscard .conf { margin-left: auto; font-size: 11.5px; color: var(--faint); }
+  .obscard h4 { margin: 9px 0 4px; font-size: 14px; }
+  .obscard p { margin: 0; font-size: 12.5px; color: var(--muted); }
+  .obscard .acts { display: flex; gap: 8px; margin-top: 11px; }
+  .mini { appearance: none; border: 1px solid var(--line); background: transparent; color: var(--muted); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; padding: 5px 11px; border-radius: 8px;
+    transition: transform 140ms var(--ease-out), border-color 140ms var(--ease-out), color 140ms var(--ease-out); }
+  .mini:hover { border-color: var(--accent); color: var(--text); }
+  .mini:active { transform: scale(0.95); }
+  .mini.go { color: var(--good); border-color: rgba(90,209,154,0.35); }
+  .empty { text-align: center; color: var(--faint); font-size: 13px; padding: 26px 10px; }
+
+  /* ---------- History ---------- */
+  .history { margin-top: 26px; }
+  .hrow {
+    display: grid; grid-template-columns: 130px 1fr auto; gap: 12px; align-items: center;
+    padding: 11px 14px; border: 1px solid var(--line); border-radius: 11px; margin-bottom: 8px; background: var(--panel);
+    font-size: 13px;
+  }
+  .hrow .when { color: var(--faint); font-size: 12px; }
+  .hrow .what b { color: var(--text); } .hrow .what { color: var(--muted); }
+  .hrow .res { font-size: 12px; font-weight: 700; color: var(--good); }
+  .hrow a { color: var(--accent); text-decoration: none; font-size: 12px; }
+  .hrow a:hover { text-decoration: underline; }
+
+  .note { color: var(--faint); font-size: 12.5px; text-align: center; margin-top: 30px; }
+  .note code { color: var(--muted); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .live .dot, .badge.working .bd, .stage.active::after { animation: none; }
+    .feed li, .obscard { animation: none; }
+    *, *::before, *::after { transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">
+      <span class="mark">CS</span>
+      <span>PowerCodex Lifecycle <small>Live agent dashboard · .powercodex/live/index.html</small></span>
+    </div>
+    <span class="live"><span class="dot"></span> Live</span>
+    <div class="spacer"></div>
+    <div class="stat"><div class="v" id="rotation">Rotation 3</div><div class="l">current loop</div></div>
+    <div class="stat"><div class="v mono" id="uptime">00:00:00</div><div class="l">session uptime</div></div>
+    <button class="btn on" id="pauseBtn">⏸ Pause</button>
+  </div>
+
+  <div class="wrap">
+
+    <!-- LOOP POSITION STRIP -->
+    <div class="loopstrip" id="loopstrip">
+      <div class="stage done" data-stage="0"><div class="sn">① PLAN <span class="check">✓</span></div><div class="st">Plan A artifact</div><div class="ss">authored &amp; approved</div></div>
+      <div class="stage done" data-stage="1"><div class="sn">② APPROVE <span class="check">✓</span></div><div class="st">Endorsed</div><div class="ss">by you, in chat</div></div>
+      <div class="stage active" data-stage="2"><div class="sn">③ BUILD</div><div class="st">Engine 1</div><div class="ss">building assets…</div></div>
+      <div class="stage" data-stage="3"><div class="sn">④ RUN</div><div class="st">push / dev</div><div class="ss">queued</div></div>
+      <div class="stage" data-stage="4"><div class="sn">⑤ TEST</div><div class="st">Engine 2</div><div class="ss">queued</div></div>
+      <div class="stage" data-stage="5"><div class="sn">⑥ OBSERVE</div><div class="st">Re-spec</div><div class="ss">queued</div></div>
+    </div>
+
+    <div class="cols">
+      <!-- LEFT: agents -->
+      <div>
+        <div class="sectitle">Agents at work <span class="count" id="agentcount">· 4 active</span></div>
+        <div class="agents" id="agents"></div>
+
+        <!-- HISTORY -->
+        <div class="history">
+          <div class="sectitle">Past stages · frozen pages <span class="count">history is browsable</span></div>
+          <div class="hrow"><span class="when mono">10:02:14</span><span class="what"><b>Rotation 2 · Observe</b> — drift on Project grid spotted</span><a href="#">stages/05-e2e.html ↗</a></div>
+          <div class="hrow"><span class="when mono">09:58:41</span><span class="what"><b>Rotation 2 · Test</b> — 18/18 specs green, 96% MVP coverage</span><span class="res">PASSED</span></div>
+          <div class="hrow"><span class="when mono">09:51:07</span><span class="what"><b>Rotation 2 · Build</b> — created <code>cr123_task</code> table + 2 columns</span><a href="#">stages/03-build.html ↗</a></div>
+          <div class="hrow"><span class="when mono">09:44:30</span><span class="what"><b>Rotation 1 · Plan</b> — initial MVP artifact approved</span><a href="#">stages/01-plan.html ↗</a></div>
+        </div>
+      </div>
+
+      <!-- RIGHT: feed + observations -->
+      <div>
+        <div class="sectitle">Live activity <span class="count">newest first</span></div>
+        <div class="panel"><ul class="feed" id="feed"></ul></div>
+
+        <div class="sectitle" style="margin-top:24px;">Specs authored from observation <span class="count" id="obscount">· awaiting signal</span></div>
+        <div class="panel"><div class="obs" id="obs"><div class="empty" id="obsempty">No new observations yet — the observer is watching the running app…</div></div></div>
+      </div>
+    </div>
+
+    <p class="note">Demo view · agent state, progress, feed and observations are simulated to show the interaction model. In the real system every value is read from <code>.powercodex/live/status.json</code>, re-rendered by the <code>dashboard-writer</code> on each event. Built with the <code>/emil-design-eng</code> pass — linear progress bars, custom easings, staggered feed entries, reduced-motion aware.</p>
+  </div>
+
+<script>
+(function () {
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---- Agents model ----
+  var agents = [
+    { id: 'planner',  emoji: '🧭', name: 'Planner',        role: 'Plan A · HTML artifacts', state: 'done',    prog: 100,
+      task: 'Artifact <b>add-task-board</b> approved · 0 open questions', meta: 'ready signal sent' },
+    { id: 'builder',  emoji: '🛠', name: 'Build Executor', role: 'Engine 1 · MDM browser',  state: 'working', prog: 42,
+      task: 'Creating Dataverse table <b>cr123_project</b> in maker portal', meta: 'task 2 of 4' },
+    { id: 'e2e',      emoji: '🧪', name: 'E2E Tester',      role: 'Engine 2 · self-heal',    state: 'idle',    prog: 0,
+      task: 'Waiting for build + run to finish', meta: 'queued' },
+    { id: 'observer', emoji: '👁', name: 'Observer',        role: 'spec author',             state: 'working', prog: 70,
+      task: 'Watching run · classifying signals (defect / gap / improvement)', meta: 'live' }
+  ];
+
+  var agentsEl = document.getElementById('agents');
+  function badge(state) {
+    var map = { working: 'Working', idle: 'Idle', blocked: 'Blocked', done: 'Done' };
+    return '<span class="badge ' + state + '"><span class="bd"></span>' + map[state] + '</span>';
+  }
+  function renderAgents() {
+    agentsEl.innerHTML = agents.map(function (a) {
+      return '<div class="agent ' + a.state + '" id="ag-' + a.id + '">' +
+        '<div class="head"><span class="av">' + a.emoji + '</span>' +
+        '<div><div class="nm">' + a.name + '</div><div class="role">' + a.role + '</div></div>' +
+        badge(a.state) + '</div>' +
+        '<div class="task">' + a.task + '</div>' +
+        '<div class="bar"><span style="width:' + a.prog + '%"></span></div>' +
+        '<div class="foot"><span>' + a.meta + '</span><span class="mono">' + Math.round(a.prog) + '%</span></div>' +
+      '</div>';
+    }).join('');
+    var active = agents.filter(function (a) { return a.state === 'working'; }).length;
+    document.getElementById('agentcount').textContent = '· ' + active + ' active';
+  }
+  renderAgents();
+
+  // ---- Feed ----
+  var feedEl = document.getElementById('feed');
+  function now() {
+    var d = new Date();
+    function p(n){ return (n<10?'0':'')+n; }
+    return p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+  }
+  var feedItems = [
+    { src: 'build-executor', cls: '', ic: '🛠', tx: 'Opened maker portal · authenticated maker profile' },
+    { src: 'observer', cls: 'pur', ic: '👁', tx: 'Baseline captured for Project grid (Now→After ref)' },
+    { src: 'planner', cls: 'good', ic: '🧭', tx: 'Artifact <b>add-task-board</b> reached ready state' }
+  ];
+  function pushFeed(item, prepend) {
+    var li = document.createElement('li');
+    li.className = item.cls || '';
+    li.innerHTML = '<span class="ts mono">' + now() + '</span><span class="ic">' + item.ic + '</span>' +
+      '<span class="tx"><span class="src">' + item.src + '</span> · ' + item.tx + '</span>';
+    feedEl.insertBefore(li, feedEl.firstChild);
+    while (feedEl.children.length > 40) feedEl.removeChild(feedEl.lastChild);
+  }
+  feedItems.slice().reverse().forEach(function (i) { pushFeed(i); });
+
+  // ---- Observations ----
+  var obsEl = document.getElementById('obs');
+  var obsEmpty = document.getElementById('obsempty');
+  var obsCountEl = document.getElementById('obscount');
+  var obsTotal = 0;
+  function addObservation(o) {
+    if (obsEmpty) { obsEmpty.remove(); obsEmpty = null; }
+    obsTotal++;
+    obsCountEl.textContent = '· ' + obsTotal + ' authored';
+    var card = document.createElement('div');
+    card.className = 'obscard ' + o.signal;
+    card.innerHTML =
+      '<div class="row"><span class="sig ' + o.signal + '">' + o.signal + '</span>' +
+      '<span class="conf mono">conf ' + o.conf.toFixed(2) + '</span></div>' +
+      '<h4>' + o.title + '</h4><p>' + o.body + '</p>' +
+      '<div class="acts">' +
+        '<button class="mini go">View preview.html</button>' +
+        '<button class="mini">' + (o.needsApproval ? 'Endorse →' : 'Auto-applying…') + '</button>' +
+      '</div>';
+    obsEl.insertBefore(card, obsEl.firstChild);
+    pushFeed({ src: 'observer', cls: 'pur', ic: '✦',
+      tx: 'Authored a new spec from observation · <b>' + o.signal + '</b> · you have been notified' });
+  }
+
+  // ---- Simulation ----
+  var stageIdx = 2;
+  var stages = document.querySelectorAll('#loopstrip .stage');
+  var rotation = 3;
+  var startTs = Date.now();
+
+  var obsQueue = [
+    { signal: 'defect', conf: 0.88, needsApproval: false,
+      title: 'Project grid lost its Status column', body: 'Live grid diverged from approved Now→After. Proposed: restore the Status choice column binding.' },
+    { signal: 'gap', conf: 0.74, needsApproval: true,
+      title: 'Approved "Archive" screen has no e2e spec', body: 'MVP surface exists but is untested. Proposed: add a covering spec mirroring the approved HTML.' },
+    { signal: 'improvement', conf: 0.63, needsApproval: true,
+      title: 'Empty-state on Tasks list feels abrupt', body: 'No guidance when zero tasks. Proposed: add an illustrated empty-state with a primary action.' }
+  ];
+  var obsPtr = 0;
+
+  function setStage(i) {
+    stages.forEach(function (s, idx) {
+      s.classList.remove('active');
+      var ss = s.querySelector('.ss'); var sn = s.querySelector('.sn');
+      if (idx < i) {
+        if (!s.classList.contains('done')) { s.classList.add('done'); }
+        if (!sn.querySelector('.check')) sn.innerHTML += ' <span class="check">✓</span>';
+        ss.textContent = 'complete';
+      } else if (idx === i) {
+        s.classList.add('active'); s.classList.remove('done');
+        ss.textContent = 'in progress…';
+      } else {
+        s.classList.remove('done');
+        ss.textContent = 'queued';
+      }
+    });
+  }
+
+  var labels = {
+    builder: ['Adding column <b>Status</b> (choice)', 'Creating relationship Project→Task', 'Verifying table in portal', 'Provisioning connection reference'],
+    e2e: ['Running spec <b>task-board.spec.ts</b>', 'Asserting Now→After parity', 'Checking MVP coverage', 'Re-running after fix'],
+    observer: ['Diffing live DOM vs approved HTML', 'Scoring signal confidence', 'Rendering preview.html', 'Watching console + network']
+  };
+
+  var paused = false;
+  document.getElementById('pauseBtn').addEventListener('click', function () {
+    paused = !paused;
+    this.textContent = paused ? '▶ Resume' : '⏸ Pause';
+    this.classList.toggle('on', !paused);
+  });
+
+  function tick() {
+    if (paused) return;
+    // advance working agents
+    agents.forEach(function (a) {
+      if (a.state !== 'working') return;
+      a.prog = Math.min(100, a.prog + (4 + Math.random() * 9));
+      if (Math.random() < 0.32 && labels[a.id]) {
+        var arr = labels[a.id]; a.task = arr[Math.floor(Math.random() * arr.length)];
+        pushFeed({ src: a.id === 'builder' ? 'build-executor' : a.id, cls: a.id === 'observer' ? 'pur' : '', ic: a.emoji, tx: a.task });
+      }
+      if (a.prog >= 100) {
+        a.prog = 100; a.state = 'done'; a.task = '<b>' + a.name + '</b> finished its stage'; a.meta = 'done';
+        pushFeed({ src: a.id === 'builder' ? 'build-executor' : a.id, cls: 'good', ic: '✓', tx: 'stage complete' });
+      }
+    });
+    renderAgents();
+  }
+
+  function advance() {
+    if (paused) return;
+    // move the loop forward
+    if (stageIdx < 5) {
+      stageIdx++;
+      setStage(stageIdx);
+      // wake the relevant agent
+      if (stageIdx === 4) {
+        var e = agents.find(function (a){ return a.id === 'e2e'; });
+        e.state = 'working'; e.prog = 6; e.meta = 'iteration 1'; e.task = 'Running e2e specs against the live app';
+        pushFeed({ src: 'e2e', cls: '', ic: '🧪', tx: 'Starting e2e run vs approved MVP' });
+      }
+      if (stageIdx === 3) {
+        pushFeed({ src: 'runner', cls: '', ic: '🚀', tx: 'Dataverse connected → <b>npx power-apps push</b> · got app link' });
+      }
+      if (stageIdx === 5) {
+        // observation phase mints a spec, loops back
+        if (obsPtr < obsQueue.length) { addObservation(obsQueue[obsPtr++]); }
+      }
+    } else {
+      // rotate
+      rotation++;
+      document.getElementById('rotation').textContent = 'Rotation ' + rotation;
+      stageIdx = 2;
+      stages.forEach(function (s, idx) { if (idx >= 2) { s.classList.remove('done'); }});
+      setStage(2);
+      // reset builder/e2e/observer for a fresh rotation
+      agents.forEach(function (a) {
+        if (a.id === 'builder') { a.state='working'; a.prog=10; a.task='New rotation · building from latest approved spec'; a.meta='task 1'; }
+        if (a.id === 'e2e') { a.state='idle'; a.prog=0; a.task='Waiting for build + run'; a.meta='queued'; }
+        if (a.id === 'observer') { a.state='working'; a.prog=20; a.task='Watching run · classifying signals'; a.meta='live'; }
+        if (a.id === 'planner') { a.state='done'; a.prog=100; a.task='Spec from observation endorsed → ready'; a.meta='ready'; }
+      });
+      renderAgents();
+      pushFeed({ src: 'loop', cls: 'good', ic: '⟲', tx: '<b>Rotation ' + rotation + '</b> started from a self-authored spec' });
+    }
+  }
+
+  function uptime() {
+    var s = Math.floor((Date.now() - startTs) / 1000);
+    function p(n){ return (n<10?'0':'')+n; }
+    document.getElementById('uptime').textContent = p(Math.floor(s/3600)) + ':' + p(Math.floor(s/60)%60) + ':' + p(s%60);
+  }
+
+  setInterval(tick, 900);
+  setInterval(advance, 5200);
+  setInterval(uptime, 1000);
+})();
+</script>
+</body>
+</html>

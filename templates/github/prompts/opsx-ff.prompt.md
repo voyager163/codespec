@@ -92,3 +92,9 @@ After completing all artifacts, summarize:
 - If context is critically unclear, ask the user - but prefer making reasonable decisions to keep momentum
 - If a change with that name already exists, ask if user wants to continue it or create a new one
 - Verify each artifact file exists after writing before proceeding to next
+
+---
+
+## HTML review artifact
+
+After generating the artifacts, also produce the HTML review surface at `openspec/changes/<name>/preview.html` per [`_html-artifact.md`](./_html-artifact.md): Now→After, a recommendation with pros/cons, all questions asked once, the required `/emil-design-eng` pass, and the readiness line when truly ready. Markdown stays canonical.

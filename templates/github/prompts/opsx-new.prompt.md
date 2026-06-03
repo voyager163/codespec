@@ -64,3 +64,9 @@ After completing the steps, summarize:
 - If the name is invalid (not kebab-case), ask for a valid name
 - If a change with that name already exists, suggest using `/opsx:continue` instead
 - Pass --schema if using a non-default workflow
+
+---
+
+## HTML review artifact
+
+As the change's artifacts are created (here and via `/opsx:continue` / `/opsx:propose`), also produce the HTML review surface at `openspec/changes/<name>/preview.html` following [`_html-artifact.md`](./_html-artifact.md): Now→After, a recommendation with pros/cons, all questions asked once, the required `/emil-design-eng` pass, and the readiness line when truly ready. Markdown stays canonical.

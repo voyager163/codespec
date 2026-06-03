@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PowerCodex — The Complete System · From Goal to Self-Healing App</title>
+<style>
+  :root {
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+    --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+    --bg: #0b0d12;
+    --bg-soft: #12151d;
+    --panel: #161a24;
+    --panel-2: #1c2130;
+    --line: #262c3a;
+    --line-2: #313a4d;
+    --text: #e8ecf4;
+    --muted: #99a2b8;
+    --faint: #6b7488;
+    --accent: #6ea8fe;
+    --accent-2: #a78bfa;
+    --good: #5ad19a;
+    --bad: #f08a8a;
+    --warn: #f5c97b;
+    --radius: 16px;
+    --shadow: 0 20px 60px -20px rgba(0,0,0,0.6);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(167,139,250,0.14), transparent 60%),
+      radial-gradient(900px 500px at -10% 10%, rgba(110,168,254,0.12), transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 24px 120px; }
+  .mono { font-family: "SF Mono", "JetBrains Mono", Consolas, Menlo, monospace; }
+
+  /* ---------- entrance ---------- */
+  .rise { opacity: 0; transform: translateY(14px); animation: rise 600ms var(--ease-out) forwards; }
+  @keyframes rise { to { opacity: 1; transform: translateY(0); } }
+  .d1 { animation-delay: 40ms; } .d2 { animation-delay: 90ms; } .d3 { animation-delay: 140ms; }
+  .d4 { animation-delay: 190ms; } .d5 { animation-delay: 240ms; } .d6 { animation-delay: 290ms; }
+
+  /* ---------- hero ---------- */
+  header.hero { padding: 92px 24px 36px; text-align: center; max-width: 920px; margin: 0 auto; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--accent); background: rgba(110,168,254,0.1);
+    border: 1px solid rgba(110,168,254,0.25);
+    padding: 6px 14px; border-radius: 999px; margin-bottom: 22px;
+  }
+  .eyebrow .dot {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+    box-shadow: 0 0 0 0 rgba(110,168,254,0.6); animation: pulse 2.4s var(--ease-out) infinite;
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(110,168,254,0.5); }
+    70% { box-shadow: 0 0 0 9px rgba(110,168,254,0); }
+    100% { box-shadow: 0 0 0 0 rgba(110,168,254,0); }
+  }
+  h1 {
+    font-size: clamp(34px, 6.4vw, 58px); line-height: 1.06; margin: 0 0 18px; letter-spacing: -0.02em;
+    background: linear-gradient(180deg, #fff, #b9c2d8);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .sub { color: var(--muted); font-size: 18px; max-width: 760px; margin: 0 auto; }
+  .meta { margin-top: 26px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; color: var(--faint); font-size: 13px; }
+  .meta span { border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; }
+  .doclinks { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 18px; }
+  .doclinks a { border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px; text-decoration: none; color: var(--muted); font-size: 13px; transition: border-color 160ms var(--ease-out), color 160ms var(--ease-out); }
+  .doclinks a:hover { border-color: var(--accent); color: var(--text); }
+
+  /* ---------- sections ---------- */
+  section { margin-top: 72px; }
+  .kicker { color: var(--accent-2); font-weight: 600; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; margin: 0 0 10px; }
+  h2 { font-size: 28px; margin: 0 0 14px; letter-spacing: -0.01em; }
+  h3 { font-size: 18px; margin: 0 0 8px; }
+  p.lead { color: var(--muted); font-size: 16px; max-width: 820px; }
+
+  .panel {
+    background: linear-gradient(180deg, var(--panel), var(--bg-soft));
+    border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow);
+  }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 820px) { .grid, .grid3 { grid-template-columns: 1fr; } }
+  .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 760px) { .twocol { grid-template-columns: 1fr; } }
+
+  .card { background: var(--panel-2); border: 1px solid var(--line); border-radius: 14px; padding: 20px;
+    transition: transform 200ms var(--ease-out), border-color 200ms var(--ease-out), box-shadow 200ms var(--ease-out); }
+  .card:hover { transform: translateY(-3px); border-color: rgba(110,168,254,0.4); box-shadow: 0 18px 40px -22px rgba(110,168,254,0.5); }
+  .card h3 { display: flex; align-items: center; gap: 10px; }
+  .card .ic { width: 30px; height: 30px; flex: none; display: grid; place-items: center; border-radius: 9px; background: rgba(110,168,254,0.12); color: var(--accent); font-size: 15px; }
+  .card p { color: var(--muted); font-size: 14.5px; margin: 6px 0 0; }
+
+  .pill { display: inline-block; font-size: 12px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .pill.good { color: var(--good); border-color: rgba(90,209,154,0.35); background: rgba(90,209,154,0.08); }
+  .pill.warn { color: var(--warn); border-color: rgba(245,201,123,0.35); background: rgba(245,201,123,0.08); }
+  .pill.acc { color: var(--accent); border-color: rgba(110,168,254,0.35); background: rgba(110,168,254,0.08); }
+  .pill.pur { color: var(--accent-2); border-color: rgba(167,139,250,0.35); background: rgba(167,139,250,0.08); }
+
+  ul.clean { list-style: none; padding: 0; margin: 12px 0 0; }
+  ul.clean li { position: relative; padding-left: 26px; margin: 9px 0; color: var(--muted); font-size: 14.5px; }
+  ul.clean li::before { content: "→"; position: absolute; left: 0; color: var(--accent); }
+  ul.clean li b { color: var(--text); font-weight: 600; }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 14px; }
+  th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--faint); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+  td { color: var(--muted); } td b { color: var(--text); }
+
+  .callout { border-left: 3px solid var(--warn); background: rgba(245,201,123,0.06); padding: 16px 18px; border-radius: 0 12px 12px 0; margin-top: 16px; }
+  .callout.acc { border-left-color: var(--accent); background: rgba(110,168,254,0.06); }
+  .callout.good { border-left-color: var(--good); background: rgba(90,209,154,0.06); }
+  .callout h3 { margin: 0 0 6px; color: var(--text); }
+  .callout p { margin: 0; color: var(--muted); font-size: 14.5px; }
+
+  .tree { font-family: "SF Mono", Consolas, monospace; font-size: 12.5px; line-height: 1.7; color: #cdd6e6; }
+  .tree .dir { color: var(--accent); } .tree .new { color: var(--good); } .tree .cm { color: var(--faint); }
+
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--line), transparent); margin: 8px 0; }
+  a { color: var(--accent); }
+
+  /* ---------- step flow ---------- */
+  .flow { display: flex; flex-direction: column; gap: 0; margin-top: 8px; }
+  .step { display: grid; grid-template-columns: 44px 1fr; gap: 16px; padding: 18px 0; border-bottom: 1px dashed var(--line); }
+  .step:last-child { border-bottom: 0; }
+  .step .nm { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; color: var(--bg); background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+  .step .nm.g { background: linear-gradient(135deg, var(--good), #3fb985); }
+  .step h3 { margin: 4px 0 6px; }
+  .step p { color: var(--muted); font-size: 14.5px; margin: 0 0 6px; }
+  .step .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+
+  /* ---------- circular loop ---------- */
+  .loop { position: relative; width: 100%; max-width: 560px; aspect-ratio: 1 / 1; margin: 8px auto 0; }
+  .loop .ring { position: absolute; inset: 8%; border-radius: 50%; border: 1px dashed var(--line); }
+  .loop .ring::before {
+    content: ""; position: absolute; inset: -1px; border-radius: 50%; border: 2px solid transparent;
+    background: conic-gradient(from 0deg, var(--accent), var(--accent-2), var(--good), var(--accent)) border-box;
+    -webkit-mask: linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude; opacity: 0.5; animation: spin 18s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loop .core {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 42%; height: 42%; border-radius: 50%; display: grid; place-items: center; text-align: center;
+    background: radial-gradient(circle at 50% 30%, rgba(110,168,254,0.18), rgba(167,139,250,0.06));
+    border: 1px solid var(--line); padding: 10px;
+  }
+  .loop .core b { font-size: 14px; color: var(--text); display: block; }
+  .loop .core span { font-size: 11.5px; color: var(--faint); }
+  .node { position: absolute; width: 134px; transform: translate(-50%, -50%); text-align: center; }
+  .node .bub { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 8px;
+    transition: transform 200ms var(--ease-out), border-color 200ms var(--ease-out); }
+  .node .bub:hover { transform: scale(1.04); border-color: rgba(110,168,254,0.5); }
+  .node .n { font-weight: 700; color: var(--accent); font-size: 12px; }
+  .node .t { font-size: 13px; color: var(--text); font-weight: 600; margin-top: 2px; }
+  .node .s { font-size: 11px; color: var(--faint); margin-top: 2px; line-height: 1.35; }
+  .node.n1 { top: 4%; left: 50%; } .node.n2 { top: 28%; left: 95%; } .node.n3 { top: 76%; left: 90%; }
+  .node.n4 { top: 99%; left: 50%; } .node.n5 { top: 76%; left: 10%; } .node.n6 { top: 28%; left: 5%; }
+  @media (max-width: 620px) {
+    .loop { max-width: 100%; aspect-ratio: auto; height: auto; }
+    .loop .ring, .loop .core { display: none; }
+    .node { position: static; transform: none; width: 100%; margin: 8px 0; }
+  }
+
+  /* ---------- now/after slider ---------- */
+  .compare { position: relative; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); user-select: none; aspect-ratio: 16 / 8; background: var(--panel-2); }
+  .compare .layer { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 22px; }
+  .compare .now { background: linear-gradient(135deg, #1a1d27, #14161f); }
+  .compare .after { background: linear-gradient(135deg, #15233a, #1b1430); clip-path: inset(0 0 0 50%); }
+  .compare .tag { align-self: flex-start; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; margin-bottom: 14px; }
+  .compare .now .tag { background: rgba(240,138,138,0.16); color: var(--bad); border: 1px solid rgba(240,138,138,0.3); }
+  .compare .after .tag { background: rgba(90,209,154,0.16); color: var(--good); border: 1px solid rgba(90,209,154,0.3); }
+  .compare .mono2 { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12.5px; color: var(--muted); white-space: pre-wrap; }
+  .compare .after .mono2 { color: #cdd6ea; }
+  .handle { position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; background: var(--accent); transform: translateX(-1px); box-shadow: 0 0 18px rgba(110,168,254,0.7); }
+  .handle .grip { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: #06203f; display: grid; place-items: center; font-weight: 800; font-size: 14px; box-shadow: 0 6px 18px rgba(0,0,0,0.5); }
+  input[type="range"].slider { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: ew-resize; margin: 0; }
+  .hint { text-align: center; color: var(--faint); font-size: 13px; margin-top: 10px; }
+
+  /* ---------- recommendation + pros/cons ---------- */
+  .reco { border: 1px solid rgba(110,168,254,0.35); background: linear-gradient(180deg, rgba(110,168,254,0.08), rgba(110,168,254,0.02)); border-radius: 14px; padding: 16px 18px; margin-bottom: 16px; display: flex; gap: 14px; align-items: flex-start; }
+  .reco .rb { flex: none; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #06203f; background: var(--accent); padding: 6px 12px; border-radius: 999px; }
+  .reco p { margin: 0; color: var(--text); font-size: 14.5px; }
+  .options { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 720px) { .options { grid-template-columns: 1fr; } }
+  .opt { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .opt header { padding: 12px 16px; font-weight: 700; font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
+  .opt.win2 header { background: rgba(90,209,154,0.12); border-bottom: 1px solid rgba(90,209,154,0.25); }
+  .opt.alt header { background: rgba(245,201,123,0.1); border-bottom: 1px solid rgba(245,201,123,0.22); }
+  .opt .pick { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--good); }
+  .opt ul { list-style: none; margin: 0; padding: 14px 16px; }
+  .opt li { font-size: 13.5px; color: var(--muted); padding: 5px 0 5px 22px; position: relative; }
+  .opt li.pro::before { content: "+"; position: absolute; left: 0; color: var(--good); font-weight: 800; }
+  .opt li.con::before { content: "\2212"; position: absolute; left: 0; color: var(--bad); font-weight: 800; }
+  .ready { margin-top: 16px; text-align: center; padding: 22px; border: 1px solid rgba(90,209,154,0.35); border-radius: 14px; background: linear-gradient(180deg, rgba(90,209,154,0.08), transparent); }
+  .ready .big { font-size: 18px; font-weight: 700; color: var(--good); }
+  .ready .check { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--good); color: #06281a; font-size: 20px; font-weight: 900; margin-bottom: 10px; }
+
+  /* ---------- window mockups (browser / IDE / app) ---------- */
+  .shot { margin-top: 22px; }
+  .shot .label { font-size: 12px; color: var(--faint); letter-spacing: 0.06em; text-transform: uppercase; margin: 0 0 9px; display: flex; align-items: center; gap: 9px; }
+  .shot .label .num { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; background: rgba(110,168,254,0.14); color: var(--accent); font-weight: 700; font-size: 11px; }
+  .win { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); background: var(--bg-soft); }
+  .win .chrome { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #0e1118; border-bottom: 1px solid var(--line); }
+  .win .dots { display: flex; gap: 6px; flex: none; }
+  .win .dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .win .dots i.r { background: #f0716f; } .win .dots i.y { background: #f5c97b; } .win .dots i.g { background: #5ad19a; }
+  .win .url { flex: 1; font-size: 12px; color: var(--faint); background: #0a0c11; border: 1px solid var(--line); border-radius: 7px; padding: 4px 10px; text-align: center; }
+
+  /* IDE mockup */
+  .ide .idebody { display: grid; grid-template-columns: 52px 200px 1fr; min-height: 420px; }
+  @media (max-width: 760px) { .ide .idebody { grid-template-columns: 1fr; } .ide .act, .ide .explorer { display: none; } }
+  .ide .act { background: #0c0f16; border-right: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 14px 0; color: var(--faint); font-size: 18px; }
+  .ide .act .on { color: var(--accent); }
+  .ide .explorer { background: #0e1118; border-right: 1px solid var(--line); padding: 12px 10px; font-size: 12.5px; }
+  .ide .explorer .eh { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--faint); margin: 0 0 10px; }
+  .ide .explorer .ef { padding: 3px 6px; border-radius: 6px; color: var(--muted); display: flex; gap: 7px; }
+  .ide .explorer .ef.on { background: rgba(110,168,254,0.12); color: var(--text); }
+  .ide .explorer .ef.ind { padding-left: 18px; }
+  .ide .explorer .ef .em { color: var(--faint); }
+  .ide .chat { display: flex; flex-direction: column; background: #0a0c11; }
+  .ide .chat .ch { padding: 11px 16px; border-bottom: 1px solid var(--line); font-size: 12.5px; color: var(--muted); display: flex; align-items: center; gap: 9px; }
+  .ide .chat .ch .mk { width: 20px; height: 20px; border-radius: 6px; display: grid; place-items: center; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #06203f; font-weight: 900; font-size: 11px; }
+  .ide .chat .cbody { padding: 16px; display: flex; flex-direction: column; gap: 14px; overflow: hidden; }
+  .msg { display: flex; gap: 10px; max-width: 92%; }
+  .msg .av { width: 26px; height: 26px; border-radius: 7px; flex: none; display: grid; place-items: center; font-size: 13px; }
+  .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+  .msg.user .av { background: var(--panel-2); border: 1px solid var(--line); }
+  .msg.ai .av { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #06203f; font-weight: 900; }
+  .msg .bub { border-radius: 12px; padding: 10px 13px; font-size: 13px; }
+  .msg.user .bub { background: rgba(110,168,254,0.12); border: 1px solid rgba(110,168,254,0.25); color: var(--text); }
+  .msg.ai .bub { background: var(--panel-2); border: 1px solid var(--line); color: var(--muted); }
+  .msg.ai .bub b { color: var(--text); }
+  .msg .bub .art { display: inline-flex; align-items: center; gap: 7px; margin-top: 8px; font-size: 12px; color: var(--accent); background: rgba(110,168,254,0.1); border: 1px solid rgba(110,168,254,0.25); border-radius: 8px; padding: 5px 9px; }
+  .msg .bub .rdy { color: var(--good); font-weight: 600; }
+  .ide .chat .cinput { margin: 0 16px 16px; border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; color: var(--faint); font-size: 12.5px; display: flex; align-items: center; gap: 8px; background: #0e1118; }
+
+  /* Power App mockup */
+  .app .appbody { display: grid; grid-template-columns: 188px 1fr; min-height: 420px; }
+  @media (max-width: 760px) { .app .appbody { grid-template-columns: 1fr; } .app .appnav { display: none; } }
+  .app .appnav { background: #0f1219; border-right: 1px solid var(--line); padding: 16px 12px; }
+  .app .appnav .ab { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 14px; padding: 2px 8px 16px; }
+  .app .appnav .ab .mk { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; background: linear-gradient(135deg, var(--good), #3fb985); color: #04231a; font-weight: 900; }
+  .app .appnav a { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 9px; color: var(--muted); text-decoration: none; font-size: 13.5px; margin: 2px 0; }
+  .app .appnav a.on { background: rgba(110,168,254,0.12); color: var(--text); }
+  .app .appnav a .ai { width: 16px; text-align: center; opacity: 0.85; }
+  .app .appmain { padding: 20px; }
+  .app .apphd { display: flex; align-items: center; margin-bottom: 16px; }
+  .app .apphd h4 { margin: 0; font-size: 19px; }
+  .app .apphd .new { margin-left: auto; font-size: 13px; font-weight: 600; color: #06203f; background: linear-gradient(180deg, var(--accent), #4f8ef0); border: 0; border-radius: 9px; padding: 8px 14px; }
+  .app .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+  @media (max-width: 560px) { .app .kpis { grid-template-columns: 1fr; } }
+  .app .kpi { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 13px 15px; }
+  .app .kpi .v { font-size: 24px; font-weight: 700; }
+  .app .kpi .l { font-size: 11.5px; color: var(--faint); margin-top: 3px; }
+  .app .dgrid { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .app .dgrid .gh, .app .dgrid .gr { display: grid; grid-template-columns: 2fr 1fr 1fr 1.2fr; gap: 10px; padding: 11px 16px; align-items: center; font-size: 13px; }
+  .app .dgrid .gh { background: #0f1219; color: var(--faint); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--line); }
+  .app .dgrid .gr { border-bottom: 1px dashed var(--line); color: var(--muted); }
+  .app .dgrid .gr:last-child { border-bottom: 0; }
+  .app .dgrid .gr b { color: var(--text); font-weight: 600; }
+  .app .chip { font-size: 11px; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line); display: inline-block; }
+  .app .chip.prog { color: var(--accent); background: rgba(110,168,254,0.1); border-color: rgba(110,168,254,0.3); }
+  .app .chip.block { color: var(--warn); background: rgba(245,201,123,0.1); border-color: rgba(245,201,123,0.3); }
+  .app .chip.done { color: var(--good); background: rgba(90,209,154,0.1); border-color: rgba(90,209,154,0.3); }
+
+  /* intake gate mockup */
+  .intake .ig { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 18px; }
+  @media (max-width: 760px) { .intake .ig { grid-template-columns: 1fr; } }
+  .intake .field { background: #0a0c11; border: 1px solid var(--line); border-radius: 11px; padding: 13px; }
+  .intake .field .fl { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 700; margin-bottom: 9px; }
+  .intake .field .fl .tg { font-size: 10px; font-weight: 800; color: #06203f; background: var(--accent); border-radius: 5px; padding: 1px 6px; }
+  .intake .field .fl .tg.b { background: var(--accent-2); }
+  .intake .field .fl .auto { margin-left: auto; font-size: 10px; font-weight: 600; color: var(--good); background: rgba(90,209,154,0.1); border: 1px solid rgba(90,209,154,0.3); border-radius: 999px; padding: 2px 8px; }
+  .intake .field p { margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+  .intake .gatebar { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-top: 1px solid var(--line); background: #0f1219; flex-wrap: wrap; }
+  .intake .cmeter { flex: 1; min-width: 140px; height: 8px; border-radius: 999px; background: #0a0c11; border: 1px solid var(--line); overflow: hidden; }
+  .intake .cmeter > span { display: block; height: 100%; width: 86%; background: linear-gradient(90deg, var(--good), #3fb985); }
+  .intake .gatebtn { font-size: 13px; font-weight: 600; color: #06203f; background: linear-gradient(180deg, var(--good), #3fb985); border: 0; border-radius: 9px; padding: 8px 14px; }
+
+  /* embedded dashboard iframe */
+  .dashframe { width: 100%; height: 760px; border: 0; display: block; background: var(--bg); }
+  @media (max-width: 760px) { .dashframe { height: 1180px; } }
+
+  /* mini bar chart */
+  .chart { display: flex; align-items: flex-end; gap: 8px; height: 120px; padding-top: 8px; }
+  .chart .cb { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+  .chart .cb .bar { width: 100%; max-width: 30px; border-radius: 5px 5px 0 0; background: linear-gradient(180deg, var(--accent), rgba(110,168,254,0.25)); }
+  .chart .cb .bar.bad { background: linear-gradient(180deg, var(--bad), rgba(240,138,138,0.25)); }
+  .chart .cb .bar.good { background: linear-gradient(180deg, var(--good), rgba(90,209,154,0.25)); }
+  .chart .cb .x { font-size: 10px; color: var(--faint); }
+  .box { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+  .box h5 { margin: 0 0 10px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--faint); }
+  .kpibig { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  @media (max-width: 620px) { .kpibig { grid-template-columns: repeat(2, 1fr); } }
+  .kpibig .k { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 13px 14px; }
+  .kpibig .k .v { font-size: 22px; font-weight: 700; line-height: 1.1; }
+  .kpibig .k .l { font-size: 11.5px; color: var(--faint); margin-top: 4px; }
+  .kpibig .k .dd { font-size: 11px; margin-top: 6px; color: var(--good); }
+  .led { font-size: 12.5px; }
+  .led div { padding: 7px 0; border-bottom: 1px dashed var(--line); display: flex; gap: 10px; }
+  .led div:last-child { border-bottom: 0; }
+  .led .id { color: var(--accent); font-weight: 700; flex: none; }
+  .badge2 { font-size: 10.5px; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .badge2.w { color: var(--warn); border-color: rgba(245,201,123,0.35); background: rgba(245,201,123,0.08); }
+  .badge2.g { color: var(--good); border-color: rgba(90,209,154,0.35); background: rgba(90,209,154,0.08); }
+
+  footer { margin-top: 84px; text-align: center; color: var(--faint); font-size: 13px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rise { animation: none; opacity: 1; transform: none; }
+    .eyebrow .dot, .loop .ring::before { animation: none; }
+    *, *::before, *::after { transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+  <header class="hero">
+    <div class="eyebrow rise d1"><span class="dot"></span> Master plan · all five plans, one document</div>
+    <h1 class="rise d2">PowerCodex, end to end:<br/>from a goal to a self-healing app</h1>
+    <p class="sub rise d3">One consolidated walkthrough of the whole system — the <b>HTML-first OpenSpec workflow</b>, the <b>two-engine Playwright-for-MDM automation</b>, the <b>autonomous lifecycle loop</b>, the <b>live agent dashboard</b>, and the <b>Hermes-style learning loop</b> — stitched into a single flow, with mockup screenshots of the finished product and exactly how you'd use it day to day.</p>
+    <div class="meta rise d4">
+      <span>Today: 2026-06-03</span>
+      <span>Branch: feat/openspec-redesigned-output</span>
+      <span>Status: plan for endorsement</span>
+    </div>
+    <div class="doclinks rise d5">
+      <a href="./openspec-html-workflow-plan.html">Plan A · HTML workflow</a>
+      <a href="./mdm-automation-workflow-plan.html">Plan B · MDM automation</a>
+      <a href="./autonomous-lifecycle-loop-plan.html">Lifecycle loop</a>
+      <a href="./live-dashboard-system.html">Live dashboard</a>
+      <a href="./hermes-agent-gap-plan.html">Hermes gap</a>
+    </div>
+  </header>
+
+  <div class="wrap">
+
+    <!-- TL;DR -->
+    <section class="rise d2">
+      <p class="kicker">The whole thing in one paragraph</p>
+      <h2>You give it a goal and an MVP. It plans, builds, runs, tests, fixes itself, and learns — and you watch all of it live.</h2>
+      <p class="lead">PowerCodex scaffolds a Power Apps <b>Code App</b> and wraps it in a spec-driven loop. This document folds the five plans into <b>one ordered pipeline</b> — not parallel tracks. You seed it with a <b>goal</b> and an <b>MVP</b>; <b>first</b> it authors a reviewable <b>HTML spec artifact</b> (the planning workflow); once you approve that, <b>then</b> a managed-browser <b>build executor</b> creates the real Dataverse tables, flows and connections (build · Engine 1); <b>then</b> an <b>e2e tester</b> runs the app against your MVP and <b>self-heals through OpenSpec</b> until green (test · Engine 2); <b>then</b> an <b>observer</b> notices defects, gaps and improvements and writes the next spec itself; a <b>live dashboard</b> shows every agent working; and a <b>Learning_Experience</b> log makes the whole thing get better over time (Hermes discipline). Every dangerous action is gated by <code>Approved_rights/</code>.</p>
+      <div class="grid3" style="margin-top:18px;">
+        <div class="card"><h3><span class="ic">1</span>First — Plan</h3><p>The HTML-first OpenSpec workflow authors the spec: Now→After, a stated recommendation with pros/cons, all questions asked once, the "I am completely ready" sign-off. <b>Nothing builds until this is approved.</b></p></div>
+        <div class="card"><h3><span class="ic">2</span>Then — Build &amp; test</h3><p>Only <i>after</i> the plan is approved: two engines on a managed Edge browser build the real assets in the maker portal, then test &amp; self-heal the app via opsx until it matches the MVP.</p></div>
+        <div class="card"><h3><span class="ic">3</span>Then — Observe &amp; loop</h3><p>The observer authors the next spec from what it sees; the live dashboard renders it all; the learning log compounds the lessons — handing back to step 1.</p></div>
+      </div>
+      <div class="callout acc"><h3>One sequence, not two plans</h3><p>"Planning" and "build &amp; test" aren't separate or simultaneous tracks. <b>Planning always comes first and must be approved</b>; the build-and-test automation only runs on an approved spec. The seven steps below are that single order, start to finish.</p></div>
+    </section>
+
+    <!-- THE CLOSED LOOP -->
+    <section class="rise d2">
+      <p class="kicker">The shape of the system</p>
+      <h2>One closed loop around a goal and an MVP</h2>
+      <p class="lead">Everything orbits two inputs you supply once: a <b>goal/objective</b> (from a summarised meeting transcript) and an <b>MVP</b> (your prototype, or one the agent proposes and you refine). They are the north star and the benchmark — and nothing builds until both are present and the MVP still serves the goal.</p>
+      <div class="panel" style="margin-top:18px;">
+        <div class="loop">
+          <div class="ring"></div>
+          <div class="core"><div><b>Goal + Approved MVP</b><span>north star &amp; benchmark</span></div></div>
+          <div class="node n1"><div class="bub"><div class="n">1</div><div class="t">Plan</div><div class="s">HTML artifact: recommend, ask once, ready</div></div></div>
+          <div class="node n2"><div class="bub"><div class="n">2</div><div class="t">Approve</div><div class="s">you endorse it in chat</div></div></div>
+          <div class="node n3"><div class="bub"><div class="n">3</div><div class="t">Build</div><div class="s">Engine 1 · MDM browser builds assets</div></div></div>
+          <div class="node n4"><div class="bub"><div class="n">4</div><div class="t">Run</div><div class="s">push (Dataverse) or dev (local)</div></div></div>
+          <div class="node n5"><div class="bub"><div class="n">5</div><div class="t">Test</div><div class="s">Engine 2 · e2e vs MVP, self-heal</div></div></div>
+          <div class="node n6"><div class="bub"><div class="n">6</div><div class="t">Observe → Re-spec</div><div class="s">writes the next HTML spec, notifies you</div></div></div>
+        </div>
+      </div>
+      <p class="lead" style="margin-top:14px;text-align:center;">Node 6 hands straight back to Node 1 — but the next artifact is <b>machine-authored from observation</b>, waiting for your nod. The pipe becomes a wheel.</p>
+    </section>
+
+    <!-- END TO END WORKFLOW -->
+    <section class="rise d2">
+      <p class="kicker">The full end-to-end workflow</p>
+      <h2>Seven steps, start to finish</h2>
+      <p class="lead">This is the merged lifecycle — every plan in sequence. Each step hands its output to the next; the only deliberate stop is "green and matches the approved MVP."</p>
+
+      <div class="panel" style="margin-top:18px;">
+        <div class="flow">
+          <div class="step">
+            <div class="nm">0</div>
+            <div>
+              <h3>Intake &amp; the rights gate</h3>
+              <p>Project start auto-opens the <b>live dashboard</b>, which collects two inputs and refuses to build without both: a <b>goal</b> (from your meeting summary) and an <b>MVP</b> (paste your prototype, or have one proposed and refine it). At the same moment it captures <b>Approved_rights/</b> — your browser profile and whether the agent may run <code>build</code> / <code>push</code> on its own. That folder is re-read before <i>every</i> build, push, or browser launch.</p>
+              <div class="tags"><span class="pill acc">goal + MVP</span><span class="pill pur">Approved_rights/</span><span class="pill warn">gate locked until compliant</span></div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="nm">1</div>
+            <div>
+              <h3>Plan — the HTML spec artifact (Plan A)</h3>
+              <p>Instead of drip-feeding markdown questions, the workflow renders a self-contained HTML artifact and opens it: a <b>Now→After</b> comparison, a <b>stated recommendation</b> with pros &amp; cons, <b>every open question batched once</b>, a <b>suggested proposal</b> you edit rather than author, and — only when truly nothing is left — the line <i>"I am completely ready, I have no more questions to ask."</i> Built with the <code>/emil-design-eng</code> pass.</p>
+              <div class="tags"><span class="pill">preview.html</span><span class="pill acc">recommend + pros/cons</span><span class="pill good">ready signal</span></div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="nm">2</div>
+            <div>
+              <h3>Approve</h3>
+              <p>You endorse the artifact in chat. The approved HTML + its markdown twin (OpenSpec tooling reads markdown) become the <b>single source of truth</b> both engines build and test against.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="nm">3</div>
+            <div>
+              <h3>Build — Engine 1, the build executor (Plan B)</h3>
+              <p>The codeapps skills (Dataverse, connectors, ALM) decide <i>what</i> assets are needed and emit declarative <b>task contracts</b> (small JSON). The build executor drives a <b>managed Edge browser</b> in the maker portal to create Dataverse tables, columns, relationships, flows and connections — then <b>re-reads the portal to verify</b> each one before reporting success. Idempotent, traceable back to the spec.</p>
+              <div class="tags"><span class="pill pur">make.powerapps.com</span><span class="pill acc">task contracts</span><span class="pill good">verified in portal</span></div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="nm">4</div>
+            <div>
+              <h3>Run — push, don't dev (once Dataverse is wired)</h3>
+              <p>How the app is launched is decided per run: <b>Dataverse connected</b> → <code>npx power-apps push</code> and test the returned app link (local Vite can't resolve tenant data); <b>no Dataverse</b> → <code>npm run dev</code> on <code>127.0.0.1:5173</code> is fine. Push is gated by <code>Approved_rights/</code>.</p>
+              <div class="tags"><span class="pill good">power-apps push → app link</span><span class="pill acc">or npm run dev</span></div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="nm">5</div>
+            <div>
+              <h3>Test — Engine 2, the self-healing loop (Plan B)</h3>
+              <p>The same runtime tests the live app, every approved screen an assertion. <b>Green &amp; full MVP coverage → stop.</b> On a real bug it doesn't just report — it drives <span class="pill pur">opsx:explore</span> → <span class="pill pur">opsx:propose</span> → <span class="pill pur">opsx:apply</span>, scaffolding a fix change, implementing it, re-running, and looping until green. Guardrails (iteration caps, a no-progress detector) keep "never-ending" safe.</p>
+              <div class="tags"><span class="pill good">e2e vs MVP</span><span class="pill pur">self-heal via opsx</span><span class="pill warn">capped &amp; escalating</span></div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="nm g">6</div>
+            <div>
+              <h3>Observe → Re-spec (lifecycle loop)</h3>
+              <p>The observer watches the running app for three signals — <b>defects</b>, <b>coverage gaps</b>, <b>improvements</b> — and any one can mint the <i>next</i> change, rendered in Plan A's exact HTML format. It notifies you on the dashboard and in chat. Defects can auto-apply (if you allowed it); gaps and improvements wait for your endorsement. Then it loops back to Step 1. Every rotation is captured in <b>Learning_Experience/</b> so the system stops repeating mistakes.</p>
+              <div class="tags"><span class="pill acc">defect · gap · improvement</span><span class="pill">notifies you</span><span class="pill good">learns</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- THE LEARNING LOOP -->
+    <section class="rise d2">
+      <p class="kicker">The Hermes discipline · why it compounds</p>
+      <h2>It gets better over time, not just done once</h2>
+      <p class="lead">Borrowed from Nous Research's <a href="https://github.com/nousresearch/hermes-agent" target="_blank" rel="noopener">Hermes Agent</a>: the value isn't which chat app it plugs into, it's that it never stops learning. PowerCodex's medium is files in a reviewable repo — a better substrate for durable learning than an opaque session store. Every rotation writes a lesson; a reflection step scores the change; recurring patterns graduate into agent-drafted skills (gated by your review). The one number worth watching is the mistakes-per-change curve bending down.</p>
+      <div class="grid3" style="margin-top:18px;">
+        <div class="card"><h3><span class="ic">✷</span>Learn from mistakes</h3><p><code>Learning_Experience/</code> is read at the start of every session and appended on every mistake — file-based, version-controlled. <span class="pill good">live today</span></p></div>
+        <div class="card"><h3><span class="ic">↺</span>Reflect</h3><p>After apply/verify, a lightweight reflection records what worked, what was reworked, and any new lesson — the data the rest feeds on.</p></div>
+        <div class="card"><h3><span class="ic">▰</span>Recall &amp; skill-up</h3><p>Archived changes + lessons become a searchable digest the agent consults before planning; recurring wins become draft skills you approve.</p></div>
+      </div>
+    </section>
+
+    <!-- ============ HOW YOU'D USE IT — MOCKUPS ============ -->
+    <section class="rise d2">
+      <p class="kicker">How you'd use it · a day in the life</p>
+      <h2>What the finished product looks like, screen by screen</h2>
+      <p class="lead">These are mockup screenshots of the end product as you'd actually operate it — from the chat surface where you steer it, through the artifacts and dashboard you review, to the Power App it ships. They follow the same flow as the seven steps above.</p>
+
+      <!-- MOCKUP 1: intake gate -->
+      <div class="shot">
+        <p class="label"><span class="num">1</span> Step 0 — the intake gate auto-opens when you start a project</p>
+        <div class="win intake">
+          <div class="chrome"><span class="dots"><i class="r"></i><i class="y"></i><i class="g"></i></span><span class="url mono">localhost:4321 — start a project</span></div>
+          <div class="ig">
+            <div class="field">
+              <div class="fl"><span class="tg">1</span> Goal &amp; objective <span class="auto">auto-filled from chat</span></div>
+              <p>"A field-team app to track <b>Projects</b> and their <b>Tasks</b>, with status and due dates, so managers see what's overdue at a glance. Success = a manager finds every blocked project in under 10 seconds."</p>
+            </div>
+            <div class="field">
+              <div class="fl"><span class="tg b">2</span> MVP benchmark <span class="auto">prototype adopted</span></div>
+              <p>Pasted from an external AI build (v0 / AI Studio) as HTML — a Projects grid with Status chips and a New-project action. Adopted as the target the app is built and tested against.</p>
+            </div>
+          </div>
+          <div class="gatebar">
+            <span class="pill good">goal ✓</span><span class="pill good">MVP ✓</span>
+            <span style="font-size:12px;color:var(--muted)">MVP ↔ goal compliance</span>
+            <span class="cmeter"><span></span></span>
+            <span style="font-size:12px;font-weight:700;color:var(--good)">86% aligned</span>
+            <button class="gatebtn">Verify &amp; start build →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MOCKUP 2: IDE / chat surface -->
+      <div class="shot">
+        <p class="label"><span class="num">2</span> Step 1 — you steer it from Copilot chat, right inside VS Code</p>
+        <div class="win ide">
+          <div class="chrome"><span class="dots"><i class="r"></i><i class="y"></i><i class="g"></i></span><span class="url mono">add-task-board — projects-hub — Visual Studio Code</span></div>
+          <div class="idebody">
+            <div class="act"><span class="on">⧉</span><span>⌕</span><span>⎇</span><span>▦</span><span>⚙</span></div>
+            <div class="explorer">
+              <p class="eh">Projects-hub</p>
+              <div class="ef"><span class="em">▾</span> openspec/</div>
+              <div class="ef ind on"><span class="em">▾</span> changes/add-task-board</div>
+              <div class="ef ind" style="padding-left:30px">preview.html</div>
+              <div class="ef ind" style="padding-left:30px">proposal.md</div>
+              <div class="ef ind" style="padding-left:30px">tasks.md</div>
+              <div class="ef"><span class="em">▸</span> automation/</div>
+              <div class="ef"><span class="em">▸</span> Learning_Experience/</div>
+              <div class="ef"><span class="em">▸</span> src/</div>
+            </div>
+            <div class="chat">
+              <div class="ch"><span class="mk">C</span> PowerCodex · OpenSpec workflow</div>
+              <div class="cbody">
+                <div class="msg user"><span class="av">🧑</span><div class="bub mono">/opsx:propose add-task-board</div></div>
+                <div class="msg ai"><span class="av">C</span><div class="bub">I drafted the change as a living HTML artifact and opened it — a <b>Now→After</b>, my <b>recommendation</b> with pros/cons, and <b>4 questions asked once</b>.<div class="art">▣ preview.html — opened</div></div></div>
+                <div class="msg user"><span class="av">🧑</span><div class="bub">Looks good. Use system-preference default, persist via localStorage.</div></div>
+                <div class="msg ai"><span class="av">C</span><div class="bub">Locked in. Proposal + spec deltas + tasks written.<br/><span class="rdy">"I am completely ready, I have no more questions to ask."</span></div></div>
+              </div>
+              <div class="cinput mono">› endorse to start the build…</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MOCKUP 3: the HTML spec artifact -->
+      <div class="shot">
+        <p class="label"><span class="num">3</span> Step 1 output — the HTML spec artifact you review &amp; approve</p>
+        <div class="win">
+          <div class="chrome"><span class="dots"><i class="r"></i><i class="y"></i><i class="g"></i></span><span class="url mono">openspec/changes/add-task-board/preview.html</span></div>
+          <div style="padding:20px;">
+            <div class="compare" id="cmp">
+              <div class="layer now"><span class="tag">Now</span><div class="mono2">&gt; /opsx:propose add-task-board
+
+Q1: what change do you want?
+Q2: should it apply to all users?
+Q3: persist where?
+…one question at a time…
+(plain markdown, no visuals)</div></div>
+              <div class="layer after" id="after"><span class="tag">After</span><div class="mono2">▣ add-task-board.html  (auto-opened)
+
+• Now vs After preview ▸ rendered
+• Recommendation ▸ system-preference
+• Pros / cons ▸ 2 options compared
+• 4 questions ▸ asked once
+• Suggested proposal ▸ ready to edit</div></div>
+              <div class="handle" id="handle"><div class="grip">⇄</div></div>
+              <input type="range" min="0" max="100" value="50" class="slider" id="slider" aria-label="Compare now and after" />
+            </div>
+            <p class="hint">Drag to compare · the exact pattern every change embeds for UI deltas</p>
+
+            <div class="reco" style="margin-top:18px;">
+              <span class="rb">Recommends</span>
+              <p><b>Follow OS preference by default.</b> Lowest friction, matches platform expectations, keeps the toggle as an override rather than a required first action.</p>
+            </div>
+            <div class="options">
+              <div class="opt win2"><header>Option A · OS-preference default <span class="pick">★ picked</span></header>
+                <ul><li class="pro">Zero-config for most users</li><li class="pro">Matches native behaviour</li><li class="con">Needs a media-query listener</li></ul></div>
+              <div class="opt alt"><header>Option B · Manual toggle only</header>
+                <ul><li class="pro">Simplest possible build</li><li class="con">Ignores OS preference</li><li class="con">Extra step before first use</li></ul></div>
+            </div>
+            <div class="ready"><div class="check">✓</div><div class="big">"I am completely ready, I have no more questions to ask."</div><p style="color:var(--muted);margin:8px 0 0;font-size:13.5px;">Rendered only once every question resolves and a proposal + Now/After are present.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MOCKUP 4: live dashboard (interactive iframe) -->
+      <div class="shot">
+        <p class="label"><span class="num">4</span> Steps 3–6 — the live agent dashboard, running for real</p>
+        <div class="win">
+          <div class="chrome"><span class="dots"><i class="r"></i><i class="y"></i><i class="g"></i></span><span class="url mono">.powercodex/live/index.html — live, never stops updating</span></div>
+          <iframe class="dashframe" id="liveDashFrame" title="PowerCodex live agent dashboard (interactive demo)" sandbox="allow-scripts"></iframe>
+        </div>
+        <p class="hint">Live, interactive demo — agent progress, the streaming activity feed, the loop position, and specs authored from observation all animate. State is simulated here; in the real system every value is read from <code class="mono">.powercodex/live/status.json</code>.</p>
+      </div>
+
+      <!-- MOCKUP 5: the shipped Power App -->
+      <div class="shot">
+        <p class="label"><span class="num">5</span> The end product — the Power Apps Code App it ships &amp; keeps green</p>
+        <div class="win app">
+          <div class="chrome"><span class="dots"><i class="r"></i><i class="y"></i><i class="g"></i></span><span class="url mono">apps.powerapps.com/play/e/…/projects-hub</span></div>
+          <div class="appbody">
+            <div class="appnav">
+              <div class="ab"><span class="mk">P</span> Projects Hub</div>
+              <a href="#"><span class="ai">▦</span> Dashboard</a>
+              <a class="on" href="#"><span class="ai">▤</span> Projects</a>
+              <a href="#"><span class="ai">☑</span> Tasks</a>
+              <a href="#"><span class="ai">▰</span> Reports</a>
+            </div>
+            <div class="appmain">
+              <div class="apphd"><h4>Projects</h4><button class="new">+ New project</button></div>
+              <div class="kpis">
+                <div class="kpi"><div class="v">12</div><div class="l">Active</div></div>
+                <div class="kpi"><div class="v" style="color:var(--warn)">3</div><div class="l">Due this week</div></div>
+                <div class="kpi"><div class="v" style="color:var(--good)">48</div><div class="l">Completed</div></div>
+              </div>
+              <div class="dgrid">
+                <div class="gh"><span>Project</span><span>Status</span><span>Due date</span><span>Owner</span></div>
+                <div class="gr"><b>Onboarding revamp</b><span><span class="chip prog">In progress</span></span><span>Jun 09</span><span>A. Tan</span></div>
+                <div class="gr"><b>Warehouse migration</b><span><span class="chip block">Blocked</span></span><span>Jun 05</span><span>M. Siew</span></div>
+                <div class="gr"><b>Q3 reporting pack</b><span><span class="chip prog">In progress</span></span><span>Jun 18</span><span>R. Lee</span></div>
+                <div class="gr"><b>Customer portal v2</b><span><span class="chip done">Done</span></span><span>May 28</span><span>J. Ng</span></div>
+              </div>
+              <p style="font-size:12px;color:var(--faint);margin-top:14px;">Backed by Dataverse table <code class="mono">cr123_project</code> (Status choice + DueDate) — built by Engine 1, asserted by Engine 2 against the approved MVP.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MOCKUP 6: learning / insights -->
+      <div class="shot">
+        <p class="label"><span class="num">6</span> Over time — the Learning &amp; Insights view, proof the loop pays off</p>
+        <div class="win">
+          <div class="chrome"><span class="dots"><i class="r"></i><i class="y"></i><i class="g"></i></span><span class="url mono">localhost:4321/insights</span></div>
+          <div style="padding:18px;">
+            <div class="kpibig">
+              <div class="k"><div class="v">2</div><div class="l">Lessons logged</div><div class="dd">since 2026-06-03</div></div>
+              <div class="k"><div class="v" style="color:var(--good)">0</div><div class="l">Repeats</div><div class="dd">no lesson re-triggered</div></div>
+              <div class="k"><div class="v">8%</div><div class="l">Rework rate</div><div class="dd">↓ from 21% (30d)</div></div>
+              <div class="k"><div class="v">3.2</div><div class="l">Avg tasks / change</div><div class="dd" style="color:var(--faint)">14 changes total</div></div>
+            </div>
+            <div class="twocol" style="margin-top:14px;">
+              <div class="box">
+                <h5>Mistakes per change (last 8)</h5>
+                <div class="chart">
+                  <div class="cb"><div class="bar bad" style="height:70%"></div><span class="x">c1</span></div>
+                  <div class="cb"><div class="bar bad" style="height:55%"></div><span class="x">c2</span></div>
+                  <div class="cb"><div class="bar" style="height:45%"></div><span class="x">c3</span></div>
+                  <div class="cb"><div class="bar" style="height:35%"></div><span class="x">c4</span></div>
+                  <div class="cb"><div class="bar" style="height:25%"></div><span class="x">c5</span></div>
+                  <div class="cb"><div class="bar good" style="height:18%"></div><span class="x">c6</span></div>
+                  <div class="cb"><div class="bar good" style="height:12%"></div><span class="x">c7</span></div>
+                  <div class="cb"><div class="bar good" style="height:8%"></div><span class="x">c8</span></div>
+                </div>
+              </div>
+              <div class="box">
+                <h5>Learning_Experience</h5>
+                <div class="led">
+                  <div><span class="id">L001</span><span>Verify source access before planning <span class="badge2 w">major</span></span></div>
+                  <div><span class="id">L002</span><span>Re-check approved rights each session <span class="badge2 g">resolved</span></span></div>
+                </div>
+                <p style="font-size:12px;color:var(--faint);margin:10px 0 0;">Curator suggests a reusable skill from a recurring pattern → <span class="badge2">draft skill</span></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- A TYPICAL DAY -->
+    <section class="rise d2">
+      <p class="kicker">Putting it together · a typical day</p>
+      <h2>Four moves, and the loop does the rest</h2>
+      <div class="panel">
+        <div class="flow">
+          <div class="step"><div class="nm">1</div><div><h3>Start &amp; seed</h3><p>Run the project. The dashboard opens; you confirm the auto-filled goal and paste (or refine) the MVP. Set your <code>Approved_rights/</code> once. Hit <b>Verify &amp; start build</b>.</p></div></div>
+          <div class="step"><div class="nm">2</div><div><h3>Plan &amp; approve</h3><p>In chat you say what you want; it returns the HTML artifact. You skim Now→After, accept or overrule the recommendation, answer the batched questions, and endorse.</p></div></div>
+          <div class="step"><div class="nm">3</div><div><h3>Watch it work</h3><p>Engine 1 builds the Dataverse assets, the app pushes, Engine 2 tests against your MVP and self-heals reds. You watch the agents move on the dashboard — no guessing.</p></div></div>
+          <div class="step"><div class="nm g">4</div><div><h3>Review what it found</h3><p>The observer pings you with a new spec card (a gap or improvement). You open its <code>preview.html</code>, endorse or refine, and the next rotation begins. The Insights curve bends down.</p></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- THE AGENTS -->
+    <section class="rise d2">
+      <p class="kicker">Who's working</p>
+      <h2>The agents in the loop</h2>
+      <table>
+        <tr><th>Agent</th><th>Owns</th><th>Writes to the status bus</th></tr>
+        <tr><td><b>Planner</b></td><td>Plan A — authors/updates the HTML change artifact, batches questions</td><td>plan progress, open-question count, ready signal</td></tr>
+        <tr><td><b>Build executor</b></td><td>Engine 1 — runs task contracts in the maker portal via MDM browser</td><td>per-task status, screenshots, verified-in-portal</td></tr>
+        <tr><td><b>E2E tester</b></td><td>Engine 2 — runs specs against the live app, drives self-heal</td><td>pass/fail per spec, MVP coverage %, loop iteration</td></tr>
+        <tr><td><b>Observer / spec author</b></td><td>Watches the run, classifies signals, mints new HTML specs</td><td>new observations, confidence, needs-approval flags</td></tr>
+        <tr><td><b>Dashboard writer</b></td><td>Re-renders the live HTML pages from the bus</td><td>nothing — it only reads &amp; renders</td></tr>
+      </table>
+      <div class="callout"><h3>They never block each other</h3><p>Agents communicate only through an append-only event bus and the file system (task contracts, results, observations). No agent waits on another's memory — so the build executor can be mid-task while the planner drafts the next change and the dashboard reflects both at once.</p></div>
+    </section>
+
+    <!-- GUARDRAILS -->
+    <section class="rise d2">
+      <p class="kicker">So "autonomous" stays safe</p>
+      <h2>Guardrails on the loop</h2>
+      <div class="grid">
+        <div class="card"><h3><span class="ic">🛑</span>No-progress detector</h3><p>Same failure twice with no spec change → stop and escalate to you. Relentless, not reckless.</p></div>
+        <div class="card"><h3><span class="ic">🔢</span>Iteration &amp; attempt caps</h3><p>Per-iteration cap and max-attempts-per-failure stop runaway loops before they burn the tenant or your time.</p></div>
+        <div class="card"><h3><span class="ic">🔐</span>Rights-gated autonomy</h3><p>Build, push, profile launch, autonomous re-spec and auto-apply are each separate <code>Approved_rights/</code> flags, re-read every run.</p></div>
+        <div class="card"><h3><span class="ic">🔔</span>Notify before, not after</h3><p>Gap/improvement specs surface as a proposal you approve. Only defect fixes — if you allowed it — apply unattended.</p></div>
+      </div>
+      <div class="callout acc"><h3>Goal-compliance is continuous</h3><p>Every time the MVP changes — your refinements, the agent's proposals, or specs authored from observation — it is re-validated against the goal. If it starts drifting from what you set out to build, the loop <b>stops and clarifies with you</b> rather than quietly steering off-course.</p></div>
+    </section>
+
+    <!-- WHAT GETS BUILT -->
+    <section class="rise d2">
+      <p class="kicker">What gets built · the system as files</p>
+      <h2>One repo, five concerns, all reviewable</h2>
+      <div class="panel" style="margin-top:14px;">
+<div class="tree">
+your-app/  <span class="cm"># scaffolded by PowerCodex</span><br/>
+├── <span class="dir">openspec/</span>                       <span class="cm"># the spec-driven loop (Plan A)</span><br/>
+│   └── changes/&lt;name&gt;/<span class="new">preview.html</span>  <span class="cm"># HTML artifact + proposal.md + tasks.md</span><br/>
+├── <span class="dir">automation/</span>                     <span class="new"># the two engines (Plan B)</span><br/>
+│   ├── shared/        <span class="cm"># managed-Edge bootstrap, auth, portal selectors, rights gate</span><br/>
+│   ├── build-executor/  <span class="cm"># Engine 1 — task contracts → portal actions → results</span><br/>
+│   └── e2e-suite/       <span class="cm"># Engine 2 — MVP-mirrored specs + self-heal orchestrator</span><br/>
+├── .powercodex/<span class="dir">live/</span>                  <span class="new"># the live dashboard (lifecycle loop)</span><br/>
+│   ├── status.json      <span class="cm"># append-only event bus</span><br/>
+│   ├── <span class="new">index.html</span>          <span class="cm"># always-on dashboard + intake gate</span><br/>
+│   └── stages/ · agents/ · observations/  <span class="cm"># per-stage / per-agent / rendered specs</span><br/>
+├── <span class="dir">Approved_rights/</span>                <span class="new"># consent gate — profile, build?, push?, auto-apply?</span><br/>
+├── <span class="dir">Learning_Experience/</span>            <span class="new"># the learning loop (Hermes discipline) · live today</span><br/>
+└── src/  <span class="cm"># the React + Vite Power Apps Code App itself</span><br/>
+</div>
+      </div>
+      <div class="callout good"><h3>Dog-fooded</h3><p>Each of these capabilities is itself captured as an OpenSpec change first — authored as a Plan A HTML artifact, built and verified through Plan B. The system bootstraps itself.</p></div>
+    </section>
+
+    <!-- CLOSING -->
+    <section class="rise d2">
+      <p class="kicker">The takeaway</p>
+      <h2>A reviewable repo that plans, builds, tests, heals — and learns</h2>
+      <p class="lead">The five plans were never really separate. Plan A produces the spec; Plan B consumes it to build and verify; the observer turns what it sees back into a spec; the dashboard makes all of it visible; and the learning loop makes every rotation cheaper than the last. Seed a goal and an MVP, set your rights once, and watch the wheel turn.</p>
+      <div class="callout acc"><h3>Decision asked of you</h3><p>Endorse this consolidated plan and I'll open the OpenSpec changes in order — starting with the live dashboard + intake gate (so you can watch the rest get built), then the two engines, then closing the loop under the <code>Approved_rights/</code> flags.</p></div>
+    </section>
+
+    <div class="divider" style="margin-top:64px;"></div>
+    <footer>
+      <p>PowerCodex · master end-to-end plan · drafted 2026-06-03 · <code>docs/plans/powercodex-master-plan.html</code></p>
+      <div class="doclinks">
+        <a href="./openspec-html-workflow-plan.html">Plan A · HTML workflow</a>
+        <a href="./mdm-automation-workflow-plan.html">Plan B · MDM automation</a>
+        <a href="./autonomous-lifecycle-loop-plan.html">Lifecycle loop</a>
+        <a href="./live-dashboard-system.html">Live dashboard</a>
+        <a href="./hermes-agent-gap-plan.html">Hermes gap</a>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Now/After slider -->
+  <script>
+    (function () {
+      var slider = document.getElementById('slider');
+      var after = document.getElementById('after');
+      var handle = document.getElementById('handle');
+      if (!slider) return;
+      function update(v) { after.style.clipPath = 'inset(0 0 0 ' + v + '%)'; handle.style.left = v + '%'; }
+      slider.addEventListener('input', function () { update(this.value); });
+      update(slider.value);
+    })();
+  </script>
+
+  <!-- Live dashboard, embedded self-contained via srcdoc (isolated document, no CSS/JS collisions) -->
+  <template id="dashTpl"><style>
+  :root{--ease-out:cubic-bezier(0.23,1,0.32,1);--bg:#0b0d12;--bg-soft:#12151d;--panel:#161a24;--panel-2:#1c2130;--line:#262c3a;--line-2:#313a4d;--text:#e8ecf4;--muted:#99a2b8;--faint:#6b7488;--accent:#6ea8fe;--accent-2:#a78bfa;--good:#5ad19a;--bad:#f08a8a;--warn:#f5c97b;--radius:16px;--shadow:0 20px 60px -20px rgba(0,0,0,0.6);}
+  *{box-sizing:border-box;}
+  body{margin:0;background:radial-gradient(1100px 560px at 85% -12%,rgba(167,139,250,0.13),transparent 60%),radial-gradient(900px 500px at -10% 8%,rgba(110,168,254,0.11),transparent 55%),var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1200px;margin:0 auto;padding:0 22px 40px;}
+  .mono{font-family:"SF Mono","JetBrains Mono",Consolas,Menlo,monospace;}
+  .topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:14px 22px;margin-bottom:22px;background:rgba(11,13,18,0.78);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);}
+  .brand{display:flex;align-items:center;gap:11px;font-weight:700;}
+  .brand .mark{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#06203f;font-weight:900;}
+  .brand small{display:block;font-weight:500;font-size:11.5px;color:var(--faint);}
+  .live{display:inline-flex;align-items:center;gap:8px;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;color:var(--good);border:1px solid rgba(90,209,154,0.35);background:rgba(90,209,154,0.08);padding:5px 12px;border-radius:999px;font-weight:700;}
+  .live .dot{width:8px;height:8px;border-radius:50%;background:var(--good);box-shadow:0 0 0 0 rgba(90,209,154,0.6);animation:pulse 1.8s var(--ease-out) infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(90,209,154,0.55);}70%{box-shadow:0 0 0 8px rgba(90,209,154,0);}100%{box-shadow:0 0 0 0 rgba(90,209,154,0);}}
+  .spacer{flex:1;}
+  .stat{text-align:right;}.stat .v{font-weight:700;font-size:15px;}.stat .l{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:0.06em;}
+  .btn{appearance:none;border:1px solid var(--line);background:var(--panel);color:var(--text);font:inherit;font-size:13px;font-weight:600;cursor:pointer;padding:8px 14px;border-radius:10px;transition:transform 140ms var(--ease-out),border-color 140ms var(--ease-out);}
+  .btn:hover{border-color:var(--accent);}.btn:active{transform:scale(0.96);}
+  .btn.on{background:rgba(110,168,254,0.14);border-color:rgba(110,168,254,0.4);color:var(--accent);}
+  .loopstrip{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:24px;}
+  @media (max-width:880px){.loopstrip{grid-template-columns:repeat(3,1fr);}}
+  @media (max-width:520px){.loopstrip{grid-template-columns:repeat(2,1fr);}}
+  .stage{position:relative;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--panel);overflow:hidden;transition:border-color 240ms var(--ease-out),background 240ms var(--ease-out);}
+  .stage .sn{font-size:11px;color:var(--faint);font-weight:700;}.stage .st{font-size:13.5px;font-weight:600;margin-top:3px;}.stage .ss{font-size:11.5px;color:var(--faint);margin-top:2px;}
+  .stage.done{border-color:rgba(90,209,154,0.3);}.stage.done .sn{color:var(--good);}
+  .stage.active{border-color:rgba(110,168,254,0.55);background:linear-gradient(180deg,rgba(110,168,254,0.10),var(--panel));}
+  .stage.active::after{content:"";position:absolute;left:0;bottom:0;height:2px;width:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));animation:sweep 2.2s linear infinite;}
+  @keyframes sweep{0%{transform:translateX(-100%);}100%{transform:translateX(100%);}}
+  .stage .check{color:var(--good);font-weight:800;}
+  .cols{display:grid;grid-template-columns:1.35fr 1fr;gap:22px;}
+  @media (max-width:980px){.cols{grid-template-columns:1fr;}}
+  .sectitle{display:flex;align-items:center;gap:10px;margin:0 0 14px;font-size:13px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent-2);font-weight:700;}
+  .sectitle .count{color:var(--faint);font-weight:600;letter-spacing:0;text-transform:none;font-size:12px;}
+  .agents{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media (max-width:560px){.agents{grid-template-columns:1fr;}}
+  .agent{border:1px solid var(--line);border-radius:14px;padding:16px;background:linear-gradient(180deg,var(--panel),var(--bg-soft));transition:border-color 240ms var(--ease-out),box-shadow 240ms var(--ease-out);}
+  .agent.working{border-color:rgba(110,168,254,0.4);box-shadow:0 16px 40px -26px rgba(110,168,254,0.6);}
+  .agent .head{display:flex;align-items:center;gap:11px;}
+  .agent .av{width:36px;height:36px;border-radius:10px;flex:none;display:grid;place-items:center;font-size:17px;background:var(--panel-2);border:1px solid var(--line);}
+  .agent .nm{font-weight:700;font-size:14.5px;}.agent .role{font-size:11.5px;color:var(--faint);}
+  .agent .badge{margin-left:auto;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:0.05em;display:inline-flex;align-items:center;gap:6px;}
+  .badge.working{color:var(--accent);background:rgba(110,168,254,0.12);border:1px solid rgba(110,168,254,0.3);}
+  .badge.idle{color:var(--faint);background:rgba(107,116,136,0.12);border:1px solid var(--line);}
+  .badge.done{color:var(--good);background:rgba(90,209,154,0.12);border:1px solid rgba(90,209,154,0.3);}
+  .badge .bd{width:6px;height:6px;border-radius:50%;background:currentColor;}
+  .badge.working .bd{animation:pulse2 1.4s var(--ease-out) infinite;}
+  @keyframes pulse2{0%,100%{opacity:1;}50%{opacity:0.3;}}
+  .agent .task{margin-top:12px;font-size:13px;color:var(--muted);min-height:36px;}.agent .task b{color:var(--text);font-weight:600;}
+  .bar{margin-top:10px;height:7px;border-radius:999px;background:var(--panel-2);overflow:hidden;border:1px solid var(--line);}
+  .bar>span{display:block;height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width 600ms linear;}
+  .agent.done .bar>span{background:linear-gradient(90deg,var(--good),#3fb985);}
+  .agent .foot{display:flex;justify-content:space-between;margin-top:8px;font-size:11.5px;color:var(--faint);}
+  .panel{border:1px solid var(--line);border-radius:14px;background:linear-gradient(180deg,var(--panel),var(--bg-soft));padding:16px;}
+  .feed{max-height:320px;overflow-y:auto;margin:0;padding:2px;list-style:none;}
+  .feed::-webkit-scrollbar{width:8px;}.feed::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:8px;}
+  .feed li{display:grid;grid-template-columns:64px 18px 1fr;gap:10px;align-items:start;padding:9px 6px;border-bottom:1px solid rgba(38,44,58,0.6);font-size:13px;animation:feedin 360ms var(--ease-out);}
+  @keyframes feedin{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
+  .feed li .ts{color:var(--faint);font-size:11.5px;}.feed li .ic{font-size:13px;}.feed li .tx{color:var(--muted);}.feed li .tx b{color:var(--text);font-weight:600;}
+  .feed li .tx .src{color:var(--accent);font-weight:600;}.feed li.good .tx .src{color:var(--good);}.feed li.pur .tx .src{color:var(--accent-2);}
+  .obs{display:flex;flex-direction:column;gap:12px;}
+  .obscard{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--panel-2);animation:obsin 420ms var(--ease-out);}
+  @keyframes obsin{from{opacity:0;transform:translateY(10px) scale(0.97);}to{opacity:1;transform:translateY(0) scale(1);}}
+  .obscard.defect{border-left:3px solid var(--bad);}.obscard.gap{border-left:3px solid var(--accent);}.obscard.improvement{border-left:3px solid var(--accent-2);}
+  .obscard .row{display:flex;align-items:center;gap:8px;}
+  .obscard .sig{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;padding:2px 8px;border-radius:999px;}
+  .sig.defect{color:var(--bad);background:rgba(240,138,138,0.12);}.sig.gap{color:var(--accent);background:rgba(110,168,254,0.12);}.sig.improvement{color:var(--accent-2);background:rgba(167,139,250,0.12);}
+  .obscard .conf{margin-left:auto;font-size:11.5px;color:var(--faint);}
+  .obscard h4{margin:9px 0 4px;font-size:14px;}.obscard p{margin:0;font-size:12.5px;color:var(--muted);}
+  .obscard .acts{display:flex;gap:8px;margin-top:11px;}
+  .mini{appearance:none;border:1px solid var(--line);background:transparent;color:var(--muted);font:inherit;font-size:12px;font-weight:600;cursor:pointer;padding:5px 11px;border-radius:8px;transition:transform 140ms var(--ease-out),border-color 140ms var(--ease-out);}
+  .mini:hover{border-color:var(--accent);color:var(--text);}.mini:active{transform:scale(0.95);}.mini.go{color:var(--good);border-color:rgba(90,209,154,0.35);}
+  .empty{text-align:center;color:var(--faint);font-size:13px;padding:26px 10px;}
+  .history{margin-top:24px;}
+  .hrow{display:grid;grid-template-columns:130px 1fr auto;gap:12px;align-items:center;padding:11px 14px;border:1px solid var(--line);border-radius:11px;margin-bottom:8px;background:var(--panel);font-size:13px;}
+  .hrow .when{color:var(--faint);font-size:12px;}.hrow .what b{color:var(--text);}.hrow .what{color:var(--muted);}
+  .hrow .res{font-size:12px;font-weight:700;color:var(--good);}.hrow a{color:var(--accent);text-decoration:none;font-size:12px;}
+  .note{color:var(--faint);font-size:12.5px;text-align:center;margin-top:26px;}.note code{color:var(--muted);}
+  @media (prefers-reduced-motion:reduce){.live .dot,.badge.working .bd,.stage.active::after{animation:none;}.feed li,.obscard{animation:none;}*,*::before,*::after{transition-duration:0.01ms !important;}}
+  </style>
+  <div class="topbar">
+    <div class="brand"><span class="mark">CS</span><span>PowerCodex Lifecycle <small>.powercodex/live/index.html</small></span></div>
+    <span class="live"><span class="dot"></span> Live</span>
+    <div class="spacer"></div>
+    <div class="stat"><div class="v" id="rotation">Rotation 3</div><div class="l">current loop</div></div>
+    <div class="stat"><div class="v mono" id="uptime">00:00:00</div><div class="l">session uptime</div></div>
+    <button class="btn on" id="pauseBtn">⏸ Pause</button>
+  </div>
+  <div class="wrap">
+    <div class="loopstrip" id="loopstrip">
+      <div class="stage done" data-stage="0"><div class="sn">① PLAN <span class="check">✓</span></div><div class="st">Plan A artifact</div><div class="ss">authored &amp; approved</div></div>
+      <div class="stage done" data-stage="1"><div class="sn">② APPROVE <span class="check">✓</span></div><div class="st">Endorsed</div><div class="ss">by you, in chat</div></div>
+      <div class="stage active" data-stage="2"><div class="sn">③ BUILD</div><div class="st">Engine 1</div><div class="ss">building assets…</div></div>
+      <div class="stage" data-stage="3"><div class="sn">④ RUN</div><div class="st">push / dev</div><div class="ss">queued</div></div>
+      <div class="stage" data-stage="4"><div class="sn">⑤ TEST</div><div class="st">Engine 2</div><div class="ss">queued</div></div>
+      <div class="stage" data-stage="5"><div class="sn">⑥ OBSERVE</div><div class="st">Re-spec</div><div class="ss">queued</div></div>
+    </div>
+    <div class="cols">
+      <div>
+        <div class="sectitle">Agents at work <span class="count" id="agentcount">· 4 active</span></div>
+        <div class="agents" id="agents"></div>
+        <div class="history">
+          <div class="sectitle">Past stages · frozen pages <span class="count">history is browsable</span></div>
+          <div class="hrow"><span class="when mono">10:02:14</span><span class="what"><b>Rotation 2 · Observe</b> — drift on Project grid spotted</span><a href="#">stages/05-e2e.html ↗</a></div>
+          <div class="hrow"><span class="when mono">09:58:41</span><span class="what"><b>Rotation 2 · Test</b> — 18/18 specs green, 96% MVP coverage</span><span class="res">PASSED</span></div>
+          <div class="hrow"><span class="when mono">09:51:07</span><span class="what"><b>Rotation 2 · Build</b> — created cr123_task table + 2 columns</span><a href="#">stages/03-build.html ↗</a></div>
+        </div>
+      </div>
+      <div>
+        <div class="sectitle">Live activity <span class="count">newest first</span></div>
+        <div class="panel"><ul class="feed" id="feed"></ul></div>
+        <div class="sectitle" style="margin-top:24px;">Specs authored from observation <span class="count" id="obscount">· awaiting signal</span></div>
+        <div class="panel"><div class="obs" id="obs"><div class="empty" id="obsempty">No new observations yet — the observer is watching the running app…</div></div></div>
+      </div>
+    </div>
+    <p class="note">Demo view · agent state, feed and observations are simulated to show the interaction model. In the real system every value is read from <code>.powercodex/live/status.json</code>, re-rendered by the <code>dashboard-writer</code> on each event.</p>
+  </div>
+  <script>
+  (function(){
+    var agents=[
+      {id:'planner',emoji:'🧭',name:'Planner',role:'Plan A · HTML artifacts',state:'done',prog:100,task:'Artifact <b>add-task-board</b> approved · 0 open questions',meta:'ready signal sent'},
+      {id:'builder',emoji:'🛠',name:'Build Executor',role:'Engine 1 · MDM browser',state:'working',prog:42,task:'Creating Dataverse table <b>cr123_project</b> in maker portal',meta:'task 2 of 4'},
+      {id:'e2e',emoji:'🧪',name:'E2E Tester',role:'Engine 2 · self-heal',state:'idle',prog:0,task:'Waiting for build + run to finish',meta:'queued'},
+      {id:'observer',emoji:'👁',name:'Observer',role:'spec author',state:'working',prog:70,task:'Watching run · classifying signals',meta:'live'}
+    ];
+    var agentsEl=document.getElementById('agents');
+    function badge(s){var m={working:'Working',idle:'Idle',done:'Done'};return '<span class="badge '+s+'"><span class="bd"></span>'+m[s]+'</span>';}
+    function renderAgents(){
+      agentsEl.innerHTML=agents.map(function(a){
+        return '<div class="agent '+a.state+'"><div class="head"><span class="av">'+a.emoji+'</span><div><div class="nm">'+a.name+'</div><div class="role">'+a.role+'</div></div>'+badge(a.state)+'</div>'+
+        '<div class="task">'+a.task+'</div><div class="bar"><span style="width:'+a.prog+'%"></span></div>'+
+        '<div class="foot"><span>'+a.meta+'</span><span class="mono">'+Math.round(a.prog)+'%</span></div></div>';
+      }).join('');
+      document.getElementById('agentcount').textContent='· '+agents.filter(function(a){return a.state==='working';}).length+' active';
+    }
+    renderAgents();
+    var feedEl=document.getElementById('feed');
+    function now(){var d=new Date();function p(n){return (n<10?'0':'')+n;}return p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());}
+    function pushFeed(item){var li=document.createElement('li');li.className=item.cls||'';li.innerHTML='<span class="ts mono">'+now()+'</span><span class="ic">'+item.ic+'</span><span class="tx"><span class="src">'+item.src+'</span> · '+item.tx+'</span>';feedEl.insertBefore(li,feedEl.firstChild);while(feedEl.children.length>40)feedEl.removeChild(feedEl.lastChild);}
+    [{src:'planner',cls:'good',ic:'🧭',tx:'Artifact <b>add-task-board</b> reached ready state'},{src:'observer',cls:'pur',ic:'👁',tx:'Baseline captured for Project grid (Now→After ref)'},{src:'build-executor',cls:'',ic:'🛠',tx:'Opened maker portal · authenticated maker profile'}].forEach(pushFeed);
+    var obsEl=document.getElementById('obs'),obsEmpty=document.getElementById('obsempty'),obsCountEl=document.getElementById('obscount'),obsTotal=0;
+    function addObservation(o){if(obsEmpty){obsEmpty.remove();obsEmpty=null;}obsTotal++;obsCountEl.textContent='· '+obsTotal+' authored';var c=document.createElement('div');c.className='obscard '+o.signal;c.innerHTML='<div class="row"><span class="sig '+o.signal+'">'+o.signal+'</span><span class="conf mono">conf '+o.conf.toFixed(2)+'</span></div><h4>'+o.title+'</h4><p>'+o.body+'</p><div class="acts"><button class="mini go">View preview.html</button><button class="mini">'+(o.needsApproval?'Endorse →':'Auto-applying…')+'</button></div>';obsEl.insertBefore(c,obsEl.firstChild);pushFeed({src:'observer',cls:'pur',ic:'✦',tx:'Authored a new spec from observation · <b>'+o.signal+'</b> · you have been notified'});}
+    var stageIdx=2,stages=document.querySelectorAll('#loopstrip .stage'),rotation=3,startTs=Date.now();
+    var obsQueue=[{signal:'defect',conf:0.88,needsApproval:false,title:'Project grid lost its Status column',body:'Live grid diverged from approved Now→After. Proposed: restore the Status choice column binding.'},{signal:'gap',conf:0.74,needsApproval:true,title:'Approved "Archive" screen has no e2e spec',body:'MVP surface exists but is untested. Proposed: add a covering spec mirroring the approved HTML.'},{signal:'improvement',conf:0.63,needsApproval:true,title:'Empty-state on Tasks list feels abrupt',body:'No guidance when zero tasks. Proposed: add an illustrated empty-state with a primary action.'}];
+    var obsPtr=0;
+    function setStage(i){stages.forEach(function(s,idx){s.classList.remove('active');var ss=s.querySelector('.ss'),sn=s.querySelector('.sn');if(idx<i){if(!s.classList.contains('done'))s.classList.add('done');if(!sn.querySelector('.check'))sn.innerHTML+=' <span class="check">✓</span>';ss.textContent='complete';}else if(idx===i){s.classList.add('active');s.classList.remove('done');ss.textContent='in progress…';}else{s.classList.remove('done');ss.textContent='queued';}});}
+    var labels={builder:['Adding column <b>Status</b> (choice)','Creating relationship Project→Task','Verifying table in portal','Provisioning connection reference'],e2e:['Running spec <b>task-board.spec.ts</b>','Asserting Now→After parity','Checking MVP coverage','Re-running after fix'],observer:['Diffing live DOM vs approved HTML','Scoring signal confidence','Rendering preview.html','Watching console + network']};
+    var paused=false;
+    document.getElementById('pauseBtn').addEventListener('click',function(){paused=!paused;this.textContent=paused?'▶ Resume':'⏸ Pause';this.classList.toggle('on',!paused);});
+    function tick(){if(paused)return;agents.forEach(function(a){if(a.state!=='working')return;a.prog=Math.min(100,a.prog+(4+Math.random()*9));if(Math.random()<0.32&&labels[a.id]){var arr=labels[a.id];a.task=arr[Math.floor(Math.random()*arr.length)];pushFeed({src:a.id==='builder'?'build-executor':a.id,cls:a.id==='observer'?'pur':'',ic:a.emoji,tx:a.task});}if(a.prog>=100){a.prog=100;a.state='done';a.task='<b>'+a.name+'</b> finished its stage';a.meta='done';pushFeed({src:a.id==='builder'?'build-executor':a.id,cls:'good',ic:'✓',tx:'stage complete'});}});renderAgents();}
+    function advance(){if(paused)return;if(stageIdx<5){stageIdx++;setStage(stageIdx);if(stageIdx===3){pushFeed({src:'runner',cls:'',ic:'🚀',tx:'Dataverse connected → <b>npx power-apps push</b> · got app link'});}if(stageIdx===4){var e=agents.find(function(a){return a.id==='e2e';});e.state='working';e.prog=6;e.meta='iteration 1';e.task='Running e2e specs against the live app';pushFeed({src:'e2e',cls:'',ic:'🧪',tx:'Starting e2e run vs approved MVP'});}if(stageIdx===5){if(obsPtr<obsQueue.length)addObservation(obsQueue[obsPtr++]);}}else{rotation++;document.getElementById('rotation').textContent='Rotation '+rotation;stageIdx=2;stages.forEach(function(s,idx){if(idx>=2)s.classList.remove('done');});setStage(2);agents.forEach(function(a){if(a.id==='builder'){a.state='working';a.prog=10;a.task='New rotation · building from latest approved spec';a.meta='task 1';}if(a.id==='e2e'){a.state='idle';a.prog=0;a.task='Waiting for build + run';a.meta='queued';}if(a.id==='observer'){a.state='working';a.prog=20;a.task='Watching run · classifying signals';a.meta='live';}if(a.id==='planner'){a.state='done';a.prog=100;a.task='Spec from observation endorsed → ready';a.meta='ready';}});renderAgents();pushFeed({src:'loop',cls:'good',ic:'⟲',tx:'<b>Rotation '+rotation+'</b> started from a self-authored spec'});}}
+    function uptime(){var s=Math.floor((Date.now()-startTs)/1000);function p(n){return (n<10?'0':'')+n;}document.getElementById('uptime').textContent=p(Math.floor(s/3600))+':'+p(Math.floor(s/60)%60)+':'+p(s%60);}
+    setInterval(tick,900);setInterval(advance,5200);setInterval(uptime,1000);
+  })();
+  </script></template>
+  <script>
+    (function () {
+      var tpl = document.getElementById('dashTpl');
+      var frame = document.getElementById('liveDashFrame');
+      if (tpl && frame) {
+        frame.srcdoc = '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>' + tpl.innerHTML + '</body></html>';
+      }
+    })();
+  </script>
+</body>
+</html>

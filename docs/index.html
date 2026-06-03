@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PowerCodex Lifecycle — From a Goal to a Self-Healing App</title>
+<style>
+  :root {
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --bg: #0b0d12;
+    --bg-soft: #12151d;
+    --panel: #161a24;
+    --panel-2: #1c2130;
+    --line: #262c3a;
+    --text: #e8ecf4;
+    --muted: #99a2b8;
+    --faint: #6b7488;
+    --accent: #6ea8fe;
+    --accent-2: #a78bfa;
+    --good: #5ad19a;
+    --bad: #f08a8a;
+    --warn: #f5c97b;
+    --radius: 16px;
+    --shadow: 0 20px 60px -20px rgba(0,0,0,0.6);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(167,139,250,0.14), transparent 60%),
+      radial-gradient(900px 500px at -10% 10%, rgba(110,168,254,0.12), transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 0 24px 120px; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .rise { opacity: 0; transform: translateY(14px); animation: rise 600ms var(--ease-out) forwards; }
+  @keyframes rise { to { opacity: 1; transform: translateY(0); } }
+  .d1 { animation-delay: 40ms; } .d2 { animation-delay: 90ms; } .d3 { animation-delay: 140ms; }
+  .d4 { animation-delay: 190ms; } .d5 { animation-delay: 240ms; } .d6 { animation-delay: 290ms; }
+
+  /* top nav */
+  nav.top {
+    position: sticky; top: 0; z-index: 20;
+    backdrop-filter: blur(10px);
+    background: rgba(11,13,18,0.72);
+    border-bottom: 1px solid var(--line);
+  }
+  nav.top .inner { max-width: 1000px; margin: 0 auto; padding: 12px 24px; display: flex; align-items: center; gap: 18px; }
+  nav.top .brand { font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; gap: 9px; }
+  nav.top .brand .mark { width: 22px; height: 22px; border-radius: 7px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: 0 0 18px rgba(110,168,254,0.5); }
+  nav.top .links { margin-left: auto; display: flex; gap: 18px; font-size: 14px; }
+  nav.top .links a { color: var(--muted); }
+  nav.top .links a:hover { color: var(--text); text-decoration: none; }
+  nav.top .cta { color: var(--accent) !important; }
+
+  header.hero { padding: 88px 24px 36px; text-align: center; max-width: 900px; margin: 0 auto; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--accent); background: rgba(110,168,254,0.1);
+    border: 1px solid rgba(110,168,254,0.25);
+    padding: 6px 14px; border-radius: 999px; margin-bottom: 22px;
+  }
+  .eyebrow .dot {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+    box-shadow: 0 0 0 0 rgba(110,168,254,0.6); animation: pulse 2.4s var(--ease-out) infinite;
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(110,168,254,0.5); }
+    70% { box-shadow: 0 0 0 9px rgba(110,168,254,0); }
+    100% { box-shadow: 0 0 0 0 rgba(110,168,254,0); }
+  }
+  h1 {
+    font-size: clamp(34px, 6.4vw, 58px); line-height: 1.06; margin: 0 0 18px; letter-spacing: -0.02em;
+    background: linear-gradient(180deg, #fff, #b9c2d8);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .sub { color: var(--muted); font-size: 18px; max-width: 740px; margin: 0 auto; }
+  .herobtns { margin-top: 30px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 11px 20px; border-radius: 12px; font-size: 15px; font-weight: 600;
+    border: 1px solid var(--line); color: var(--text);
+    transition: transform 160ms var(--ease-out), border-color 160ms var(--ease-out), background 160ms var(--ease-out);
+  }
+  .btn:hover { text-decoration: none; transform: translateY(-2px); border-color: rgba(110,168,254,0.5); }
+  .btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #0b0d12; border-color: transparent; }
+  .btn.primary:hover { box-shadow: 0 14px 30px -10px rgba(110,168,254,0.6); }
+  .meta { margin-top: 28px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; color: var(--faint); font-size: 13px; }
+  .meta span { border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; }
+
+  section { margin-top: 72px; }
+  .kicker { color: var(--accent-2); font-weight: 600; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; margin: 0 0 10px; }
+  h2 { font-size: 28px; margin: 0 0 14px; letter-spacing: -0.01em; }
+  h3 { font-size: 17px; margin: 0 0 8px; }
+  p.lead { color: var(--muted); font-size: 16px; max-width: 820px; }
+
+  .panel {
+    background: linear-gradient(180deg, var(--panel), var(--bg-soft));
+    border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow);
+  }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 820px) { .grid, .grid3 { grid-template-columns: 1fr; } }
+
+  .card { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+  .card .ic { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; font-size: 17px; margin-bottom: 12px;
+    background: rgba(110,168,254,0.12); border: 1px solid rgba(110,168,254,0.25); }
+  .card p { color: var(--muted); font-size: 14px; margin: 0; }
+
+  /* the loop strip */
+  .loop { display: flex; flex-wrap: wrap; gap: 10px; align-items: stretch; }
+  .stage {
+    flex: 1 1 110px; min-width: 110px; position: relative;
+    background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 14px 12px; text-align: center;
+  }
+  .stage .n { font-size: 11px; color: var(--faint); }
+  .stage .t { font-weight: 700; margin-top: 2px; font-size: 15px; }
+  .stage .d { font-size: 11.5px; color: var(--muted); margin-top: 5px; }
+  .stage.gate { border-color: rgba(245,201,123,0.4); background: rgba(245,201,123,0.06); }
+  .stage.gate .t { color: var(--warn); }
+  .loopback { text-align: center; color: var(--faint); font-size: 13px; margin-top: 14px; }
+  .loopback b { color: var(--accent-2); }
+
+  /* numbered steps */
+  ol.steps { list-style: none; counter-reset: s; padding: 0; margin: 0; }
+  ol.steps li { counter-increment: s; position: relative; padding: 0 0 22px 52px; }
+  ol.steps li::before {
+    content: counter(s); position: absolute; left: 0; top: 0;
+    width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center;
+    font-weight: 700; font-size: 14px; color: #0b0d12;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  }
+  ol.steps li::after {
+    content: ""; position: absolute; left: 16px; top: 38px; bottom: 4px; width: 2px;
+    background: linear-gradient(180deg, rgba(110,168,254,0.4), transparent);
+  }
+  ol.steps li:last-child { padding-bottom: 0; }
+  ol.steps li:last-child::after { display: none; }
+  ol.steps h3 { margin: 4px 0 6px; }
+  ol.steps p { color: var(--muted); font-size: 14.5px; margin: 0; }
+
+  pre {
+    background: #0c0f16; border: 1px solid var(--line); border-radius: 12px;
+    padding: 16px 18px; overflow-x: auto; font-size: 13.5px; line-height: 1.7;
+    font-family: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
+    color: #d7def0; margin: 12px 0 0;
+  }
+  pre .c { color: var(--faint); }
+  pre .p { color: var(--good); }
+  code.inl { background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 1px 7px; font-size: 13px;
+    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace; color: #cdd6ea; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 6px; }
+  table th, table td { text-align: left; padding: 11px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table th { color: var(--faint); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .tag { font-size: 11px; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--line); white-space: nowrap; }
+  .tag.real { color: var(--good); border-color: rgba(90,209,154,0.4); background: rgba(90,209,154,0.08); }
+  .tag.sim { color: var(--warn); border-color: rgba(245,201,123,0.4); background: rgba(245,201,123,0.08); }
+
+  .twoin { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 700px) { .twoin { grid-template-columns: 1fr; } }
+  .inbox { border: 1px solid var(--line); border-radius: 12px; padding: 18px; background: var(--panel-2); }
+  .inbox .lbl { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); margin-bottom: 8px; }
+
+  .callout { border-left: 3px solid var(--accent); background: rgba(110,168,254,0.06); padding: 14px 16px; border-radius: 0 10px 10px 0; color: var(--muted); font-size: 14.5px; }
+
+  footer { margin-top: 90px; padding-top: 28px; border-top: 1px solid var(--line); text-align: center; color: var(--faint); font-size: 13px; }
+  footer a { color: var(--muted); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rise { animation: none; opacity: 1; transform: none; }
+    .eyebrow .dot { animation: none; }
+    *, *::before, *::after { transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+  <nav class="top">
+    <div class="inner">
+      <div class="brand"><span class="mark"></span> PowerCodex</div>
+      <div class="links">
+        <a href="#what">What it is</a>
+        <a href="#loop">The loop</a>
+        <a href="#use">How to use</a>
+        <a class="cta" href="./integration-guide.html">Integrate →</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="eyebrow rise d1"><span class="dot"></span> The autonomous app-lifecycle loop</div>
+    <h1 class="rise d2">From a goal to a<br/>self-healing app.</h1>
+    <p class="sub rise d3">PowerCodex turns a plain-language <b>goal</b> and an approved <b>MVP</b> into a running app — then keeps it healthy. It plans, asks for consent, builds, runs, tests, and learns from what it observes, looping until the app meets the goal. The whole machine streams to a live dashboard you keep open and watch move.</p>
+    <div class="herobtns rise d4">
+      <a class="btn primary" href="#use">How to use it</a>
+      <a class="btn" href="./integration-guide.html">Add it to my project</a>
+    </div>
+    <div class="meta rise d5">
+      <span>Zero-dependency Node tool</span>
+      <span>Live dashboard · localhost:4321</span>
+      <span>Consent-gated by design</span>
+    </div>
+  </header>
+
+  <div class="wrap">
+
+    <!-- WHAT -->
+    <section id="what" class="rise d2">
+      <p class="kicker">What it is</p>
+      <h2>One loop that owns the whole build</h2>
+      <p class="lead">Most tools help you write code. PowerCodex runs the entire lifecycle around it — from understanding the goal to healing the app after it ships — as a single, observable loop. It takes two inputs and produces a working, continuously-verified app.</p>
+
+      <div class="twoin" style="margin-top:20px">
+        <div class="inbox">
+          <div class="lbl">Input 1 · The goal</div>
+          <p style="margin:0;color:var(--muted);font-size:14.5px">A plain-language description of what the app should do. "A leave-request app where staff submit time off and managers approve it."</p>
+        </div>
+        <div class="inbox">
+          <div class="lbl">Input 2 · The approved MVP</div>
+          <p style="margin:0;color:var(--muted);font-size:14.5px">The slice you've agreed to build first. PowerCodex measures everything it does against it with a live goal&#8596;MVP compliance meter.</p>
+        </div>
+      </div>
+
+      <div class="grid3" style="margin-top:16px">
+        <div class="card">
+          <div class="ic">🔁</div>
+          <h3>Autonomous, not blind</h3>
+          <p>It runs the loop on its own, but stops at a consent gate before anything that touches your tenant.</p>
+        </div>
+        <div class="card">
+          <div class="ic">📡</div>
+          <h3>Always observable</h3>
+          <p>Every stage, agent, and event streams to a live dashboard. Nothing happens off-screen.</p>
+        </div>
+        <div class="card">
+          <div class="ic">🩹</div>
+          <h3>Self-healing</h3>
+          <p>When a test goes red, the e2e engine diagnoses it, writes a spec from the observation, and re-builds.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- THE LOOP -->
+    <section id="loop" class="rise d2">
+      <p class="kicker">The loop</p>
+      <h2>Seven stages, one rotation</h2>
+      <p class="lead">Each rotation moves through seven stages. The dashboard highlights the current stage live and advances an overall progress bar; when a rotation ends, observations feed the next one.</p>
+
+      <div class="panel" style="margin-top:18px">
+        <div class="loop">
+          <div class="stage"><div class="n">01</div><div class="t">Intake</div><div class="d">Read the goal + MVP</div></div>
+          <div class="stage"><div class="n">02</div><div class="t">Plan</div><div class="d">Break into tasks</div></div>
+          <div class="stage gate"><div class="n">03</div><div class="t">Approve</div><div class="d">Consent gate</div></div>
+          <div class="stage"><div class="n">04</div><div class="t">Build</div><div class="d">Engine 1 builds</div></div>
+          <div class="stage"><div class="n">05</div><div class="t">Run</div><div class="d">Launch the app</div></div>
+          <div class="stage"><div class="n">06</div><div class="t">Test</div><div class="d">Engine 2 e2e</div></div>
+          <div class="stage"><div class="n">07</div><div class="t">Observe</div><div class="d">Author specs</div></div>
+        </div>
+        <div class="loopback">Observe ⟶ <b>feeds the next Intake</b> — defects, gaps, and improvements become the next rotation's plan.</div>
+      </div>
+
+      <div class="callout" style="margin-top:16px">
+        <b>The Approve stage is a real gate, not a formality.</b> PowerCodex reads <code class="inl">Approved_rights/</code> before it builds or pushes. If the relevant flag (build / push / auto-respec / auto-fix) is <code class="inl">false</code>, the loop blocks right there and waits for you.
+      </div>
+    </section>
+
+    <!-- TWO ENGINES -->
+    <section class="rise d2">
+      <p class="kicker">Under the hood</p>
+      <h2>Two engines and a status bus</h2>
+      <div class="grid" style="margin-top:16px">
+        <div class="card">
+          <div class="ic">🛠️</div>
+          <h3>Engine 1 · Build Executor</h3>
+          <p>Drives a managed Edge browser against the Power Platform tenant to build the app from the plan — or runs locally via <code class="inl">npm run dev</code> when there's no Dataverse.</p>
+        </div>
+        <div class="card">
+          <div class="ic">🧪</div>
+          <h3>Engine 2 · E2E Tester</h3>
+          <p>Runs end-to-end tests against the running app and powers the self-heal loop when something breaks.</p>
+        </div>
+      </div>
+      <p class="lead" style="margin-top:16px">Both engines emit a real event stream onto an append-only status bus (<code class="inl">.powercodex/live/status.json</code>). The dashboard server reads that bus and serves <code class="inl">/api/state</code>; the page polls it every 1.2s and re-renders in place.</p>
+    </section>
+
+    <!-- HOW TO USE -->
+    <section id="use" class="rise d2">
+      <p class="kicker">How to use it</p>
+      <h2>Open the dashboard, then run the loop</h2>
+      <p class="lead">PowerCodex ships as a small zero-dependency Node tool with npm scripts. The flow is always the same: start the live dashboard and leave it open, then drive the loop in a second terminal — the dashboard follows along.</p>
+
+      <ol class="steps" style="margin-top:24px">
+        <li>
+          <h3>Initialize the workspace</h3>
+          <p>Creates <code class="inl">.powercodex/live/</code>, the <code class="inl">Approved_rights/</code> consent file, and a first dashboard snapshot.</p>
+          <pre><span class="c"># one-time setup in your project root</span>
+npm run lifecycle <span class="p">--</span> init</pre>
+        </li>
+        <li>
+          <h3>Grant the rights you're comfortable with</h3>
+          <p>Open <code class="inl">Approved_rights/approval.json</code> and set the flags — build, push, auto-respec, auto-fix. The loop will only ever do what you've turned on.</p>
+        </li>
+        <li>
+          <h3>Start the live dashboard — keep it open</h3>
+          <p>A zero-dependency server serves the dashboard at <code class="inl">localhost:4321</code> and a <code class="inl">/api/state</code> endpoint. Add <code class="inl">--demo</code> to drive a paced simulated loop so you can watch it move.</p>
+          <pre>npm run lifecycle:serve              <span class="c"># http://localhost:4321</span>
+npm run lifecycle:serve <span class="p">--</span> --demo     <span class="c"># also drives a paced demo loop</span></pre>
+        </li>
+        <li>
+          <h3>Run the loop in a second terminal</h3>
+          <p>The open dashboard follows along live — stages light up, agent cards update, the activity feed streams newest-first.</p>
+          <pre>npm run lifecycle <span class="p">--</span> loop --rotations 3
+npm run lifecycle <span class="p">--</span> loop --rotations 2 --real   <span class="c"># real engines (needs tenant + rights)</span></pre>
+        </li>
+        <li>
+          <h3>Prove it works against itself</h3>
+          <p>The self-test runs the full loop in a throwaway workspace and asserts the product does what the plan promises — 16/16 checks, including the rights gate blocking an un-approved build.</p>
+          <pre>npm run lifecycle:selftest           <span class="c"># 16/16 checks</span></pre>
+        </li>
+      </ol>
+    </section>
+
+    <!-- WHAT YOU WATCH -->
+    <section class="rise d2">
+      <p class="kicker">On the dashboard</p>
+      <h2>What you're watching</h2>
+      <div class="grid" style="margin-top:16px">
+        <div class="card"><h3>Intake &amp; rights</h3><p>The goal, the MVP, the goal&#8596;MVP compliance meter, and the live <code class="inl">Approved_rights/</code> flags.</p></div>
+        <div class="card"><h3>Loop strip</h3><p>All 7 stages with the current one live, plus an overall progress bar.</p></div>
+        <div class="card"><h3>Agent cards</h3><p>Intake, Planner, Build Executor, Runner, E2E Tester, Observer — each with a status badge, progress, and current task.</p></div>
+        <div class="card"><h3>Live activity feed</h3><p>The streaming event log, newest first.</p></div>
+        <div class="card"><h3>Test &amp; MVP coverage</h3><p>A coverage ring plus the last red/green result.</p></div>
+        <div class="card"><h3>Specs from observation</h3><p>Defect, gap, and improvement cards authored by the Observer — and lessons from <code class="inl">Learning_Experience/</code>.</p></div>
+      </div>
+    </section>
+
+    <!-- REAL VS SIM -->
+    <section class="rise d2">
+      <p class="kicker">Honest by default</p>
+      <h2>What's real vs. simulated</h2>
+      <p class="lead">The orchestration, consent gate, status bus, and live server are all real. The two engines drive a managed browser against a production tenant — which can't run without a tenant + MFA — so they ship as adapters with a simulation fallback. Swap two functions in <code class="inl">lib/engines.js</code> and nothing else changes.</p>
+      <div class="panel" style="margin-top:16px;padding:8px 24px">
+        <table>
+          <thead><tr><th>Piece</th><th style="width:120px">Status</th></tr></thead>
+          <tbody>
+            <tr><td><code class="inl">Approved_rights/</code> consent gate</td><td><span class="tag real">real</span></td></tr>
+            <tr><td>Append-only status bus</td><td><span class="tag real">real</span></td></tr>
+            <tr><td>Live dashboard server + <code class="inl">/api/state</code></td><td><span class="tag real">real</span></td></tr>
+            <tr><td>Static dashboard snapshot</td><td><span class="tag real">real</span></td></tr>
+            <tr><td>Loop orchestrator + guardrails</td><td><span class="tag real">real</span></td></tr>
+            <tr><td>Build Executor &amp; E2E Tester engines</td><td><span class="tag sim">adapters</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- NEXT -->
+    <section class="rise d2">
+      <p class="kicker">Next</p>
+      <h2>Bring it to your project</h2>
+      <p class="lead">Ready to wire PowerCodex into an existing codebase to enhance your build experience? The integration guide walks you through it step by step — copying the tool, adding the scripts, setting up consent, and swapping in real engine adapters.</p>
+      <div class="herobtns" style="justify-content:flex-start;margin-top:20px">
+        <a class="btn primary" href="./integration-guide.html">Open the integration guide →</a>
+        <a class="btn" href="./plans/powercodex-master-plan.html">Read the full master plan</a>
+      </div>
+    </section>
+
+    <footer>
+      PowerCodex Lifecycle · the autonomous app loop, as files, with a live monitor.<br/>
+      Plans: <a href="./plans/powercodex-master-plan.html">Master</a> ·
+      <a href="./plans/autonomous-lifecycle-loop-plan.html">Lifecycle loop</a> ·
+      <a href="./plans/mdm-automation-workflow-plan.html">MDM automation</a> ·
+      <a href="./plans/live-dashboard-system.html">Live dashboard</a> ·
+      <a href="./plans/openspec-html-workflow-plan.html">OpenSpec workflow</a>
+    </footer>
+
+  </div>
+</body>
+</html>

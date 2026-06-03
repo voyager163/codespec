@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PowerCodex · Playwright-for-MDM Automation — Whole-Workflow Plan</title>
+<style>
+  :root {
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+    --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+    --bg: #0b0d12;
+    --bg-soft: #12151d;
+    --panel: #161a24;
+    --panel-2: #1c2130;
+    --line: #262c3a;
+    --text: #e8ecf4;
+    --muted: #99a2b8;
+    --faint: #6b7488;
+    --accent: #6ea8fe;
+    --accent-2: #a78bfa;
+    --good: #5ad19a;
+    --bad: #f08a8a;
+    --warn: #f5c97b;
+    --radius: 16px;
+    --shadow: 0 20px 60px -20px rgba(0,0,0,0.6);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(167,139,250,0.14), transparent 60%),
+      radial-gradient(900px 500px at -10% 10%, rgba(110,168,254,0.12), transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 24px 120px; }
+
+  .rise { opacity: 0; transform: translateY(14px); animation: rise 600ms var(--ease-out) forwards; }
+  @keyframes rise { to { opacity: 1; transform: translateY(0); } }
+  .d1 { animation-delay: 40ms; } .d2 { animation-delay: 90ms; } .d3 { animation-delay: 140ms; }
+  .d4 { animation-delay: 190ms; } .d5 { animation-delay: 240ms; } .d6 { animation-delay: 290ms; }
+
+  header.hero { padding: 88px 24px 40px; text-align: center; max-width: 880px; margin: 0 auto; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--accent); background: rgba(110,168,254,0.1);
+    border: 1px solid rgba(110,168,254,0.25);
+    padding: 6px 14px; border-radius: 999px; margin-bottom: 22px;
+  }
+  .eyebrow .dot {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+    box-shadow: 0 0 0 0 rgba(110,168,254,0.6); animation: pulse 2.4s var(--ease-out) infinite;
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(110,168,254,0.5); }
+    70% { box-shadow: 0 0 0 9px rgba(110,168,254,0); }
+    100% { box-shadow: 0 0 0 0 rgba(110,168,254,0); }
+  }
+  h1 {
+    font-size: clamp(32px, 6vw, 52px); line-height: 1.08; margin: 0 0 18px; letter-spacing: -0.02em;
+    background: linear-gradient(180deg, #fff, #b9c2d8);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .sub { color: var(--muted); font-size: 18px; max-width: 700px; margin: 0 auto; }
+  .meta { margin-top: 26px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; color: var(--faint); font-size: 13px; }
+  .meta span { border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; }
+
+  section { margin-top: 64px; }
+  .kicker { color: var(--accent-2); font-weight: 600; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; margin: 0 0 10px; }
+  h2 { font-size: 28px; margin: 0 0 14px; letter-spacing: -0.01em; }
+  h3 { font-size: 18px; margin: 0 0 8px; }
+  p.lead { color: var(--muted); font-size: 16px; max-width: 760px; }
+
+  .panel {
+    background: linear-gradient(180deg, var(--panel), var(--bg-soft));
+    border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow);
+  }
+
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+
+  .card { background: var(--panel-2); border: 1px solid var(--line); border-radius: 14px; padding: 20px; }
+  .card h3 { display: flex; align-items: center; gap: 10px; }
+  .card .ic { width: 28px; height: 28px; flex: none; display: grid; place-items: center; border-radius: 8px; background: rgba(110,168,254,0.12); color: var(--accent); font-size: 15px; }
+  .card p { color: var(--muted); font-size: 14.5px; margin: 6px 0 0; }
+
+  .pill { display: inline-block; font-size: 12px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .pill.good { color: var(--good); border-color: rgba(90,209,154,0.35); background: rgba(90,209,154,0.08); }
+  .pill.warn { color: var(--warn); border-color: rgba(245,201,123,0.35); background: rgba(245,201,123,0.08); }
+  .pill.acc { color: var(--accent); border-color: rgba(110,168,254,0.35); background: rgba(110,168,254,0.08); }
+  .pill.pur { color: var(--accent-2); border-color: rgba(167,139,250,0.35); background: rgba(167,139,250,0.08); }
+
+  pre {
+    background: #0a0c11; border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px;
+    overflow-x: auto; font-size: 13px; line-height: 1.55; color: #cdd6e6; margin: 14px 0 0;
+    font-family: "SF Mono", "JetBrains Mono", Consolas, Menlo, monospace;
+  }
+  pre .c { color: var(--faint); } pre .k { color: var(--accent-2); } pre .s { color: var(--good); } pre .f { color: var(--accent); }
+
+  ul.clean { list-style: none; padding: 0; margin: 12px 0 0; }
+  ul.clean li { position: relative; padding-left: 26px; margin: 9px 0; color: var(--muted); font-size: 14.5px; }
+  ul.clean li::before { content: "→"; position: absolute; left: 0; color: var(--accent); }
+  ul.clean li b { color: var(--text); font-weight: 600; }
+
+  .flow { display: flex; flex-direction: column; gap: 0; margin-top: 8px; }
+  .step { display: grid; grid-template-columns: 44px 1fr; gap: 16px; padding: 16px 0; border-bottom: 1px dashed var(--line); }
+  .step:last-child { border-bottom: 0; }
+  .step .n { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; color: var(--bg); background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+  .step h3 { margin: 4px 0 4px; }
+  .step p { color: var(--muted); font-size: 14.5px; margin: 0; }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 14px; }
+  th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--faint); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+  td { color: var(--muted); } td b { color: var(--text); }
+
+  .callout { border-left: 3px solid var(--warn); background: rgba(245,201,123,0.06); padding: 16px 18px; border-radius: 0 12px 12px 0; margin-top: 16px; }
+  .callout.acc { border-left-color: var(--accent); background: rgba(110,168,254,0.06); }
+  .callout h3 { margin: 0 0 6px; color: var(--text); }
+  .callout p { margin: 0; color: var(--muted); font-size: 14.5px; }
+
+  .tree { font-family: "SF Mono", Consolas, monospace; font-size: 13px; line-height: 1.7; color: #cdd6e6; }
+  .tree .dir { color: var(--accent); } .tree .new { color: var(--good); } .tree .cm { color: var(--faint); }
+
+  .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 760px) { .twocol { grid-template-columns: 1fr; } }
+
+  footer { margin-top: 80px; text-align: center; color: var(--faint); font-size: 13px; }
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--line), transparent); margin: 8px 0; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+  <header class="hero">
+    <div class="eyebrow rise d1"><span class="dot"></span> Plan for endorsement</div>
+    <h1 class="rise d2">Playwright-for-MDM Automation:<br/>Two Engines, One Build Loop</h1>
+    <p class="sub rise d3">Bringing a managed-browser (MDM) Playwright runtime into PowerCodex so the same infrastructure can <b>build</b> Power Platform assets and <b>test</b> the app — then self-heal through the OpenSpec loop until the app matches your approved MVP.</p>
+    <div class="meta rise d4">
+      <span>Target: <b>main branch</b></span>
+      <span>Today: 2026-06-03</span>
+      <span>Branch: feat/openspec-redesigned-output</span>
+      <span>Status: awaiting your sign-off</span>
+    </div>
+  </header>
+
+  <div class="wrap">
+
+    <!-- READ FIRST -->
+    <section class="rise d2">
+      <p class="kicker">Read this first</p>
+      <h2>One assumption I need you to confirm</h2>
+      <div class="callout">
+        <h3>⚠ The reference repo is private — I could not read it</h3>
+        <p><code>ElfredSeow/Playwright-for-MDM-Browser</code> resolves but is a <b>private</b> repository (owner: ElfredSeow, created 2026-05-28). I have no read access from here, so the MDM-browser mechanics below are <b>reconstructed from standard Playwright managed-Edge patterns</b> (persistent context, real <code>msedge</code> channel, saved <code>storageState</code>) plus what your existing starter already ships. If you can share the repo (add me / paste its <code>playwright.config</code> + folder layout), I will align the implementation exactly to it. Everything else in this plan stands regardless.</p>
+      </div>
+    </section>
+
+    <!-- PRE-PROJECT GATE -->
+    <section>
+      <p class="kicker rise">Non-negotiable · runs before everything</p>
+      <h2 class="rise">Step 0 — Intake &amp; the <code>Approved_rights/</code> gate</h2>
+      <p class="lead rise">Before <b>any</b> project starts, I ask you for the key operating permissions first, write your answers to a local <code>Approved_rights/</code> folder, and <b>re-read that folder before every build, push, or browser launch</b>. Consent is recorded, not assumed.</p>
+
+      <div class="twocol" style="margin-top:16px;">
+        <div class="panel rise">
+          <h3>What I ask at intake</h3>
+          <ul class="clean">
+            <li><b>Browser profile</b> — which MDM/Edge profile should the runtime use?</li>
+            <li><b>Build autonomy</b> — may I run <code>npm run build</code> on my own?</li>
+            <li><b>Push autonomy</b> — may I run <code>npx power-apps push</code> on my own?</li>
+          </ul>
+        </div>
+        <div class="panel rise">
+          <h3>What gets saved (and always re-checked)</h3>
+<pre><span class="c">// Approved_rights/approval.json</span>
+{
+  <span class="f">"browserProfile"</span>: <span class="s">"&lt;your answer&gt;"</span>,
+  <span class="f">"allowBuild"</span>: <span class="k">true</span>,         <span class="c">// npm run build</span>
+  <span class="f">"allowPush"</span>: <span class="k">false</span>,        <span class="c">// npx power-apps push</span>
+  <span class="f">"grantedBy"</span>: <span class="s">"user"</span>,
+  <span class="f">"grantedAt"</span>: <span class="s">"2026-06-03"</span>
+}</pre>
+        </div>
+      </div>
+      <div class="callout"><h3>The gate is enforced, not advisory</h3><p>If <code>Approved_rights/</code> is missing or a flag is <code>false</code>, the runtime <b>stops and asks</b> rather than running <code>build</code>/<code>push</code> or launching a profile. Both engines below honor this.</p></div>
+    </section>
+
+    <!-- RUN COMMAND RULE -->
+    <section>
+      <p class="kicker rise">Non-negotiable · how the app is run</p>
+      <h2 class="rise">The run-command rule: push, don't dev (once Dataverse is connected)</h2>
+      <p class="lead rise">How I launch the app for testing depends entirely on whether Dataverse is wired in. This is decided <b>per run</b>, automatically.</p>
+      <table class="rise">
+        <tr><th>App state</th><th>How it's run / tested</th><th>Why</th></tr>
+        <tr><td><b>Dataverse connected</b></td><td><span class="pill good">npx power-apps push</span> → test against the <b>app link it returns</b>. <b>Never</b> <code>npm run dev</code>.</td><td>Local Vite dev can't resolve Dataverse data/connections — only the pushed app runs in real Power Platform context.</td></tr>
+        <tr><td><b>No Dataverse</b></td><td><span class="pill acc">npm run dev</span> on <code>127.0.0.1:5173</code> is fine for checking the app.</td><td>Nothing tenant-backed to resolve; the local dev server is sufficient and faster.</td></tr>
+      </table>
+      <div class="callout acc"><h3>Wired into the e2e config</h3><p>The e2e-suite detects Dataverse connection state and sets its <code>baseURL</code> to the pushed app link (push gated by <code>Approved_rights/</code>) or to the local dev server accordingly — no manual switching.</p></div>
+    </section>
+
+    <!-- WHAT I UNDERSTOOD -->
+    <section>
+      <p class="kicker rise">What I understood</p>
+      <h2 class="rise">The goal: automate the entire build lifecycle</h2>
+      <p class="lead rise">PowerCodex today scaffolds a Power Apps <b>Code App</b> (React + Vite), wires an <b>OpenSpec (opsx)</b> spec-driven loop, and ships <b>Code Apps skills</b> (architect, scaffolder, connectors, Dataverse, env-vars, ALM). What's missing is a <b>hands-on-keyboard runtime</b> — something that can drive the real Power Platform maker portal and the running app through a managed browser. That is what the MDM-Playwright infrastructure adds, and you want it serving <b>two distinct jobs</b>.</p>
+
+      <div class="grid" style="margin-top:22px;">
+        <div class="card rise d1">
+          <h3><span class="ic">🛠</span> Use case 1 — Build executor (cowork)</h3>
+          <p>After planning, the app still needs <b>things that can't be created from app code alone</b>: Dataverse tables, columns, relationships, Power Automate flows, connections. The AI hands these as <b>tasks</b>; the MDM browser <b>executes them in the maker portal</b> on your behalf.</p>
+          <p style="margin-top:10px;"><span class="pill pur">cowork</span> <span class="pill acc">make.powerapps.com</span> <span class="pill acc">Dataverse</span> <span class="pill acc">Power Automate</span></p>
+        </div>
+        <div class="card rise d2">
+          <h3><span class="ic">🧪</span> Use case 2 — E2E tester (self-healing)</h3>
+          <p>The same runtime <b>tests the built app</b> end-to-end. When something breaks, its job isn't just to report — it's to <b>open an OpenSpec change</b> and drive <code>explore → propose → apply</code> until the fix lands. It loops until <b>zero bugs</b> and the app matches your <b>MVP / approved HTML</b>.</p>
+          <p style="margin-top:10px;"><span class="pill good">e2e</span> <span class="pill pur">opsx:explore</span> <span class="pill pur">opsx:propose</span> <span class="pill pur">opsx:apply</span></p>
+        </div>
+      </div>
+
+      <div class="callout acc" style="margin-top:18px;">
+        <h3>The hard rule you set: keep them in two separate folders</h3>
+        <p>Building and testing must never get confused. So the runtime is split into two top-level folders with their own configs, their own browser profiles, and their own entry points — sharing only a small, common browser-bootstrap library.</p>
+      </div>
+    </section>
+
+    <!-- WHERE IT LIVES -->
+    <section>
+      <p class="kicker rise">The change · folder layout</p>
+      <h2 class="rise">A new <code>automation/</code> root with two engines</h2>
+      <p class="lead rise">This lands inside <code>templates/starter/</code> so every project PowerCodex scaffolds inherits it. The existing <code>e2e/</code> + root <code>playwright.config.ts</code> (a single Chromium smoke test) get <b>absorbed and superseded</b> by the new structure.</p>
+
+      <div class="panel rise" style="margin-top:18px;">
+<div class="tree">
+templates/starter/
+├── <span class="dir">automation/</span>                       <span class="cm"># NEW — the MDM-Playwright root</span>
+│   ├── <span class="dir">shared/</span>                       <span class="new"># common, used by BOTH engines</span>
+│   │   ├── mdm-browser.ts             <span class="cm"># launch managed Edge, persistent context</span>
+│   │   ├── auth.setup.ts              <span class="cm"># one-time login → saves storageState</span>
+│   │   ├── portal-selectors.ts        <span class="cm"># maker-portal locators, versioned</span>
+│   │   └── env.ts                     <span class="cm"># env URL, tenant, app id, secrets via .env</span>
+│   │
+│   ├── <span class="dir">build-executor/</span>               <span class="new"># USE CASE 1 — cowork / build</span>
+│   │   ├── playwright.build.config.ts
+│   │   ├── tasks/                     <span class="cm"># task contracts dropped by the AI</span>
+│   │   │   └── *.task.json
+│   │   ├── actions/                   <span class="cm"># reusable portal operations</span>
+│   │   │   ├── create-dataverse-table.ts
+│   │   │   ├── add-column.ts
+│   │   │   ├── create-flow.ts
+│   │   │   └── create-connection.ts
+│   │   ├── run-task.ts                <span class="cm"># reads a task contract → runs the action</span>
+│   │   └── results/                   <span class="cm"># structured outcome per task (json)</span>
+│   │
+│   └── <span class="dir">e2e-suite/</span>                    <span class="new"># USE CASE 2 — testing + self-heal</span>
+│       ├── playwright.e2e.config.ts
+│       ├── specs/                     <span class="cm"># app e2e specs (mirrors MVP/approved HTML)</span>
+│       │   └── *.spec.ts
+│       ├── fixtures/
+│       ├── loop/
+│       │   ├── orchestrator.ts        <span class="cm"># the never-ending test→fix→retest loop</span>
+│       │   └── failure-to-change.ts   <span class="cm"># failure → OpenSpec change scaffold</span>
+│       └── reports/
+│
+├── e2e/  <span class="cm">→ migrated into automation/e2e-suite/specs/</span>
+└── playwright.config.ts  <span class="cm">→ replaced by the two scoped configs</span>
+</div>
+      </div>
+
+      <div class="grid" style="margin-top:16px;">
+        <div class="card rise"><h3><span class="ic">🔒</span> Separate browser profiles</h3><p>Build-executor uses an <b>authenticated maker profile</b> (can mutate your tenant). E2E uses an <b>app-runtime profile</b> (read/interact only). Different <code>storageState</code> files, never shared.</p></div>
+        <div class="card rise"><h3><span class="ic">🧩</span> Shared bootstrap only</h3><p>The only thing in common is <code>shared/</code> — how to launch managed Edge and where selectors live. No test logic leaks into build logic or vice-versa.</p></div>
+      </div>
+    </section>
+
+    <!-- MDM BROWSER -->
+    <section>
+      <p class="kicker rise">The MDM browser</p>
+      <h2 class="rise">What "managed browser" means here</h2>
+      <p class="lead rise">Power Platform sits behind tenant conditional-access / device-compliance. A throwaway headless Chromium often can't pass it. The MDM approach launches a <b>real Microsoft Edge channel with a persistent user-data dir</b>, performs login <b>once</b>, and reuses the saved session — so both engines act as a genuinely signed-in maker.</p>
+      <div class="panel rise" style="margin-top:16px;">
+<pre><span class="c">// automation/shared/mdm-browser.ts (shape — to be aligned to ElfredSeow's repo)</span>
+<span class="k">export async function</span> <span class="f">launchMdmContext</span>(profileDir: <span class="k">string</span>, storageState?: <span class="k">string</span>) {
+  <span class="k">return</span> chromium.<span class="f">launchPersistentContext</span>(profileDir, {
+    channel: <span class="s">"msedge"</span>,        <span class="c">// real managed Edge, not bundled Chromium</span>
+    headless: <span class="k">false</span>,           <span class="c">// MDM/conditional-access often needs headed</span>
+    storageState,               <span class="c">// reuse the one-time login</span>
+    viewport: { width: <span class="s">1440</span>, height: <span class="s">900</span> },
+  })
+}</pre>
+      </div>
+      <div class="callout"><h3>Auth is a one-time, human-in-the-loop step</h3><p><code>auth.setup.ts</code> opens the portal, you complete MFA once, and the session is captured to <code>storageState</code>. Subsequent build/test runs are fully unattended until the session expires. No credentials are stored in the repo — only the gitignored state file.</p></div>
+    </section>
+
+    <!-- USE CASE 1 DETAIL -->
+    <section>
+      <p class="kicker rise">Engine 1 · build executor</p>
+      <h2 class="rise">How the AI builds real assets through the browser</h2>
+      <p class="lead rise">The codeapps skills (Dataverse, connectors, ALM) decide <i>what</i> is needed. They emit a <b>task contract</b> — a small JSON the build-executor knows how to perform. This keeps the AI's intent declarative and the browser automation deterministic.</p>
+      <div class="twocol" style="margin-top:16px;">
+        <div class="panel rise">
+          <h3>Task contract (input)</h3>
+<pre><span class="c">// automation/build-executor/tasks/create-projects-table.task.json</span>
+{
+  <span class="f">"type"</span>: <span class="s">"dataverse.table.create"</span>,
+  <span class="f">"displayName"</span>: <span class="s">"Project"</span>,
+  <span class="f">"schemaName"</span>: <span class="s">"cr123_project"</span>,
+  <span class="f">"columns"</span>: [
+    { <span class="f">"name"</span>: <span class="s">"Status"</span>, <span class="f">"type"</span>: <span class="s">"choice"</span> },
+    { <span class="f">"name"</span>: <span class="s">"DueDate"</span>, <span class="f">"type"</span>: <span class="s">"datetime"</span> }
+  ],
+  <span class="f">"source"</span>: <span class="s">"matflow-dataverse-model"</span>
+}</pre>
+        </div>
+        <div class="panel rise">
+          <h3>Result (output)</h3>
+<pre><span class="c">// automation/build-executor/results/create-projects-table.json</span>
+{
+  <span class="f">"status"</span>: <span class="s">"succeeded"</span>,
+  <span class="f">"tableId"</span>: <span class="s">"cr123_project"</span>,
+  <span class="f">"screenshots"</span>: [<span class="s">"results/shots/table.png"</span>],
+  <span class="f">"verifiedInPortal"</span>: <span class="k">true</span>,
+  <span class="f">"durationMs"</span>: <span class="s">18422</span>
+}</pre>
+        </div>
+      </div>
+      <ul class="clean rise">
+        <li><b>Declarative in, verified out</b> — every action re-reads the portal to confirm the asset exists before reporting success.</li>
+        <li><b>Idempotent</b> — re-running a task that already succeeded is a no-op, so the loop can retry safely.</li>
+        <li><b>Traceable</b> — each task links back to the OpenSpec capability (<code>source</code>) that requested it.</li>
+      </ul>
+    </section>
+
+    <!-- USE CASE 2 DETAIL / THE LOOP -->
+    <section>
+      <p class="kicker rise">Engine 2 · the never-ending loop</p>
+      <h2 class="rise">Test → detect → self-heal via OpenSpec → retest</h2>
+      <p class="lead rise">This is the heart of what you asked for. The e2e-suite doesn't just fail loudly — on a real bug it <b>drives the opsx skills itself</b> and won't stop until the app is green <i>and</i> matches your approved MVP/HTML.</p>
+
+      <div class="panel rise" style="margin-top:18px;">
+        <div class="flow">
+          <div class="step"><div class="n">1</div><div><h3>Run e2e against the live app</h3><p>Target resolved by Dataverse state: pushed <code>power-apps</code> app link (push gated by <code>Approved_rights/</code>) or local dev. Specs mirror the approved MVP/HTML — every approved screen and interaction is an assertion.</p></div></div>
+          <div class="step"><div class="n">2</div><div><h3>Green? → exit loop</h3><p>If all specs pass <b>and</b> coverage of the MVP surface is complete, the loop terminates successfully. This is the only stop condition.</p></div></div>
+          <div class="step"><div class="n">3</div><div><h3>Red? → <span class="pill pur">opsx:explore</span></h3><p>Failure artifacts (trace, screenshot, DOM, console) feed an explore pass to understand the root cause — thinking only, no code yet.</p></div></div>
+          <div class="step"><div class="n">4</div><div><h3><span class="pill pur">opsx:propose</span> a change</h3><p><code>failure-to-change.ts</code> scaffolds <code>openspec/changes/&lt;fix-…&gt;/</code> with proposal + tasks + spec deltas describing the fix.</p></div></div>
+          <div class="step"><div class="n">5</div><div><h3><span class="pill pur">opsx:apply</span> the change</h3><p>Implement against the spec, run unit + lint + the failing spec, then archive the change when it validates.</p></div></div>
+          <div class="step"><div class="n">6</div><div><h3>↺ Back to step 1</h3><p>Re-run the full suite. New regressions feed the loop again. Repeat until step 2 is reached.</p></div></div>
+        </div>
+      </div>
+
+      <div class="callout acc"><h3>Guardrails so "never-ending" stays safe</h3><p>Per-iteration cap, max-attempts-per-failure, and a "no-progress" detector (same failure twice with no spec change → stop and escalate to you). The loop is relentless, not reckless.</p></div>
+    </section>
+
+    <!-- HOW IT FITS -->
+    <section>
+      <p class="kicker rise">How it all connects</p>
+      <h2 class="rise">The whole lifecycle, end to end</h2>
+      <div class="panel rise" style="margin-top:14px;">
+<pre>  Step 0: intake ──▶ <span class="f">Approved_rights/</span> (profile, build?, push?)  ◀── re-read before every build/push/launch
+        │
+        ▼
+  Approved MVP / HTML
+        │
+        ▼
+  <span class="f">opsx</span> plan ──▶ codeapps skills decide assets needed
+        │                         │
+        │                         ▼
+        │            <span class="f">Engine 1: build-executor</span>  ──(MDM browser)──▶  Dataverse tables, flows, connections
+        │                         │
+        ▼                         ▼
+  app code built ──▶ Dataverse?  ─yes─▶ npx power-apps push ──▶ app link
+        │                └─no─▶ npm run dev (127.0.0.1:5173)
+        ▼
+  <span class="f">Engine 2: e2e-suite</span> ──(MDM browser)──▶ test against MVP (push link / dev)
+        │
+   ┌────┴─────┐
+ green       red ──▶ opsx explore → propose → apply ──┐
+   │                                                   │
+   ▼                                                   │
+  DONE ◀───────────────── retest ◀─────────────────────┘</pre>
+      </div>
+      <p class="lead rise" style="margin-top:14px;">Both engines share one truth — the OpenSpec specs and your approved MVP — so building and testing are two views of the same target.</p>
+    </section>
+
+    <!-- CONCRETE CHANGES -->
+    <section>
+      <p class="kicker rise">Concrete changes I will make</p>
+      <h2 class="rise">The deliverables</h2>
+      <table class="rise">
+        <tr><th>Area</th><th>Change</th><th>Type</th></tr>
+        <tr><td><b>Approved_rights/</b></td><td>Intake prompt + saved <code>approval.json</code> (browser profile, build/push autonomy); read before every build/push/launch</td><td><span class="pill good">new</span></td></tr>
+        <tr><td><b>automation/shared/</b></td><td>MDM browser bootstrap, auth setup, portal selectors, env loader, <code>approved-rights.ts</code> gate + Dataverse-state run-target resolver</td><td><span class="pill good">new</span></td></tr>
+        <tr><td><b>automation/build-executor/</b></td><td>Build config, task-contract runner, portal actions (table/column/flow/connection), results writer</td><td><span class="pill good">new</span></td></tr>
+        <tr><td><b>automation/e2e-suite/</b></td><td>E2E config, MVP-mirrored specs, loop orchestrator, failure→OpenSpec-change bridge</td><td><span class="pill good">new</span></td></tr>
+        <tr><td><b>e2e/ + playwright.config.ts</b></td><td>Migrate the existing smoke test into <code>e2e-suite/specs/</code>; retire the single root config</td><td><span class="pill warn">move</span></td></tr>
+        <tr><td><b>package.json</b></td><td>Scripts: <code>build:task</code>, <code>e2e:run</code>, <code>e2e:loop</code>, <code>mdm:auth</code></td><td><span class="pill warn">edit</span></td></tr>
+        <tr><td><b>.gitignore</b></td><td>Ignore <code>storageState</code>, profile dirs, results/reports artifacts</td><td><span class="pill warn">edit</span></td></tr>
+        <tr><td><b>OpenSpec change</b></td><td>A new <code>add-mdm-automation</code> change (proposal + tasks + specs) so this work is itself spec-driven and reviewable</td><td><span class="pill good">new</span></td></tr>
+        <tr><td><b>Docs</b></td><td>README section + this plan; how to authenticate, run a build task, run the loop</td><td><span class="pill warn">edit</span></td></tr>
+      </table>
+      <div class="callout acc"><h3>Done the PowerCodex way</h3><p>I'll capture this as an OpenSpec change <i>first</i> (eat our own dog food), get your approval on the proposal, then apply — the same loop Engine 2 uses to fix bugs.</p></div>
+    </section>
+
+    <!-- OPEN QUESTIONS -->
+    <section>
+      <p class="kicker rise">Before I build · 3 decisions for you</p>
+      <h2 class="rise">Open questions</h2>
+      <div class="grid">
+        <div class="card rise d1"><h3><span class="ic">①</span> Repo access</h3><p>Can you grant access to (or paste the layout of) <code>ElfredSeow/Playwright-for-MDM-Browser</code> so I match it exactly? If not, I proceed with the standard managed-Edge pattern above.</p></div>
+        <div class="card rise d2"><h3><span class="ic">②</span> Where it lives</h3><p>Inside <code>templates/starter/automation/</code> (every scaffolded app gets it) — or a standalone top-level package? I recommend inside the starter so it ships with each app.</p></div>
+        <div class="card rise d3"><h3><span class="ic">③</span> Loop autonomy</h3><p>Should the e2e self-heal loop run <b>fully autonomous</b> (apply fixes unattended) or <b>pause for approval</b> at the propose step on first run? I recommend approval-gated until trusted.</p></div>
+        <div class="card rise d4"><h3><span class="ic">④</span> Branch target</h3><p>You said "implement main as the e2e-run structure." Confirm: land on <code>main</code> directly, or via this feature branch + PR? I recommend PR from a branch.</p></div>
+      </div>
+    </section>
+
+    <div class="divider" style="margin-top:64px;"></div>
+    <footer>
+      <p>PowerCodex · Playwright-for-MDM Automation plan · drafted 2026-06-03 · <code>docs/plans/mdm-automation-workflow-plan.html</code></p>
+      <p>Endorse this and I'll open the <code>add-mdm-automation</code> OpenSpec change and start applying.</p>
+    </footer>
+
+  </div>
+</body>
+</html>

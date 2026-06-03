@@ -51,3 +51,13 @@ Thumbs.db
 tmp/
 temp/
 .tmp/
+
+# PowerCodex live view (generated, append-only) + consent gate.
+# Per-project runtime lives under projects/<name>/ and stays local; the root
+# .powercodex/ is ephemeral demo space. The workspace marker IS committed.
+.powercodex/
+Approved_rights/
+
+# MDM browser profiles — real session cookies/tokens, never commit.
+# Only the pointer (browserProfile name + profilePath) in approval.json is kept.
+**/.profiles/

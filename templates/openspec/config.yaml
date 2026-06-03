@@ -16,7 +16,9 @@ rules:
   proposal:
     - Include rollback plan
     - Identify affected teams
+    - Produce an HTML review artifact (preview.html) per .github/prompts/_html-artifact.md
   specs:
     - Use Given/When/Then format for scenarios
   design:
     - Include sequence diagrams for complex flows
+    - UI artifacts require a /emil-design-eng pass (custom easings, scale-on-press, reduced-motion)

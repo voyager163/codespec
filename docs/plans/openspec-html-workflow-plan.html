@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PowerCodex · HTML-First Workflow Redesign — Plan for Endorsement</title>
+<style>
+  :root {
+    /* Strong custom easings (emil-design-eng) — built-ins are too weak */
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+    --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+    --bg: #0b0d12;
+    --bg-soft: #12151d;
+    --panel: #161a24;
+    --panel-2: #1c2130;
+    --line: #262c3a;
+    --text: #e8ecf4;
+    --muted: #99a2b8;
+    --faint: #6b7488;
+    --accent: #6ea8fe;
+    --accent-2: #a78bfa;
+    --good: #5ad19a;
+    --bad: #f08a8a;
+    --warn: #f5c97b;
+    --radius: 16px;
+    --shadow: 0 20px 60px -20px rgba(0,0,0,0.6);
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(167,139,250,0.14), transparent 60%),
+      radial-gradient(900px 500px at -10% 10%, rgba(110,168,254,0.12), transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 960px; margin: 0 auto; padding: 0 24px 120px; }
+
+  /* ---------- Entrance animation (stagger) ---------- */
+  .rise {
+    opacity: 0;
+    transform: translateY(14px);
+    animation: rise 600ms var(--ease-out) forwards;
+  }
+  @keyframes rise { to { opacity: 1; transform: translateY(0); } }
+  .d1 { animation-delay: 40ms; }
+  .d2 { animation-delay: 90ms; }
+  .d3 { animation-delay: 140ms; }
+  .d4 { animation-delay: 190ms; }
+  .d5 { animation-delay: 240ms; }
+
+  /* ---------- Hero ---------- */
+  header.hero {
+    padding: 88px 24px 40px;
+    text-align: center;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--accent);
+    background: rgba(110,168,254,0.1);
+    border: 1px solid rgba(110,168,254,0.25);
+    padding: 6px 14px; border-radius: 999px; margin-bottom: 22px;
+  }
+  .eyebrow .dot {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+    box-shadow: 0 0 0 0 rgba(110,168,254,0.6);
+    animation: pulse 2.4s var(--ease-out) infinite;
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(110,168,254,0.5); }
+    70% { box-shadow: 0 0 0 9px rgba(110,168,254,0); }
+    100% { box-shadow: 0 0 0 0 rgba(110,168,254,0); }
+  }
+  h1 {
+    font-size: clamp(32px, 6vw, 52px);
+    line-height: 1.08; margin: 0 0 18px; letter-spacing: -0.02em;
+    background: linear-gradient(180deg, #fff, #b9c2d8);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .sub { color: var(--muted); font-size: 18px; max-width: 660px; margin: 0 auto; }
+  .meta {
+    margin-top: 26px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+    color: var(--faint); font-size: 13px;
+  }
+  .meta span { border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; }
+
+  /* ---------- Sections ---------- */
+  section { margin-top: 64px; }
+  .kicker {
+    color: var(--accent-2); font-weight: 600; font-size: 13px;
+    letter-spacing: 0.14em; text-transform: uppercase; margin: 0 0 10px;
+  }
+  h2 { font-size: 28px; margin: 0 0 14px; letter-spacing: -0.01em; }
+  h3 { font-size: 18px; margin: 0 0 8px; }
+  p.lead { color: var(--muted); font-size: 16px; max-width: 720px; }
+
+  .panel {
+    background: linear-gradient(180deg, var(--panel), var(--bg-soft));
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: var(--shadow);
+  }
+
+  /* ---------- Principle cards ---------- */
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px;
+    transition: transform 200ms var(--ease-out), border-color 200ms var(--ease-out), box-shadow 200ms var(--ease-out);
+  }
+  .card:hover { transform: translateY(-3px); border-color: rgba(110,168,254,0.4); box-shadow: 0 18px 40px -22px rgba(110,168,254,0.5); }
+  .card .num {
+    width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center;
+    font-weight: 700; font-size: 14px; margin-bottom: 12px;
+    background: rgba(167,139,250,0.14); color: var(--accent-2); border: 1px solid rgba(167,139,250,0.3);
+  }
+  .card p { color: var(--muted); font-size: 14.5px; margin: 0; }
+
+  /* ---------- Now vs After comparison (functional clip-path slider) ---------- */
+  .compare {
+    position: relative; border-radius: 14px; overflow: hidden;
+    border: 1px solid var(--line); user-select: none;
+    aspect-ratio: 16 / 8; background: var(--panel-2);
+  }
+  .compare .layer { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 22px; }
+  .compare .now { background: linear-gradient(135deg, #1a1d27, #14161f); }
+  .compare .after {
+    background: linear-gradient(135deg, #15233a, #1b1430);
+    clip-path: inset(0 0 0 50%);
+  }
+  .compare .tag {
+    align-self: flex-start; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 999px; margin-bottom: 14px;
+  }
+  .compare .now .tag { background: rgba(240,138,138,0.16); color: var(--bad); border: 1px solid rgba(240,138,138,0.3); }
+  .compare .after .tag { background: rgba(90,209,154,0.16); color: var(--good); border: 1px solid rgba(90,209,154,0.3); }
+  .compare .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12.5px; color: var(--muted); white-space: pre-wrap; }
+  .compare .after .mono { color: #cdd6ea; }
+  .handle {
+    position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; background: var(--accent);
+    transform: translateX(-1px); box-shadow: 0 0 18px rgba(110,168,254,0.7);
+  }
+  .handle .grip {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: #06203f;
+    display: grid; place-items: center; font-weight: 800; font-size: 14px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+  }
+  input[type="range"].slider {
+    position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: ew-resize; margin: 0;
+  }
+  .hint { text-align: center; color: var(--faint); font-size: 13px; margin-top: 10px; }
+
+  /* ---------- Recommendation + pros/cons ---------- */
+  .reco {
+    border: 1px solid rgba(110,168,254,0.35);
+    background: linear-gradient(180deg, rgba(110,168,254,0.08), rgba(110,168,254,0.02));
+    border-radius: 14px; padding: 18px 20px; margin-bottom: 18px;
+    display: flex; gap: 14px; align-items: flex-start;
+  }
+  .reco .badge {
+    flex: none; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    color: #06203f; background: var(--accent); padding: 6px 12px; border-radius: 999px;
+  }
+  .reco p { margin: 0; color: var(--text); font-size: 15px; }
+  .options { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 720px) { .options { grid-template-columns: 1fr; } }
+  .opt { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .opt header { padding: 14px 18px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+  .opt.win header { background: rgba(90,209,154,0.12); border-bottom: 1px solid rgba(90,209,154,0.25); }
+  .opt.alt header { background: rgba(245,201,123,0.1); border-bottom: 1px solid rgba(245,201,123,0.22); }
+  .opt .pick { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--good); }
+  .opt ul { list-style: none; margin: 0; padding: 16px 18px; }
+  .opt li { font-size: 14px; color: var(--muted); padding: 6px 0 6px 24px; position: relative; }
+  .opt li.pro::before { content: "+"; position: absolute; left: 0; color: var(--good); font-weight: 800; }
+  .opt li.con::before { content: "−"; position: absolute; left: 0; color: var(--bad); font-weight: 800; }
+
+  /* ---------- One-shot question panel ---------- */
+  .qpanel { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .qpanel .bar { background: var(--panel-2); padding: 12px 18px; font-size: 13px; color: var(--muted); display: flex; gap: 8px; align-items: center; }
+  .qitem { padding: 16px 18px; border-top: 1px solid var(--line); }
+  .qitem .q { font-weight: 600; margin: 0 0 6px; }
+  .qitem .a { color: var(--faint); font-size: 14px; margin: 0; }
+  .qitem .chip { display: inline-block; font-size: 11px; padding: 2px 9px; border-radius: 999px; background: rgba(167,139,250,0.14); color: var(--accent-2); margin-left: 8px; }
+
+  /* ---------- Ready badge ---------- */
+  .ready {
+    margin-top: 18px; text-align: center; padding: 24px;
+    border: 1px solid rgba(90,209,154,0.35); border-radius: 14px;
+    background: linear-gradient(180deg, rgba(90,209,154,0.08), transparent);
+  }
+  .ready .big { font-size: 20px; font-weight: 700; color: var(--good); }
+  .ready .check {
+    display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 50%;
+    background: var(--good); color: #06281a; font-size: 20px; font-weight: 900; margin-bottom: 10px;
+  }
+
+  /* ---------- Affected files ---------- */
+  table.files { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.files th, table.files td { text-align: left; padding: 11px 12px; border-bottom: 1px solid var(--line); }
+  table.files th { color: var(--faint); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+  table.files code { font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--accent); font-size: 13px; }
+  .pill { font-size: 11px; padding: 3px 9px; border-radius: 999px; }
+  .pill.edit { background: rgba(245,201,123,0.14); color: var(--warn); }
+  .pill.new { background: rgba(90,209,154,0.14); color: var(--good); }
+
+  /* ---------- Steps / phases ---------- */
+  ol.phases { counter-reset: step; list-style: none; padding: 0; margin: 0; }
+  ol.phases li { position: relative; padding: 0 0 22px 46px; }
+  ol.phases li::before {
+    counter-increment: step; content: counter(step);
+    position: absolute; left: 0; top: 0; width: 30px; height: 30px; border-radius: 50%;
+    background: var(--panel-2); border: 1px solid var(--line); color: var(--accent);
+    display: grid; place-items: center; font-weight: 700; font-size: 14px;
+  }
+  ol.phases li::after {
+    content: ""; position: absolute; left: 15px; top: 30px; bottom: 0; width: 1px; background: var(--line);
+  }
+  ol.phases li:last-child { padding-bottom: 0; }
+  ol.phases li:last-child::after { display: none; }
+  ol.phases h3 { margin: 4px 0 4px; }
+  ol.phases p { color: var(--muted); font-size: 14.5px; margin: 0; }
+
+  /* ---------- Endorsement ---------- */
+  .endorse { text-align: center; margin-top: 56px; padding: 40px 24px; }
+  .btnrow { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 22px; }
+  .btn {
+    appearance: none; border: none; cursor: pointer; font: inherit; font-weight: 600;
+    padding: 14px 26px; border-radius: 12px; transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out), background 160ms var(--ease-out);
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn.primary { background: linear-gradient(180deg, var(--accent), #4f8ef0); color: #06203f; box-shadow: 0 12px 30px -10px rgba(110,168,254,0.7); }
+  .btn.primary:hover { box-shadow: 0 16px 40px -10px rgba(110,168,254,0.9); }
+  .btn.ghost { background: var(--panel); color: var(--text); border: 1px solid var(--line); }
+  .btn.ghost:hover { border-color: var(--accent); }
+  .confirm { margin-top: 18px; color: var(--good); font-weight: 600; opacity: 0; transform: translateY(6px); transition: opacity 300ms var(--ease-out), transform 300ms var(--ease-out); }
+  .confirm.show { opacity: 1; transform: translateY(0); }
+
+  footer { text-align: center; color: var(--faint); font-size: 13px; margin-top: 70px; }
+  a { color: var(--accent); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rise { animation: none; opacity: 1; transform: none; }
+    .eyebrow .dot { animation: none; }
+    *, *::before, *::after { transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="eyebrow rise"><span class="dot"></span> Plan for endorsement · v1 draft</div>
+  <h1 class="rise d1">An HTML-first, design-led<br />PowerCodex workflow</h1>
+  <p class="sub rise d2">
+    Replace text-only Q&amp;A in the OpenSpec (OPSX) workflow with a single, living HTML artifact:
+    Now-vs-After comparisons, a built-in recommendation with pros &amp; cons, every open question asked
+    once, and motion crafted with the <code>/emil-design-eng</code> philosophy.
+  </p>
+  <div class="meta rise d3">
+    <span>Branch · feat/openspec-redesigned-output</span>
+    <span>Scope · OPSX prompt templates</span>
+    <span>Date · 2026-06-03</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- WHAT YOU ASKED FOR -->
+  <section>
+    <p class="kicker rise">What this plan delivers</p>
+    <h2 class="rise d1">Seven changes, one experience</h2>
+    <p class="lead rise d2">Each card maps directly to something you asked for. Together they turn the workflow's
+      output from a wall of markdown questions into an interactive, modern surface you skim and decide from.</p>
+
+    <div class="grid" style="margin-top: 24px;">
+      <div class="card rise d1">
+        <div class="num">1</div>
+        <h3>HTML output by default</h3>
+        <p>Explore / new / propose stop asking in plain text. They render a self-contained HTML artifact in the workspace and open it — that becomes the conversation surface.</p>
+      </div>
+      <div class="card rise d2">
+        <div class="num">2</div>
+        <h3>Now vs After screenshots</h3>
+        <p>Any proposed change embeds a side-by-side "Now → After" comparison (screenshot, mock, or rendered preview) with a draggable slider so the delta is obvious at a glance.</p>
+      </div>
+      <div class="card rise d3">
+        <div class="num">3</div>
+        <h3><code>/emil-design-eng</code> is required</h3>
+        <p>The template mandates a design-engineering pass on every UI artifact — custom easings, scale-on-press, stagger, reduced-motion — so output is lively and modern, never static.</p>
+      </div>
+      <div class="card rise d4">
+        <div class="num">4</div>
+        <h3>Always recommends, with pros &amp; cons</h3>
+        <p>Even inside OpenSpec, the workflow states its own recommended path and lays out pros &amp; cons for each option as visual cards — so you can judge fast.</p>
+      </div>
+      <div class="card rise d4">
+        <div class="num">5</div>
+        <h3>One-shot questions</h3>
+        <p>Instead of drip-feeding questions, it gathers <em>every</em> open concern and presents them together, once, in the HTML — answer the batch and move on.</p>
+      </div>
+      <div class="card rise d5">
+        <div class="num">6</div>
+        <h3>Always a suggested proposal</h3>
+        <p>Every exploration output includes a concrete suggested proposal in the HTML, so you're never staring at a blank page — you're approving or adjusting a draft.</p>
+      </div>
+    </div>
+
+    <div class="card rise d5" style="margin-top:16px; border-color: rgba(90,209,154,0.35);">
+      <div class="num" style="background:rgba(90,209,154,0.14); color:var(--good); border-color:rgba(90,209,154,0.3);">7</div>
+      <h3>A clear "ready" signal</h3>
+      <p>When nothing is left to clarify, the artifact ends with the exact line:
+      <strong style="color:var(--good)">"I am completely ready, I have no more questions to ask."</strong></p>
+    </div>
+  </section>
+
+  <!-- NOW VS AFTER DEMO -->
+  <section>
+    <p class="kicker rise">Requirement 1 &amp; 2 · in action</p>
+    <h2 class="rise d1">The Now → After comparison, live</h2>
+    <p class="lead rise d2">Drag the handle. This is the exact pattern every change artifact will embed for UI deltas —
+      built with <code>clip-path</code> so it's GPU-cheap and works without a screenshot service.</p>
+
+    <div class="panel rise d3" style="margin-top:22px;">
+      <div class="compare" id="cmp">
+        <div class="layer now">
+          <span class="tag">Now</span>
+          <div class="mono">&gt; /opsx:propose add-dark-mode
+
+Q1: What change do you want to build?
+Q2: Should this apply to all users?
+Q3: Persist preference where?
+Q4: ...one question at a time...
+(plain markdown, no visuals)</div>
+        </div>
+        <div class="layer after" id="after">
+          <span class="tag">After</span>
+          <div class="mono">▣ add-dark-mode.html  (auto-opened)
+
+• Now vs After preview ▸ rendered
+• Recommendation ▸ system-preference default
+• Pros / cons ▸ 2 options compared
+• 4 open questions ▸ asked once
+• Suggested proposal ▸ ready to edit</div>
+        </div>
+        <div class="handle" id="handle"><div class="grip">⇄</div></div>
+        <input type="range" min="0" max="100" value="50" class="slider" id="slider" aria-label="Compare now and after" />
+      </div>
+      <p class="hint">Drag to compare · powered by clip-path inset (hardware-accelerated)</p>
+    </div>
+  </section>
+
+  <!-- RECOMMENDATION + PROS/CONS DEMO -->
+  <section>
+    <p class="kicker rise">Requirement 4 · in action</p>
+    <h2 class="rise d1">It always takes a position</h2>
+    <p class="lead rise d2">A sample of what the workflow will render inside every artifact: a stated recommendation,
+      then each option weighed openly so you can overrule it with full information.</p>
+
+    <div class="panel rise d3" style="margin-top:22px;">
+      <div class="reco">
+        <span class="badge">Recommends</span>
+        <p><strong>Option A — follow OS preference by default.</strong> Lowest friction, matches platform expectations,
+          and keeps the toggle as an override rather than a required first action.</p>
+      </div>
+      <div class="options">
+        <div class="opt win">
+          <header>Option A · OS-preference default <span class="pick">★ Picked</span></header>
+          <ul>
+            <li class="pro">Zero-config for most users</li>
+            <li class="pro">Matches native app behavior</li>
+            <li class="pro">Toggle still available as override</li>
+            <li class="con">Needs a media-query listener</li>
+          </ul>
+        </div>
+        <div class="opt alt">
+          <header>Option B · Manual toggle only</header>
+          <ul>
+            <li class="pro">Simplest possible implementation</li>
+            <li class="pro">Fully explicit user control</li>
+            <li class="con">Ignores existing OS preference</li>
+            <li class="con">Extra step before first use</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ONE-SHOT QUESTIONS + READY -->
+  <section>
+    <p class="kicker rise">Requirement 5, 6 &amp; 7 · in action</p>
+    <h2 class="rise d1">Every question, once — then a clear all-clear</h2>
+    <p class="lead rise d2">All outstanding concerns are batched into one block with a suggested answer pre-filled,
+      so answering is editing, not authoring. When the batch is resolved, the artifact signs off.</p>
+
+    <div class="panel rise d3" style="margin-top:22px;">
+      <div class="qpanel">
+        <div class="bar">◷ 4 open questions · asked together, one time</div>
+        <div class="qitem">
+          <p class="q">1 · Should dark mode persist across sessions? <span class="chip">suggested: yes, localStorage</span></p>
+          <p class="a">Default proposal assumes persistence via localStorage with a Power Platform user-settings fallback.</p>
+        </div>
+        <div class="qitem">
+          <p class="q">2 · Apply to embedded Code Apps surfaces too? <span class="chip">suggested: yes</span></p>
+          <p class="a">Recommend theming the shell and all routes for consistency.</p>
+        </div>
+        <div class="qitem">
+          <p class="q">3 · Animate the theme switch? <span class="chip">suggested: 200ms, reduced-motion aware</span></p>
+          <p class="a">Per emil-design-eng: crossfade with view-transition; disabled under prefers-reduced-motion.</p>
+        </div>
+        <div class="qitem">
+          <p class="q">4 · Who owns the design token source of truth? <span class="chip">needs your input</span></p>
+          <p class="a">No safe default — this is the one decision the workflow won't assume for you.</p>
+        </div>
+      </div>
+
+      <div class="ready">
+        <div class="check">✓</div>
+        <div class="big">"I am completely ready, I have no more questions to ask."</div>
+        <p style="color:var(--muted); margin:8px 0 0; font-size:14px;">Rendered only once all questions resolve and a suggested proposal is in place.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- AFFECTED FILES -->
+  <section>
+    <p class="kicker rise">Scope</p>
+    <h2 class="rise d1">What actually changes in the repo</h2>
+    <p class="lead rise d2">The behavior lives in the OPSX prompt templates. We edit the shipped template copies
+      (what new projects get) and the live copies, plus add one shared HTML artifact convention.</p>
+
+    <div class="panel rise d3" style="margin-top:22px; padding: 8px 8px;">
+      <table class="files">
+        <thead>
+          <tr><th>File / area</th><th>Change</th><th>What</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>templates/github/prompts/opsx-explore.prompt.md</code></td><td><span class="pill edit">edit</span></td><td>Output HTML artifact + suggested proposal + one-shot questions</td></tr>
+          <tr><td><code>templates/github/prompts/opsx-propose.prompt.md</code></td><td><span class="pill edit">edit</span></td><td>HTML output, Now/After, recommendation + pros/cons, ready line</td></tr>
+          <tr><td><code>templates/github/prompts/opsx-new.prompt.md</code></td><td><span class="pill edit">edit</span></td><td>First artifact as HTML preview, not markdown template dump</td></tr>
+          <tr><td><code>templates/github/prompts/opsx-continue.prompt.md</code></td><td><span class="pill edit">edit</span></td><td>Carry HTML + design-eng pass through each artifact</td></tr>
+          <tr><td><code>templates/github/prompts/opsx-ff.prompt.md</code></td><td><span class="pill edit">edit</span></td><td>Same conventions in fast-forward mode</td></tr>
+          <tr><td><code>.github/prompts/opsx-*.prompt.md</code> (live mirror)</td><td><span class="pill edit">edit</span></td><td>Keep live repo prompts in sync with templates</td></tr>
+          <tr><td><code>templates/github/.../html-artifact.md</code> (shared guide)</td><td><span class="pill new">new</span></td><td>Reusable HTML skeleton, easings, slider, design-eng checklist</td></tr>
+          <tr><td><code>templates/openspec/config.yaml</code></td><td><span class="pill edit">edit</span></td><td>Add rule: UI artifacts require an emil-design-eng pass + HTML render</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- IMPLEMENTATION PHASES -->
+  <section>
+    <p class="kicker rise">How we'll build it</p>
+    <h2 class="rise d1">Rollout in four phases</h2>
+
+    <div class="panel rise d2" style="margin-top:22px;">
+      <ol class="phases">
+        <li>
+          <h3>Shared HTML artifact convention</h3>
+          <p>Author the reusable skeleton (self-contained HTML, custom easings, clip-path Now/After slider, pros/cons cards, one-shot question block, ready badge, reduced-motion). One source the prompts point to.</p>
+        </li>
+        <li>
+          <h3>Rewrite the OPSX prompts</h3>
+          <p>Update explore / new / propose / continue / ff to emit that HTML, always include a suggested proposal, batch all questions, and require the <code>/emil-design-eng</code> pass before finishing.</p>
+        </li>
+        <li>
+          <h3>Wire the ready-state contract</h3>
+          <p>Define exactly when the artifact prints "I am completely ready, I have no more questions to ask." — only after all batched questions resolve and a proposal + Now/After are present.</p>
+        </li>
+        <li>
+          <h3>Sync, verify, document</h3>
+          <p>Mirror to live <code>.github/prompts</code>, update <code>config.yaml</code> rules, extend the verify script to assert HTML output, and note the new behavior in the README.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- OPEN QUESTIONS (this plan's own one-shot) -->
+  <section>
+    <p class="kicker rise">Practicing what it preaches · my open questions for you</p>
+    <h2 class="rise d1">Three things I'd lock before building</h2>
+    <div class="panel rise d2" style="margin-top:22px;">
+      <div class="qpanel">
+        <div class="bar">◷ Asked once — answer inline when you endorse</div>
+        <div class="qitem">
+          <p class="q">A · How should "screenshots" be produced? <span class="chip">suggested: rendered HTML/mock, no live capture</span></p>
+          <p class="a">Live screenshotting needs a running app + headless browser. I suggest the Now/After panel renders HTML mocks by default, and links a real screenshot only when one already exists. Confirm, or do you want true automated capture wired in?</p>
+        </div>
+        <div class="qitem">
+          <p class="q">B · Where do HTML artifacts live? <span class="chip">suggested: openspec/changes/&lt;name&gt;/preview.html</span></p>
+          <p class="a">Markdown stays canonical for version control; HTML is the generated review surface beside it. Agree, or should HTML be canonical?</p>
+        </div>
+        <div class="qitem">
+          <p class="q">C · Should the HTML pass keep the markdown artifacts too? <span class="chip">suggested: yes, both</span></p>
+          <p class="a">OpenSpec tooling reads markdown, so I'd keep generating it and add HTML on top — not replace it. Confirm this is acceptable.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ENDORSEMENT -->
+  <section class="endorse">
+    <p class="kicker rise">Your call</p>
+    <h2 class="rise d1" style="font-size:30px;">Endorse this plan?</h2>
+    <p class="lead rise d2" style="margin: 0 auto;">Reply in chat to endorse, tweak, or answer the three questions above.
+      The button below is just a local acknowledgement so you can see the interaction model we're proposing.</p>
+    <div class="btnrow rise d3">
+      <button class="btn primary" id="endorseBtn">I endorse this plan</button>
+      <button class="btn ghost" id="tweakBtn">I want changes first</button>
+    </div>
+    <div class="confirm" id="confirmMsg">Noted locally — now tell me in chat so I can start building. ✓</div>
+  </section>
+
+  <footer>
+    PowerCodex · HTML-first workflow redesign · drafted with the emil-design-eng philosophy ·
+    <a href="https://animations.dev/" target="_blank" rel="noopener">animations.dev</a>
+  </footer>
+
+</div>
+
+<script>
+  // Now/After slider via clip-path inset — transform/clip only, hardware-accelerated.
+  (function () {
+    var slider = document.getElementById('slider');
+    var after = document.getElementById('after');
+    var handle = document.getElementById('handle');
+    function update(v) {
+      after.style.clipPath = 'inset(0 0 0 ' + v + '%)';
+      handle.style.left = v + '%';
+    }
+    slider.addEventListener('input', function () { update(this.value); });
+    update(slider.value);
+  })();
+
+  // Local-only endorsement acknowledgement.
+  (function () {
+    var confirm = document.getElementById('confirmMsg');
+    function ack(text) { confirm.textContent = text; confirm.classList.add('show'); }
+    document.getElementById('endorseBtn').addEventListener('click', function () {
+      ack('Endorsed locally — now tell me in chat so I can start building. ✓');
+    });
+    document.getElementById('tweakBtn').addEventListener('click', function () {
+      ack('Got it — share what you’d change in chat and I’ll revise the plan.');
+    });
+  })();
+</script>
+</body>
+</html>

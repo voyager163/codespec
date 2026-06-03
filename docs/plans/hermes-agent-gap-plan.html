@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PowerCodex × Hermes Agent — Gap Analysis & Improvement Plan</title>
+<style>
+  :root {
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --bg: #0b0d12;
+    --bg-soft: #12151d;
+    --panel: #161a24;
+    --panel-2: #1c2130;
+    --line: #262c3a;
+    --text: #e8ecf4;
+    --muted: #99a2b8;
+    --faint: #6b7488;
+    --accent: #6ea8fe;
+    --accent-2: #a78bfa;
+    --good: #5ad19a;
+    --bad: #f08a8a;
+    --warn: #f5c97b;
+    --radius: 16px;
+    --shadow: 0 20px 60px -20px rgba(0,0,0,0.6);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(167,139,250,0.14), transparent 60%),
+      radial-gradient(900px 500px at -10% 10%, rgba(110,168,254,0.12), transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 0 24px 120px; }
+  .rise { opacity: 0; transform: translateY(14px); animation: rise 600ms var(--ease-out) forwards; }
+  @keyframes rise { to { opacity: 1; transform: translateY(0); } }
+  .d1 { animation-delay: 40ms; } .d2 { animation-delay: 90ms; } .d3 { animation-delay: 140ms; }
+  .d4 { animation-delay: 190ms; } .d5 { animation-delay: 240ms; } .d6 { animation-delay: 290ms; }
+  header.hero { padding: 88px 24px 40px; text-align: center; max-width: 900px; margin: 0 auto; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--accent); background: rgba(110,168,254,0.1);
+    border: 1px solid rgba(110,168,254,0.25);
+    padding: 6px 14px; border-radius: 999px; margin-bottom: 22px;
+  }
+  .eyebrow .dot {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+    box-shadow: 0 0 0 0 rgba(110,168,254,0.6); animation: pulse 2.4s var(--ease-out) infinite;
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(110,168,254,0.5); }
+    70% { box-shadow: 0 0 0 9px rgba(110,168,254,0); }
+    100% { box-shadow: 0 0 0 0 rgba(110,168,254,0); }
+  }
+  h1 {
+    font-size: clamp(32px, 6vw, 54px); line-height: 1.08; margin: 0 0 18px; letter-spacing: -0.02em;
+    background: linear-gradient(180deg, #fff, #b9c2d8);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .sub { color: var(--muted); font-size: 18px; max-width: 720px; margin: 0 auto; }
+  .meta { margin-top: 26px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; color: var(--faint); font-size: 13px; }
+  .meta span { border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; }
+  section { margin-top: 64px; }
+  .kicker { color: var(--accent-2); font-weight: 600; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; margin: 0 0 10px; }
+  h2 { font-size: 28px; margin: 0 0 14px; letter-spacing: -0.01em; }
+  h3 { font-size: 18px; margin: 0 0 8px; }
+  p.lead { color: var(--muted); font-size: 16px; max-width: 820px; }
+  .panel {
+    background: linear-gradient(180deg, var(--panel), var(--bg-soft));
+    border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow);
+  }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 820px) { .grid, .grid3 { grid-template-columns: 1fr; } }
+  .card { background: var(--panel-2); border: 1px solid var(--line); border-radius: 14px; padding: 20px;
+    transition: transform 200ms var(--ease-out), border-color 200ms var(--ease-out), box-shadow 200ms var(--ease-out); }
+  .card:hover { transform: translateY(-3px); border-color: rgba(110,168,254,0.4); box-shadow: 0 18px 40px -22px rgba(110,168,254,0.5); }
+  .card h3 { display: flex; align-items: center; gap: 10px; }
+  .card .ic { width: 30px; height: 30px; flex: none; display: grid; place-items: center; border-radius: 9px; background: rgba(110,168,254,0.12); color: var(--accent); font-size: 15px; }
+  .card p { color: var(--muted); font-size: 14.5px; margin: 6px 0 0; }
+  .pill { display: inline-block; font-size: 12px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .pill.good { color: var(--good); border-color: rgba(90,209,154,0.35); background: rgba(90,209,154,0.08); }
+  .pill.warn { color: var(--warn); border-color: rgba(245,201,123,0.35); background: rgba(245,201,123,0.08); }
+  .pill.bad { color: var(--bad); border-color: rgba(240,138,138,0.35); background: rgba(240,138,138,0.08); }
+  .pill.acc { color: var(--accent); border-color: rgba(110,168,254,0.35); background: rgba(110,168,254,0.08); }
+  .pill.pur { color: var(--accent-2); border-color: rgba(167,139,250,0.35); background: rgba(167,139,250,0.08); }
+  ul.clean { list-style: none; padding: 0; margin: 12px 0 0; }
+  ul.clean li { position: relative; padding-left: 26px; margin: 9px 0; color: var(--muted); font-size: 14.5px; }
+  ul.clean li::before { content: "→"; position: absolute; left: 0; color: var(--accent); }
+  ul.clean li b { color: var(--text); font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 13.5px; }
+  th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--faint); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+  td { color: var(--muted); } td b { color: var(--text); }
+  .callout { border-left: 3px solid var(--warn); background: rgba(245,201,123,0.06); padding: 16px 18px; border-radius: 0 12px 12px 0; margin-top: 16px; }
+  .callout.acc { border-left-color: var(--accent); background: rgba(110,168,254,0.06); }
+  .callout.good { border-left-color: var(--good); background: rgba(90,209,154,0.06); }
+  .callout h3 { margin: 0 0 6px; color: var(--text); }
+  .callout p { margin: 0; color: var(--muted); font-size: 14.5px; }
+  .flow { display: flex; flex-direction: column; gap: 0; margin-top: 8px; }
+  .step { display: grid; grid-template-columns: 44px 1fr; gap: 16px; padding: 16px 0; border-bottom: 1px dashed var(--line); }
+  .step:last-child { border-bottom: 0; }
+  .step .nm { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; color: var(--bg); background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+  .step h3 { margin: 4px 0 4px; }
+  .step p { color: var(--muted); font-size: 14.5px; margin: 0; }
+  .tree { font-family: "SF Mono", Consolas, monospace; font-size: 13px; line-height: 1.7; color: #cdd6e6; }
+  .tree .dir { color: var(--accent); } .tree .new { color: var(--good); } .tree .cm { color: var(--faint); }
+  footer { margin-top: 80px; text-align: center; color: var(--faint); font-size: 13px; }
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--line), transparent); margin: 8px 0; }
+  a { color: var(--accent); }
+  .doclinks { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 14px; }
+  .doclinks a { border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px; text-decoration: none; color: var(--muted); font-size: 13px; transition: border-color 160ms var(--ease-out), color 160ms var(--ease-out); }
+  .doclinks a:hover { border-color: var(--accent); color: var(--text); }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 12px; font-size: 13px; color: var(--muted); }
+
+  /* ---------- Dashboard mockups (screenshot simulations) ---------- */
+  .mono { font-family: "SF Mono", "JetBrains Mono", Consolas, Menlo, monospace; }
+  .shot { margin-top: 22px; }
+  .shot .label { font-size: 12px; color: var(--faint); letter-spacing: 0.06em; text-transform: uppercase; margin: 0 0 9px; display: flex; align-items: center; gap: 9px; }
+  .shot .label .num { width: 21px; height: 21px; border-radius: 6px; display: grid; place-items: center; background: rgba(110,168,254,0.14); color: var(--accent); font-weight: 700; font-size: 11px; }
+  .win { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); background: var(--bg-soft); }
+  .win .chrome { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #0e1118; border-bottom: 1px solid var(--line); }
+  .win .dots { display: flex; gap: 6px; flex: none; }
+  .win .dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .win .dots i.r { background: #f0716f; } .win .dots i.y { background: #f5c97b; } .win .dots i.g { background: #5ad19a; }
+  .win .url { flex: 1; font-size: 12px; color: var(--faint); background: #0a0c11; border: 1px solid var(--line); border-radius: 7px; padding: 4px 10px; text-align: center; }
+  .win .body { display: grid; grid-template-columns: 184px 1fr; }
+  @media (max-width: 760px) { .win .body { grid-template-columns: 1fr; } .win .nav { display: none; } }
+  .win .nav { background: #10131b; border-right: 1px solid var(--line); padding: 14px 10px; }
+  .win .nav .nb { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 13px; padding: 4px 10px 12px; }
+  .win .nav .nb .mk { width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #06203f; font-weight: 900; font-size: 13px; }
+  .win .nav a { display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 8px; color: var(--muted); text-decoration: none; margin: 2px 0; font-size: 13px; }
+  .win .nav a .ic { width: 15px; text-align: center; opacity: 0.8; }
+  .win .nav a.on { background: rgba(110,168,254,0.12); color: var(--text); }
+  .win .nav a .cnt { margin-left: auto; font-size: 11px; color: var(--faint); background: #0a0c11; border: 1px solid var(--line); border-radius: 999px; padding: 0 7px; }
+  .win .main { padding: 18px; min-height: 300px; }
+  .win .ph { display: flex; align-items: baseline; justify-content: space-between; margin: 0 0 14px; }
+  .win .ph h4 { margin: 0; font-size: 16px; color: var(--text); }
+  .win .ph .rf { font-size: 11.5px; color: var(--good); display: inline-flex; align-items: center; gap: 6px; }
+  .win .ph .rf::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 0 rgba(90,209,154,0.6); animation: pulse 2.4s var(--ease-out) infinite; }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  @media (max-width: 620px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+  .kpi { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 13px 14px; }
+  .kpi .v { font-size: 23px; font-weight: 700; color: var(--text); line-height: 1.1; }
+  .kpi .l { font-size: 11.5px; color: var(--faint); margin-top: 4px; }
+  .kpi .d { font-size: 11px; margin-top: 7px; }
+  .kpi .d.up { color: var(--good); } .kpi .d.down { color: var(--bad); } .kpi .d.flat { color: var(--faint); }
+  .dgrid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 14px; margin-top: 14px; }
+  @media (max-width: 760px) { .dgrid { grid-template-columns: 1fr; } }
+  .box { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+  .box h5 { margin: 0 0 10px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--faint); }
+  .row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px dashed var(--line); font-size: 13px; }
+  .row:last-child { border-bottom: 0; }
+  .row .nm { color: var(--text); font-weight: 600; }
+  .row .meta { color: var(--faint); font-size: 11.5px; }
+  .row .sp { margin-left: auto; }
+  .badge { font-size: 10.5px; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+  .badge.g { color: var(--good); border-color: rgba(90,209,154,0.35); background: rgba(90,209,154,0.08); }
+  .badge.a { color: var(--accent); border-color: rgba(110,168,254,0.35); background: rgba(110,168,254,0.08); }
+  .badge.p { color: var(--accent-2); border-color: rgba(167,139,250,0.35); background: rgba(167,139,250,0.08); }
+  .badge.w { color: var(--warn); border-color: rgba(245,201,123,0.35); background: rgba(245,201,123,0.08); }
+  .badge.b { color: var(--bad); border-color: rgba(240,138,138,0.35); background: rgba(240,138,138,0.08); }
+  .feed { list-style: none; padding: 0; margin: 0; font-size: 12.5px; }
+  .feed li { display: flex; gap: 9px; padding: 7px 0; border-bottom: 1px dashed var(--line); color: var(--muted); }
+  .feed li:last-child { border-bottom: 0; }
+  .feed li .t { color: var(--faint); font-size: 11px; flex: none; width: 52px; }
+  .feed li .dt { width: 7px; height: 7px; border-radius: 50%; flex: none; margin-top: 5px; }
+  .feed li .dt.g { background: var(--good); } .feed li .dt.a { background: var(--accent); } .feed li .dt.p { background: var(--accent-2); } .feed li .dt.w { background: var(--warn); }
+  .kan { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  @media (max-width: 760px) { .kan { grid-template-columns: repeat(2, 1fr); } }
+  .col { background: #0e1118; border: 1px solid var(--line); border-radius: 11px; padding: 10px; }
+  .col .ct { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--faint); margin: 0 0 9px; display: flex; justify-content: space-between; }
+  .tk { background: var(--panel-2); border: 1px solid var(--line); border-radius: 9px; padding: 9px; margin-bottom: 8px; font-size: 12px; }
+  .tk:last-child { margin-bottom: 0; }
+  .tk .tt { color: var(--text); font-weight: 600; font-size: 12px; }
+  .tk .tm { color: var(--faint); font-size: 10.5px; margin-top: 4px; display: flex; gap: 6px; align-items: center; }
+  .tk.acc { border-left: 2px solid var(--accent); } .tk.pur { border-left: 2px solid var(--accent-2); } .tk.good { border-left: 2px solid var(--good); } .tk.warn { border-left: 2px solid var(--warn); }
+  .chart { display: flex; align-items: flex-end; gap: 8px; height: 120px; padding-top: 8px; }
+  .chart .cb { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+  .chart .cb .bar { width: 100%; max-width: 30px; border-radius: 5px 5px 0 0; background: linear-gradient(180deg, var(--accent), rgba(110,168,254,0.25)); }
+  .chart .cb .bar.bad { background: linear-gradient(180deg, var(--bad), rgba(240,138,138,0.25)); }
+  .chart .cb .bar.good { background: linear-gradient(180deg, var(--good), rgba(90,209,154,0.25)); }
+  .chart .cb .x { font-size: 10px; color: var(--faint); }
+  .led { font-size: 12.5px; }
+  .led div { padding: 7px 0; border-bottom: 1px dashed var(--line); display: flex; gap: 10px; }
+  .led div:last-child { border-bottom: 0; }
+  .led .id { color: var(--accent); font-weight: 700; flex: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rise { animation: none; opacity: 1; transform: none; }
+    .eyebrow .dot { animation: none; }
+    *, *::before, *::after { transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+  <header class="hero">
+    <div class="eyebrow rise d1"><span class="dot"></span> Gap analysis · borrowing the Hermes learning loop</div>
+    <h1 class="rise d2">PowerCodex × Hermes Agent:<br/>What You Have, What's Missing, Where to Improve</h1>
+    <p class="sub rise d3">Hermes Agent's defining idea is a <b>built-in learning loop</b> — it creates skills from experience, improves them in use, persists knowledge, and recalls its own past. PowerCodex is a <b>spec-driven build pipeline</b> for Power Apps Code Apps. This plan maps one onto the other: the seven Hermes pillars, your current coverage, the honest gaps, and a phased way to adopt the parts that matter — starting with the <b>Learning_Experience</b> loop already added today.</p>
+    <div class="meta rise d4">
+      <span>Today: 2026-06-03</span>
+      <span>Branch: feat/openspec-redesigned-output</span>
+      <span>Source: github.com/nousresearch/hermes-agent</span>
+      <span>Status: plan for endorsement</span>
+    </div>
+    <div class="doclinks rise d5">
+      <a href="./autonomous-lifecycle-loop-plan.html">◂ Autonomous lifecycle loop</a>
+      <a href="./openspec-html-workflow-plan.html">◂ HTML workflow</a>
+      <a href="./mdm-automation-workflow-plan.html">◂ MDM automation</a>
+    </div>
+  </header>
+
+  <div class="wrap">
+
+    <!-- TL;DR -->
+    <section class="rise d2">
+      <p class="kicker">The one-paragraph answer</p>
+      <h2>You already own the "build a correct app" loop. Hermes owns the "get better over time" loop.</h2>
+      <p class="lead">PowerCodex is genuinely strong where Hermes is generic: a <b>reviewable spec pipeline</b> (OPSX), a <b>domain</b> (Power Apps Code Apps), <b>security-hardened scaffolding</b>, and a planned <b>autonomous build + self-heal automation</b>. What Hermes has that you don't is the <b>meta-layer</b>: durable cross-session memory, agent-authored skills that improve in use, self-scheduling, and reflection. The good news — most of these map cleanly onto files-in-a-repo, which is exactly PowerCodex's native medium. You don't need Hermes' runtime; you need its <i>habits</i>.</p>
+      <div class="callout good">
+        <h3>Already shipped in this session</h3>
+        <p>The <code>Learning_Experience/</code> folder + the <code>learning-experience-protocol</code> memory entry implement Hermes' "learn from mistakes, never repeat them" pillar — file-based, version-controlled, and read at the start of every session.</p>
+      </div>
+    </section>
+
+    <!-- WHAT HERMES IS -->
+    <section class="rise d2">
+      <p class="kicker">The concept being borrowed</p>
+      <h2>Hermes Agent in seven pillars</h2>
+      <p class="lead">Hermes is a self-improving, multi-platform agent runtime. Stripped to its ideas, it stands on seven pillars — each is a candidate to adopt:</p>
+      <div class="grid3">
+        <div class="card"><h3><span class="ic">1</span>Learning loop</h3><p>Creates skills from experience, refines them during use, and nudges itself to persist what it learns.</p></div>
+        <div class="card"><h3><span class="ic">2</span>Durable memory</h3><p>FTS5 search over past conversations + LLM summarization for cross-session recall; a deepening user model.</p></div>
+        <div class="card"><h3><span class="ic">3</span>Agent-authored skills</h3><p>Procedural memories saved as reusable skills, compatible with the agentskills.io open standard.</p></div>
+        <div class="card"><h3><span class="ic">4</span>Scheduling</h3><p>Built-in cron in natural language — daily reports, nightly audits — running unattended.</p></div>
+        <div class="card"><h3><span class="ic">5</span>Parallel subagents</h3><p>Isolated subagents run concurrent workstreams, collapsing multi-step work into single turns.</p></div>
+        <div class="card"><h3><span class="ic">6</span>Reflection</h3><p><code>/insights</code> performance analysis, context compression, and trajectory capture for evaluation.</p></div>
+        <div class="card"><h3><span class="ic">7</span>Many surfaces &amp; backends</h3><p>Terminal, Telegram/Discord/Slack; local, Docker, SSH, Modal, Daytona serverless persistence.</p></div>
+      </div>
+    </section>
+
+    <!-- SIDE BY SIDE -->
+    <section class="rise d2">
+      <p class="kicker">What you have vs what Hermes has</p>
+      <h2>The honest comparison</h2>
+      <div class="legend">
+        <span><span class="pill good">have</span> covered today</span>
+        <span><span class="pill warn">partial</span> exists but shallow / planned</span>
+        <span><span class="pill bad">gap</span> not present</span>
+      </div>
+      <div class="panel" style="margin-top:16px; padding:8px 8px;">
+      <table>
+        <thead><tr><th>Hermes pillar</th><th>PowerCodex today</th><th>Status</th><th>Where it lives / would live</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><b>Learning loop</b><br/>learn from mistakes</td>
+            <td>New <b>Learning_Experience/</b> folder + memory protocol read every session.</td>
+            <td><span class="pill good">have</span></td>
+            <td><code>Learning_Experience/</code>, auto-memory <code>learning-experience-protocol</code></td>
+          </tr>
+          <tr>
+            <td><b>Durable memory</b><br/>cross-session recall</td>
+            <td>Auto-memory store (MEMORY.md + entries) holds project/feedback facts; no search over past sessions.</td>
+            <td><span class="pill warn">partial</span></td>
+            <td><code>.claude/.../memory/</code></td>
+          </tr>
+          <tr>
+            <td><b>Agent-authored skills</b></td>
+            <td>Rich <i>hand-authored</i> skills (OPSX, codeapps:*); none are written or refined by the agent from experience.</td>
+            <td><span class="pill warn">partial</span></td>
+            <td><code>.github/skills/</code>, <code>.powerplatform/*/SKILL.md</code></td>
+          </tr>
+          <tr>
+            <td><b>Spec-driven correctness</b><br/>(Hermes has no equivalent)</td>
+            <td>Full OPSX loop: explore → propose → specs/design/tasks → apply → verify → archive.</td>
+            <td><span class="pill good">have</span></td>
+            <td><code>openspec/</code>, OPSX prompts</td>
+          </tr>
+          <tr>
+            <td><b>Scheduling / unattended runs</b></td>
+            <td>Harness can schedule (<code>/schedule</code>, loop) but PowerCodex defines no recurring jobs of its own.</td>
+            <td><span class="pill warn">partial</span></td>
+            <td>harness cron; would live as project routines</td>
+          </tr>
+          <tr>
+            <td><b>Parallel subagents</b></td>
+            <td>Available in the harness; not yet wired into a PowerCodex workflow (e.g. parallel verify).</td>
+            <td><span class="pill warn">partial</span></td>
+            <td>Agent tool / planned automation engine</td>
+          </tr>
+          <tr>
+            <td><b>Reflection / insights</b></td>
+            <td>No self-evaluation pass; no metrics on plan quality, rework, or mistake rate.</td>
+            <td><span class="pill bad">gap</span></td>
+            <td>would build on <code>Learning_Experience/</code></td>
+          </tr>
+          <tr>
+            <td><b>Autonomous build + test self-heal</b><br/>(PowerCodex ahead here)</td>
+            <td>Planned dual-engine Playwright-for-MDM: build executor + e2e self-heal loop driving OPSX.</td>
+            <td><span class="pill warn">partial</span></td>
+            <td><code>templates/starter/automation/</code> (planned)</td>
+          </tr>
+          <tr>
+            <td><b>Many surfaces / backends</b></td>
+            <td>Single surface (Copilot/CLI in repo). Not a goal — PowerCodex is a project initializer, not an agent runtime.</td>
+            <td><span class="pill bad">gap</span></td>
+            <td>out of scope (intentionally)</td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="callout acc">
+        <h3>Read the table this way</h3>
+        <p>The two rows marked "Hermes has no equivalent" / "PowerCodex ahead" matter: you are <b>not</b> behind Hermes overall. You lead on <i>correctness and domain</i>; Hermes leads on <i>self-improvement</i>. The plan only adopts the second column.</p>
+      </div>
+    </section>
+
+    <!-- THE GAPS -->
+    <section class="rise d2">
+      <p class="kicker">What you're missing — concretely</p>
+      <h2>Four gaps worth closing</h2>
+      <div class="grid">
+        <div class="card"><h3><span class="ic">A</span>Experience → skill</h3><p><b>Gap:</b> nothing turns a successful run into a reusable, agent-maintained skill. Skills are static.<br/><br/><b>Fix:</b> after a clean OPSX change, capture the winning pattern as a draft skill under a <code>skills/_learned/</code> area for human review.</p></div>
+        <div class="card"><h3><span class="ic">B</span>Recall over history</h3><p><b>Gap:</b> memory holds curated facts but can't search "how did we solve X last time."<br/><br/><b>Fix:</b> index archived OpenSpec changes + Learning_Experience into a small searchable digest the agent consults before planning.</p></div>
+        <div class="card"><h3><span class="ic">C</span>Reflection pass</h3><p><b>Gap:</b> no end-of-change retrospective; mistakes only logged ad hoc.<br/><br/><b>Fix:</b> add a lightweight <code>/opsx:reflect</code> step that scores the change and appends lessons to Learning_Experience automatically.</p></div>
+        <div class="card"><h3><span class="ic">D</span>Self-scheduling</h3><p><b>Gap:</b> no unattended hygiene (dep audits, spec drift checks).<br/><br/><b>Fix:</b> a scheduled routine that runs verify + dependency review and opens a change when it finds drift.</p></div>
+      </div>
+    </section>
+
+    <!-- ROADMAP -->
+    <section class="rise d2">
+      <p class="kicker">Where to improve — a phased path</p>
+      <h2>Adopt the loop in four phases</h2>
+      <div class="panel">
+      <div class="flow">
+        <div class="step"><div class="nm">0</div><div><h3>Phase 0 · Learn from mistakes <span class="pill good">done today</span></h3><p>Learning_Experience/ folder, template, index, and the memory protocol that forces a read at session start. This is the keystone — every later phase writes into it.</p></div></div>
+        <div class="step"><div class="nm">1</div><div><h3>Phase 1 · Reflection step in OPSX <span class="pill acc">next</span></h3><p>Add a <code>reflect</code> artifact/prompt to the workflow: after <code>apply</code>/<code>verify</code>, the agent records what worked, what was reworked, and any new lesson. Cheapest high-value win; pure files, no runtime.</p></div></div>
+        <div class="step"><div class="nm">2</div><div><h3>Phase 2 · Searchable project memory</h3><p>Generate a digest index of archived changes + lessons (a simple JSON/markdown the agent greps before planning). Gives Hermes-style recall without FTS5 infrastructure.</p></div></div>
+        <div class="step"><div class="nm">3</div><div><h3>Phase 3 · Agent-drafted skills</h3><p>When a pattern recurs across changes, the agent proposes a <code>skills/_learned/&lt;name&gt;/SKILL.md</code> for human approval — mirroring Hermes' autonomous skill creation, gated by review.</p></div></div>
+        <div class="step"><div class="nm">4</div><div><h3>Phase 4 · Scheduled hygiene + parallel verify</h3><p>A nightly routine runs verification, dependency review, and spec-drift checks; parallel subagents fan out across the verify matrix. Ties into the planned MDM self-heal engine.</p></div></div>
+      </div>
+      </div>
+      <div class="callout">
+        <h3>Sequencing rule</h3>
+        <p>Do them in order. Each phase feeds the next: reflection (1) produces the data that recall (2) indexes, which reveals the recurring patterns that become skills (3), which the scheduler (4) can then exercise unattended.</p>
+      </div>
+    </section>
+
+    <!-- THE DASHBOARD -->
+    <section class="rise d2">
+      <p class="kicker">The piece you asked about · the dashboard</p>
+      <h2>What Hermes' dashboard is — and the PowerCodex version of it</h2>
+      <p class="lead">Hermes ships a local web dashboard (<code class="mono">hermes dashboard</code> → <code class="mono">127.0.0.1:9119</code>) with a sidebar and ~14 panels: <b>Status</b> (recent sessions, gateway state), <b>Sessions</b> (FTS5 search over history), <b>Analytics</b> (tokens, cache-hit, cost, per-model), <b>Cron jobs</b>, <b>Skills</b>, <b>Logs</b>, <b>Config/API keys</b>, and a <b>System</b> panel (host stats, skill curator, memory reset). It's a window onto the <i>learning loop</i> — you watch the agent work, review what it did, and tune it without editing YAML.</p>
+      <p class="lead" style="margin-top:12px;">PowerCodex doesn't need most of that (no messaging gateway, no model routing — it runs in your editor). But a <b>local dashboard over the repo's own artifacts</b> would be the perfect surface for the OPSX pipeline, verification, the new Learning_Experience log, and the planned MDM automation. It would read the files you already have — <code class="mono">openspec/</code>, <code class="mono">Learning_Experience/</code>, verify output — and serve them at, say, <code class="mono">localhost:4321</code> with <code class="mono">npm run dashboard</code>. Below are screenshot simulations of how that looks.</p>
+
+      <!-- SHOT 1 -->
+      <div class="shot">
+        <p class="label"><span class="num">1</span> Overview — the landing page (maps to Hermes "Status")</p>
+        <div class="win">
+          <div class="chrome">
+            <span class="dots"><i class="r"></i><i class="y"></i><i class="g"></i></span>
+            <span class="url mono">localhost:4321/overview</span>
+          </div>
+          <div class="body">
+            <nav class="nav">
+              <div class="nb"><span class="mk">C</span> PowerCodex</div>
+              <a class="on" href="#"><span class="ic">▦</span> Overview</a>
+              <a href="#"><span class="ic">⇄</span> Changes <span class="cnt">3</span></a>
+              <a href="#"><span class="ic">▤</span> Specs <span class="cnt">2</span></a>
+              <a href="#"><span class="ic">✷</span> Learning <span class="cnt">2</span></a>
+              <a href="#"><span class="ic">▶</span> Automation</a>
+              <a href="#"><span class="ic">◷</span> Schedule</a>
+              <a href="#"><span class="ic">▰</span> Insights</a>
+              <a href="#"><span class="ic">≡</span> Logs</a>
+            </nav>
+            <div class="main">
+              <div class="ph"><h4>Overview</h4><span class="rf">live · refreshed 3s ago</span></div>
+              <div class="kpis">
+                <div class="kpi"><div class="v">3</div><div class="l">Active changes</div><div class="d flat">1 in apply · 2 proposing</div></div>
+                <div class="kpi"><div class="v" style="color:var(--good)">✓ pass</div><div class="l">Last verify</div><div class="d up">build · lint · 42 tests green</div></div>
+                <div class="kpi"><div class="v">2</div><div class="l">Open lessons</div><div class="d down">1 major · 1 resolved</div></div>
+                <div class="kpi"><div class="v">idle</div><div class="l">MDM automation</div><div class="d flat">build executor ready</div></div>
+              </div>
+              <div class="dgrid">
+                <div class="box">
+                  <h5>Active changes</h5>
+                  <div class="row"><span class="nm">add-mdm-automation</span><span class="meta">· 6/14 tasks</span><span class="sp badge a">apply</span></div>
+                  <div class="row"><span class="nm">opsx-reflect-step</span><span class="meta">· specs drafted</span><span class="sp badge p">propose</span></div>
+                  <div class="row"><span class="nm">searchable-memory-digest</span><span class="meta">· framing</span><span class="sp badge w">explore</span></div>
+                </div>
+                <div class="box">
+                  <h5>Activity</h5>
+                  <ul class="feed">
+                    <li><span class="t mono">14:02</span><span class="dt g"></span> verify passed on <b>add-mdm-automation</b></li>
+                    <li><span class="t mono">13:51</span><span class="dt a"></span> task 6/14 applied · DataverseTable service</li>
+                    <li><span class="t mono">13:30</span><span class="dt p"></span> proposal created · <b>opsx-reflect-step</b></li>
+                    <li><span class="t mono">11:18</span><span class="dt w"></span> lesson logged · <b>L001</b> source access</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SHOT 2 -->
+      <div class="shot">
+        <p class="label"><span class="num">2</span> Changes — the OPSX pipeline as a board (PowerCodex's answer to Hermes "Sessions")</p>
+        <div class="win">
+          <div class="chrome">
+            <span class="dots"><i class="r"></i><i class="y"></i><i class="g"></i></span>
+            <span class="url mono">localhost:4321/changes</span>
+          </div>
+          <div class="body">
+            <nav class="nav">
+              <div class="nb"><span class="mk">C</span> PowerCodex</div>
+              <a href="#"><span class="ic">▦</span> Overview</a>
+              <a class="on" href="#"><span class="ic">⇄</span> Changes <span class="cnt">3</span></a>
+              <a href="#"><span class="ic">▤</span> Specs <span class="cnt">2</span></a>
+              <a href="#"><span class="ic">✷</span> Learning <span class="cnt">2</span></a>
+              <a href="#"><span class="ic">▶</span> Automation</a>
+              <a href="#"><span class="ic">◷</span> Schedule</a>
+              <a href="#"><span class="ic">▰</span> Insights</a>
+              <a href="#"><span class="ic">≡</span> Logs</a>
+            </nav>
+            <div class="main">
+              <div class="ph"><h4>Changes · OPSX pipeline</h4><span class="rf">live</span></div>
+              <div class="kan">
+                <div class="col"><div class="ct">Explore <span>1</span></div>
+                  <div class="tk warn"><div class="tt">searchable-memory-digest</div><div class="tm">framing · risks</div></div>
+                </div>
+                <div class="col"><div class="ct">Propose <span>1</span></div>
+                  <div class="tk pur"><div class="tt">opsx-reflect-step</div><div class="tm">proposal · design · specs</div></div>
+                </div>
+                <div class="col"><div class="ct">Apply <span>1</span></div>
+                  <div class="tk acc"><div class="tt">add-mdm-automation</div><div class="tm">6/14 tasks · ▒▒▒▒░░</div></div>
+                </div>
+                <div class="col"><div class="ct">Verify <span>0</span></div>
+                  <div class="tm" style="color:var(--faint);font-size:11px;padding:4px;">drag here to run<br/>build · lint · tests</div>
+                </div>
+                <div class="col"><div class="ct">Archive <span>5</span></div>
+                  <div class="tk good"><div class="tt">create-powercodex-cli</div><div class="tm">archived · 05-12</div></div>
+                  <div class="tk good"><div class="tt">rename-to-powercodex</div><div class="tm">archived · 05-12</div></div>
+                </div>
+              </div>
+              <div class="box" style="margin-top:14px;">
+                <h5>add-mdm-automation · selected</h5>
+                <div class="row"><span class="nm mono">proposal.md</span><span class="sp badge g">approved</span></div>
+                <div class="row"><span class="nm mono">specs/automation/spec.md</span><span class="sp badge g">complete</span></div>
+                <div class="row"><span class="nm mono">tasks.md</span><span class="meta">· 6 of 14 done</span><span class="sp badge a">in progress</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SHOT 3 -->
+      <div class="shot">
+        <p class="label"><span class="num">3</span> Learning &amp; Insights — the loop made visible (maps to Hermes "Analytics" + skill curator)</p>
+        <div class="win">
+          <div class="chrome">
+            <span class="dots"><i class="r"></i><i class="y"></i><i class="g"></i></span>
+            <span class="url mono">localhost:4321/insights</span>
+          </div>
+          <div class="body">
+            <nav class="nav">
+              <div class="nb"><span class="mk">C</span> PowerCodex</div>
+              <a href="#"><span class="ic">▦</span> Overview</a>
+              <a href="#"><span class="ic">⇄</span> Changes <span class="cnt">3</span></a>
+              <a href="#"><span class="ic">▤</span> Specs <span class="cnt">2</span></a>
+              <a class="on" href="#"><span class="ic">✷</span> Learning <span class="cnt">2</span></a>
+              <a href="#"><span class="ic">▶</span> Automation</a>
+              <a href="#"><span class="ic">◷</span> Schedule</a>
+              <a href="#"><span class="ic">▰</span> Insights</a>
+              <a href="#"><span class="ic">≡</span> Logs</a>
+            </nav>
+            <div class="main">
+              <div class="ph"><h4>Learning &amp; Insights</h4><span class="rf">live</span></div>
+              <div class="kpis">
+                <div class="kpi"><div class="v">2</div><div class="l">Lessons logged</div><div class="d flat">since 2026-06-03</div></div>
+                <div class="kpi"><div class="v" style="color:var(--good)">0</div><div class="l">Repeats</div><div class="d up">no lesson re-triggered</div></div>
+                <div class="kpi"><div class="v">8%</div><div class="l">Rework rate</div><div class="d up">↓ from 21% (30d)</div></div>
+                <div class="kpi"><div class="v">3.2</div><div class="l">Avg tasks / change</div><div class="d flat">14 changes total</div></div>
+              </div>
+              <div class="dgrid">
+                <div class="box">
+                  <h5>Mistakes per change (last 8)</h5>
+                  <div class="chart">
+                    <div class="cb"><div class="bar bad" style="height:70%"></div><span class="x">c1</span></div>
+                    <div class="cb"><div class="bar bad" style="height:55%"></div><span class="x">c2</span></div>
+                    <div class="cb"><div class="bar" style="height:45%"></div><span class="x">c3</span></div>
+                    <div class="cb"><div class="bar" style="height:35%"></div><span class="x">c4</span></div>
+                    <div class="cb"><div class="bar" style="height:25%"></div><span class="x">c5</span></div>
+                    <div class="cb"><div class="bar good" style="height:18%"></div><span class="x">c6</span></div>
+                    <div class="cb"><div class="bar good" style="height:12%"></div><span class="x">c7</span></div>
+                    <div class="cb"><div class="bar good" style="height:8%"></div><span class="x">c8</span></div>
+                  </div>
+                </div>
+                <div class="box">
+                  <h5>Learning_Experience</h5>
+                  <div class="led">
+                    <div><span class="id">L001</span><span>Verify source access before planning <span class="badge w">major</span></span></div>
+                    <div><span class="id">L002</span><span>Re-check approved rights each session <span class="badge g">resolved</span></span></div>
+                  </div>
+                  <div class="row" style="margin-top:8px;border:0;padding-top:10px;"><span class="meta">Curator suggests a reusable skill from a recurring pattern →</span><span class="sp badge p">draft skill</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="kicker" style="margin-top:36px;">How it complements what you have</p>
+      <h2 style="font-size:22px;">Not a new system — a window onto the files you already keep</h2>
+      <div class="grid3">
+        <div class="card"><h3><span class="ic">▦</span>Reads, never owns</h3><p>The dashboard renders <code>openspec/</code>, <code>Learning_Experience/</code>, and verify output. Files stay the source of truth and stay reviewable in git — the dashboard is just the lens.</p></div>
+        <div class="card"><h3><span class="ic">✷</span>Makes the loop visible</h3><p>Phase 0–4 of this plan produce data (lessons, rework rate, recurring patterns). The Insights tab is where that data becomes a glanceable signal that the agent is actually improving.</p></div>
+        <div class="card"><h3><span class="ic">▶</span>Mission control for MDM</h3><p>When the dual-engine automation runs, its build-executor and e2e self-heal status land on the Automation tab — the live view your existing <a href="./live-dashboard-system.html">live dashboard demo</a> already prototypes.</p></div>
+      </div>
+
+      <p class="kicker" style="margin-top:36px;">How you'd use it · a typical day</p>
+      <div class="panel">
+      <div class="flow">
+        <div class="step"><div class="nm">1</div><div><h3>Morning glance</h3><p>Run <code class="mono">npm run dashboard</code>. The Overview shows what changes are active, whether last night's verify passed, and any new lessons — the same role Hermes' Status page plays.</p></div></div>
+        <div class="step"><div class="nm">2</div><div><h3>Work a change</h3><p>Drive the OPSX commands in Copilot as usual. The Changes board updates as artifacts are created and tasks complete; drag a change to Verify to trigger build + tests without leaving the page.</p></div></div>
+        <div class="step"><div class="nm">3</div><div><h3>Review &amp; reflect</h3><p>After applying, the reflection step (Phase 1) writes any lesson; you see it appear on the Learning tab and confirm or refine it — Hermes' "agent-curated memory" nudge, made explicit.</p></div></div>
+        <div class="step"><div class="nm">4</div><div><h3>Check the trend</h3><p>Insights shows rework and mistakes-per-change falling over time. That downward curve is the proof the learning loop is paying off — the one number worth watching.</p></div></div>
+      </div>
+      </div>
+      <div class="callout acc">
+        <h3>Scope note</h3>
+        <p>This dashboard is a <b>Phase 2+ deliverable</b> in the roadmap above — it's most useful once the reflection step (Phase 1) is feeding it data. It would ship as an optional <code>npm run dashboard</code> in the generated starter, not a required dependency. The mockups are simulations, not yet built.</p>
+      </div>
+    </section>
+
+    <!-- WHERE IT LIVES -->
+    <section class="rise d2">
+      <p class="kicker">What changed on disk today</p>
+      <h2>The learning loop, as files</h2>
+      <div class="panel">
+      <div class="tree">
+powercodex/<br/>
+├── <span class="dir">Learning_Experience/</span>　<span class="new">← new (Phase 0)</span><br/>
+│   ├── README.md　　　<span class="cm"># the protocol: read at session start, log on mistake</span><br/>
+│   ├── LEARNINGS.md　 <span class="cm"># one-line index of every lesson</span><br/>
+│   ├── _TEMPLATE.md　 <span class="cm"># structure for each lesson</span><br/>
+│   └── L001-verify-source-access-before-planning.md　<span class="cm"># seed lesson</span><br/>
+├── docs/plans/<br/>
+│   └── <span class="new">hermes-agent-gap-plan.html</span>　<span class="cm"># this document</span><br/>
+└── .claude/.../memory/<br/>
+　　├── MEMORY.md　　　<span class="cm"># + pointer to the protocol</span><br/>
+　　└── <span class="new">learning-experience-protocol.md</span>　<span class="cm"># forces the loop across sessions</span><br/>
+      </div>
+      </div>
+    </section>
+
+    <!-- CLOSING -->
+    <section class="rise d2">
+      <p class="kicker">The takeaway</p>
+      <h2>Don't copy Hermes' runtime — copy its discipline</h2>
+      <p class="lead">Hermes is impressive because it never stops learning, not because of which chat app it plugs into. PowerCodex's medium is files in a reviewable repo, which is actually a <b>better</b> substrate for durable learning than an opaque session store. Phase 0 is live. Endorse Phase 1 (a reflection step) and you'll have the smaller, sharper half of Hermes — the half that compounds — running inside the workflow you already trust.</p>
+      <div class="callout good">
+        <h3>Decision asked of you</h3>
+        <p>Approve Phase 1 (<code>/opsx:reflect</code> + auto-append to Learning_Experience). It's a prompt + one artifact, no new dependencies, and it makes every later phase possible.</p>
+      </div>
+    </section>
+
+    <footer>
+      <div class="divider"></div>
+      <p>PowerCodex · Hermes Agent gap analysis · 2026-06-03 · plan for endorsement</p>
+      <div class="doclinks">
+        <a href="./autonomous-lifecycle-loop-plan.html">Autonomous lifecycle loop</a>
+        <a href="./openspec-html-workflow-plan.html">HTML workflow</a>
+        <a href="./mdm-automation-workflow-plan.html">MDM automation</a>
+        <a href="./live-dashboard-system.html">Live dashboard</a>
+      </div>
+    </footer>
+
+  </div>
+</body>
+</html>

@@ -109,3 +109,9 @@ For other schemas, follow the `instruction` field from the CLI output.
 - **IMPORTANT**: `context` and `rules` are constraints for YOU, not content for the file
   - Do NOT copy `<context>`, `<rules>`, `<project_context>` blocks into the artifact
   - These guide what you write, but should never appear in the output
+
+---
+
+## HTML review artifact
+
+After advancing the change's artifacts, refresh the HTML review surface at `openspec/changes/<name>/preview.html` per [`_html-artifact.md`](./_html-artifact.md): Now→After, a recommendation with pros/cons, all questions asked once, the required `/emil-design-eng` pass, and the readiness line when truly ready. Markdown stays canonical.

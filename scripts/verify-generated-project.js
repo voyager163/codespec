@@ -6,12 +6,12 @@ const os = require('node:os');
 const path = require('node:path');
 
 const repoRoot = path.resolve(__dirname, '..');
-const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'codespec-'));
+const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-'));
 const projectName = 'verify-app';
 const projectPath = path.join(tempRoot, projectName);
 
 try {
-  run('node', [path.join(repoRoot, 'bin', 'create-codespec.js'), projectName, '--skip-install', '--skip-git'], tempRoot);
+  run('node', [path.join(repoRoot, 'bin', 'create-powercodex.js'), projectName, '--skip-install', '--skip-git'], tempRoot);
 
   assertFile(path.join(projectPath, 'package.json'));
   assertFile(path.join(projectPath, 'openspec', 'config.yaml'));
@@ -29,12 +29,24 @@ try {
   assertFile(path.join(projectPath, 'src', 'telemetry', 'app-telemetry.test.ts'));
   assertFile(path.join(projectPath, 'e2e', 'home.spec.ts'));
 
-  const promptCount = countFiles(path.join(projectPath, '.github', 'prompts'));
+  const promptsDir = path.join(projectPath, '.github', 'prompts');
+  const promptCount = fs.readdirSync(promptsDir).filter((entry) => entry.endsWith('.prompt.md')).length;
   const skillCount = countDirectories(path.join(projectPath, '.github', 'skills'));
 
-  if (promptCount !== 11) {
-    throw new Error(`Expected 11 OPSX prompt files, found ${promptCount}.`);
+  if (promptCount !== 12) {
+    throw new Error(`Expected 12 OPSX prompt files, found ${promptCount}.`);
   }
+
+  assertFile(path.join(promptsDir, '_html-artifact.md'));
+  assertFile(path.join(promptsDir, 'opsx-reflect.prompt.md'));
+
+  // PowerCodex Lifecycle tool + automation scaffold ship in generated projects.
+  assertFile(path.join(projectPath, 'tools', 'lifecycle', 'bin', 'powercodex-lifecycle.js'));
+  assertFile(path.join(projectPath, 'tools', 'lifecycle', 'package.json'));
+  assertFile(path.join(projectPath, 'tools', 'lifecycle', 'assets', 'dashboard.html'));
+  assertDirectory(path.join(projectPath, 'automation', 'shared'));
+  assertDirectory(path.join(projectPath, 'automation', 'build-executor'));
+  assertDirectory(path.join(projectPath, 'automation', 'e2e-suite'));
 
   if (skillCount !== 11) {
     throw new Error(`Expected 11 OpenSpec skill folders, found ${skillCount}.`);
@@ -61,6 +73,8 @@ try {
   assertPackageScript(generatedPackage, 'e2e');
   assertPackageScript(generatedPackage, 'format');
   assertPackageScript(generatedPackage, 'format:check');
+  assertPackageScript(generatedPackage, 'lifecycle:serve');
+  assertPackageScript(generatedPackage, 'lifecycle:selftest');
 
   assertPackageScriptValue(generatedPackage, 'lint', /--max-warnings 0/);
   assertPackageScriptValue(generatedPackage, 'test:coverage', /vitest run --coverage/);

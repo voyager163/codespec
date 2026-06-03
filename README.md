@@ -1,6 +1,6 @@
 <div align="center">
-	<img src="https://raw.githubusercontent.com/voyager163/codespec/main/media/logo.svg" alt="CodeSpec logo" width="160" height="160" />
-	<h1>CodeSpec</h1>
+	<img src="https://raw.githubusercontent.com/voyager163/powercodex/main/media/logo.svg" alt="PowerCodex logo" width="160" height="160" />
+	<h1>PowerCodex</h1>
 	<h3><em>Spec-driven development for Power Apps Code Apps.</em></h3>
 </div>
 
@@ -9,30 +9,30 @@
 </p>
 
 <p align="center">
-	<a href="https://github.com/voyager163/codespec/releases/latest">
-		<img src="https://img.shields.io/github/v/release/voyager163/codespec?label=release" alt="Latest release" />
+	<a href="https://github.com/voyager163/powercodex/releases/latest">
+		<img src="https://img.shields.io/github/v/release/voyager163/powercodex?label=release" alt="Latest release" />
 	</a>
-	<a href="https://github.com/voyager163/codespec/stargazers">
-		<img src="https://img.shields.io/github/stars/voyager163/codespec?style=social" alt="GitHub stars" />
+	<a href="https://github.com/voyager163/powercodex/stargazers">
+		<img src="https://img.shields.io/github/stars/voyager163/powercodex?style=social" alt="GitHub stars" />
 	</a>
-	<a href="https://github.com/voyager163/codespec/blob/main/LICENSE">
-		<img src="https://img.shields.io/github/license/voyager163/codespec" alt="License" />
+	<a href="https://github.com/voyager163/powercodex/blob/main/LICENSE">
+		<img src="https://img.shields.io/github/license/voyager163/powercodex" alt="License" />
 	</a>
-	<a href="https://www.npmjs.com/package/@voyager163/codespec">
-		<img src="https://img.shields.io/npm/v/%40voyager163%2Fcodespec?label=npm" alt="npm version" />
+	<a href="https://www.npmjs.com/package/@voyager163/powercodex">
+		<img src="https://img.shields.io/npm/v/%40voyager163%2Fpowercodex?label=npm" alt="npm version" />
 	</a>
 </p>
 
 ---
 
-CodeSpec is an open source initializer for teams building [Power Apps Code Apps](https://learn.microsoft.com/power-apps/developer/code-apps/overview). It combines a customized Code Apps starter, OpenSpec project artifacts, and GitHub Copilot prompt and skill files so app development can move from idea to reviewed requirements to implementation without losing decisions in chat history.
+PowerCodex is an open source initializer for teams building [Power Apps Code Apps](https://learn.microsoft.com/power-apps/developer/code-apps/overview). It combines a customized Code Apps starter, OpenSpec project artifacts, and GitHub Copilot prompt and skill files so app development can move from idea to reviewed requirements to implementation without losing decisions in chat history.
 
-The goal is practical spec-driven development for Code Apps. CodeSpec uses OpenSpec today because it is lightweight, file-based, and easy to learn. If a better spec-driven development framework emerges, CodeSpec should be able to adopt it while preserving the same developer experience.
+The goal is practical spec-driven development for Code Apps. PowerCodex uses OpenSpec today because it is lightweight, file-based, and easy to learn. If a better spec-driven development framework emerges, PowerCodex should be able to adopt it while preserving the same developer experience.
 
 ## Table Of Contents
 
 - [Quick Start](#quick-start)
-- [Who CodeSpec Is For](#who-codespec-is-for)
+- [Who PowerCodex Is For](#who-powercodex-is-for)
 - [Why Spec-Driven Development](#why-spec-driven-development)
 - [What You Get](#what-you-get)
 - [Prerequisites](#prerequisites)
@@ -52,8 +52,8 @@ The goal is practical spec-driven development for Code Apps. CodeSpec uses OpenS
 ## Quick Start
 
 ```bash
-npm install -g @voyager163/codespec@latest
-codespec my-app
+npm install -g @voyager163/powercodex@latest
+powercodex my-app
 cd my-app
 code .
 ```
@@ -61,7 +61,7 @@ code .
 To create a project without a global install, run:
 
 ```bash
-npx @voyager163/codespec my-app
+npx @voyager163/powercodex my-app
 ```
 
 Initialize the Power Apps code app for your target environment:
@@ -92,9 +92,9 @@ Start local development:
 npm run dev
 ```
 
-## Who CodeSpec Is For
+## Who PowerCodex Is For
 
-CodeSpec is for developers and teams who want to build Power Apps Code Apps with a repeatable, reviewable workflow:
+PowerCodex is for developers and teams who want to build Power Apps Code Apps with a repeatable, reviewable workflow:
 
 - makers and developers starting a new Code Apps project;
 - teams using GitHub Copilot for implementation but wanting durable requirements;
@@ -103,7 +103,7 @@ CodeSpec is for developers and teams who want to build Power Apps Code Apps with
 
 ## Why Spec-Driven Development
 
-AI-assisted development works best when the project keeps its intent close to the code. CodeSpec encourages a loop where ideas become files that can be reviewed, changed, implemented, verified, and archived.
+AI-assisted development works best when the project keeps its intent close to the code. PowerCodex encourages a loop where ideas become files that can be reviewed, changed, implemented, verified, and archived.
 
 ```text
 Explore the idea -> propose the change -> generate specs/design/tasks -> implement -> archive
@@ -116,11 +116,11 @@ OpenSpec keeps that loop lightweight:
 - Easy to start, but organized enough for real projects.
 - Built around project files that can be reviewed, updated, and archived.
 
-OpenSpec is the current framework choice, not an irreversible constraint. CodeSpec is about making spec-driven development practical for Code Apps; the framework can evolve if the ecosystem gives the project a better fit.
+OpenSpec is the current framework choice, not an irreversible constraint. PowerCodex is about making spec-driven development practical for Code Apps; the framework can evolve if the ecosystem gives the project a better fit.
 
 ## What You Get
 
-A generated CodeSpec app includes:
+A generated PowerCodex app includes:
 
 - a Vite, React 19, and TypeScript Code Apps starter;
 - Tailwind CSS, shadcn/ui components, theming, and Lucide icons;
@@ -129,7 +129,20 @@ A generated CodeSpec app includes:
 - GitHub Actions workflows for GHAS CodeQL, Dependency Review, quality checks, coverage, Semgrep OSS, npm audit, and OpenSSF Scorecard;
 - all OPSX prompt files for GitHub Copilot under `.github/prompts/`;
 - matching OpenSpec skill folders under `.github/skills/`;
-- project-local guidance for exploration, proposal, implementation, verification, syncing, and archiving.
+- project-local guidance for exploration, proposal, implementation, verification, syncing, and archiving;
+- the **PowerCodex Lifecycle** tool under `tools/lifecycle/` with a live monitoring dashboard.
+
+### Live lifecycle dashboard
+
+Every generated app ships a zero-dependency live dashboard that monitors the autonomous loop (Intake → Plan → Approve → Build → Run → Test → Observe) and lets you control it:
+
+```bash
+npm run lifecycle:serve            # http://localhost:4321 — keep it open
+npm run lifecycle -- loop          # run the loop; the dashboard follows live
+npm run lifecycle:selftest         # run the product against itself (asserts it works)
+```
+
+It shows intake (goal + MVP + compliance), the `Approved_rights/` gate, per-agent progress, a live activity feed, test/MVP coverage, observations, and `Learning_Experience` lessons — all read from an append-only status bus. The build/test engines run in simulation until you wire real Playwright-for-MDM adapters (see `tools/lifecycle/README.md`). Any process can post progress with `npm run lifecycle -- emit <agent> "<message>"`.
 
 One repo setting must be enabled manually: go to Settings > Code security and turn on Secret Scanning and Push Protection. These are GHAS features but have no workflow file; GitHub runs them natively on every push.
 
@@ -240,8 +253,8 @@ Follow these rules when building Code Apps from the generated project.
 ## CLI Options
 
 ```bash
-codespec my-app --skip-install
-codespec my-app --skip-git
+powercodex my-app --skip-install
+powercodex my-app --skip-git
 ```
 
 By default, `npm install` and `git init` both run automatically.
@@ -250,7 +263,7 @@ The CLI fails if the target folder already exists. This avoids accidental overwr
 
 ## Contributing
 
-CodeSpec is open source. Contributions are welcome around the starter template, OPSX workflow, OpenSpec configuration, verification coverage, docs, and future spec-driven development framework evaluation.
+PowerCodex is open source. Contributions are welcome around the starter template, OPSX workflow, OpenSpec configuration, verification coverage, docs, and future spec-driven development framework evaluation.
 
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. By participating in this project, you also agree to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 
@@ -259,9 +272,9 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. By
 This repository contains both the initializer and the templates it copies.
 
 ```text
-codespec/
+powercodex/
 	bin/
-		create-codespec.js
+		create-powercodex.js
 	templates/
 		starter/
 			SOURCE.md
@@ -345,7 +358,7 @@ The script creates a temporary generated project and checks that:
 Before publishing or handing off a change, also run:
 
 ```bash
-node --check bin/create-codespec.js
+node --check bin/create-powercodex.js
 node --check scripts/verify-generated-project.js
 npm pack --dry-run
 ```
@@ -368,7 +381,7 @@ For documentation or community-file changes, also review:
 - README badge links and image paths;
 - accessible alt text for media assets;
 - links to [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), and [LICENSE](LICENSE);
-- CodeSpec project identity terms;
+- PowerCodex project identity terms;
 - Power Apps Code Apps, `pac code init`, and `microsoft/PowerAppsCodeApps` references.
 
 ## Publishing Checklist
@@ -377,7 +390,7 @@ Before publishing a package version:
 
 1. Run `npm run verify`.
 2. Run `npm pack --dry-run` and inspect the included files.
-3. Confirm `npm install -g @voyager163/codespec@latest` installs the `codespec` command after publishing.
+3. Confirm `npm install -g @voyager163/powercodex@latest` installs the `powercodex` command after publishing.
 4. Confirm `templates/starter` contains no local secrets or generated build output.
 5. Confirm [templates/openspec/config.yaml](templates/openspec/config.yaml) has the desired Power Apps Code Apps defaults.
 6. Confirm [templates/github](templates/github) contains exactly the expected OPSX prompts and skills.

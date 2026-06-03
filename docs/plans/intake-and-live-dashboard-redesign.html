@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PowerCodex · Intake + Live Dashboard Redesign (Plan Mockup)</title>
+<style>
+  :root{
+    --ease:cubic-bezier(0.23,1,0.32,1);
+    --bg:#0b0d12;--bg-soft:#12151d;--panel:#161a24;--panel2:#1c2130;--line:#262c3a;--line2:#313a4d;
+    --text:#e8ecf4;--muted:#99a2b8;--faint:#6b7488;--accent:#6ea8fe;--accent2:#a78bfa;
+    --good:#5ad19a;--bad:#f08a8a;--warn:#f5c97b;--radius:16px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1100px 560px at 85% -12%,rgba(167,139,250,.13),transparent 60%),radial-gradient(900px 500px at -10% 8%,rgba(110,168,254,.11),transparent 55%),var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .mono{font-family:"SF Mono","JetBrains Mono",Consolas,Menlo,monospace}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 22px 80px}
+  a{color:var(--accent)}
+  h1,h2,h3{letter-spacing:-.01em}
+
+  /* ---- plan chrome ---- */
+  .planbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:14px 22px;background:rgba(11,13,18,.82);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+  .brand{display:flex;align-items:center;gap:11px;font-weight:700}
+  .mark{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#06203f;font-weight:900}
+  .brand small{display:block;font-weight:500;font-size:11.5px;color:var(--faint)}
+  .sp{flex:1}
+  .tabs{display:flex;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:4px}
+  .tab{appearance:none;border:0;background:transparent;color:var(--muted);font:inherit;font-size:13px;font-weight:600;padding:7px 14px;border-radius:9px;cursor:pointer;transition:all .18s var(--ease)}
+  .tab[aria-selected="true"]{background:linear-gradient(180deg,var(--accent),#4f8ef0);color:#06203f}
+  .tab:active{transform:scale(.95)}
+
+  .note{color:var(--faint);font-size:12.5px;text-align:center;margin-top:30px}
+  .planhead{margin:26px 0 6px;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2);font-weight:700}
+  .lead{color:var(--muted);font-size:14px;max-width:760px}
+
+  .view{display:none;animation:fade .4s var(--ease)}
+  .view.on{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+  /* ============ SCREEN 1 — INTAKE ============ */
+  .intake-shell{max-width:860px;margin:32px auto 0}
+  .intake-title{font-size:26px;margin:0 0 6px}
+  .intake-sub{color:var(--muted);margin:0 0 26px}
+  .card{border:1px solid var(--line);border-radius:var(--radius);background:linear-gradient(180deg,rgba(110,168,254,.04),var(--panel));padding:22px;margin-bottom:18px}
+  .field{margin-bottom:18px}
+  .field:last-child{margin-bottom:0}
+  .lbl{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700;margin-bottom:7px}
+  .lbl .req{color:var(--bad);font-weight:800}
+  .lbl .tag{font-size:10px;font-weight:800;color:#06203f;background:var(--accent);border-radius:5px;padding:1px 7px}
+  .lbl .tag.b{background:var(--accent2)}
+  .hint{font-size:12px;color:var(--faint);font-weight:500;margin-left:auto}
+  input.tx,textarea.tx{width:100%;background:#0a0c11;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:11px 13px;font:inherit;font-size:13.5px;resize:vertical;transition:border-color .16s var(--ease)}
+  textarea.tx{min-height:64px}
+  input.tx:focus,textarea.tx:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(110,168,254,.12)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:680px){.grid2{grid-template-columns:1fr}}
+
+  /* drag & drop repo */
+  .drop{border:1.5px dashed var(--line2);border-radius:14px;background:#0a0c11;padding:30px 22px;text-align:center;transition:all .2s var(--ease);cursor:pointer}
+  .drop:hover{border-color:var(--accent);background:rgba(110,168,254,.05)}
+  .drop.over{border-color:var(--accent);background:rgba(110,168,254,.1);transform:scale(1.01)}
+  .drop .ic{font-size:30px}
+  .drop .big{font-weight:700;margin-top:8px}
+  .drop .small{color:var(--faint);font-size:12.5px;margin-top:4px}
+  .files{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-direction:column;gap:6px;text-align:left}
+  .files li{display:flex;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:8px 12px;font-size:12.5px;animation:fade .3s var(--ease)}
+  .files .ext{font-size:10px;font-weight:800;color:var(--accent2);background:rgba(167,139,250,.12);border-radius:5px;padding:2px 7px}
+  .files .sz{margin-left:auto;color:var(--faint);font-size:11px}
+
+  /* compliance — read only, agent owned */
+  .compliance-ro{display:flex;align-items:center;gap:14px;border:1px solid var(--line);border-left:3px solid var(--accent2);border-radius:12px;background:var(--panel2);padding:14px 16px}
+  .lock{width:38px;height:38px;border-radius:10px;flex:none;display:grid;place-items:center;font-size:18px;background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.3)}
+  .compliance-ro .t{font-weight:700;font-size:13.5px}
+  .compliance-ro .d{font-size:12px;color:var(--muted);margin-top:2px}
+  .compliance-ro .state{margin-left:auto;font-size:11px;font-weight:700;color:var(--faint);background:rgba(107,116,136,.12);border:1px solid var(--line);padding:5px 11px;border-radius:999px}
+
+  .actions{display:flex;align-items:center;gap:12px;margin-top:6px}
+  .btn{appearance:none;border:1px solid var(--line);background:var(--panel);color:var(--text);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;padding:11px 20px;border-radius:11px;transition:transform .14s var(--ease),border-color .14s var(--ease)}
+  .btn:hover{border-color:var(--accent)}.btn:active{transform:scale(.97)}
+  .btn.primary{background:linear-gradient(180deg,var(--accent),#4f8ef0);color:#06203f;border-color:transparent}
+  .btn.ghost{background:transparent;color:var(--muted)}
+  .actions .msg{font-size:12.5px;color:var(--faint)}
+
+  /* ============ SCREEN 2 — DASHBOARD ============ */
+  .topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:16px;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);margin:26px 0 16px}
+  .pill{font-size:12px;font-weight:700;padding:5px 12px;border-radius:999px;border:1px solid var(--line);display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+  .pill.live{color:var(--good);border-color:rgba(90,209,154,.35);background:rgba(90,209,154,.08)}
+  .pill.live .d{width:8px;height:8px;border-radius:50%;background:var(--good);animation:pulse 1.4s var(--ease) infinite}
+  .pill.real{color:var(--accent);border-color:rgba(110,168,254,.35);background:rgba(110,168,254,.08)}
+  .pill.warn{color:var(--warn);border-color:rgba(245,201,123,.35);background:rgba(245,201,123,.08)}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .proj{display:flex;flex-direction:column}
+  .proj .nm{font-weight:800;font-size:16px}
+  .proj .meta{font-size:11.5px;color:var(--faint)}
+  .stat{text-align:right}.stat .v{font-weight:700;font-size:14px}.stat .l{font-size:10.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em}
+
+  /* context strip from intake */
+  .ctx{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+  @media(max-width:760px){.ctx{grid-template-columns:1fr}}
+  .ctx .c{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:12px 14px}
+  .ctx .c .k{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--accent2)}
+  .ctx .c .vv{font-size:12.5px;color:var(--muted);margin-top:5px}
+
+  .compbar{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:12px 16px;margin-bottom:16px}
+  .compbar .lock{width:32px;height:32px;font-size:15px}
+  .cmeter{flex:1;height:9px;border-radius:999px;background:#0a0c11;border:1px solid var(--line);overflow:hidden}
+  .cmeter>span{display:block;height:100%;background:linear-gradient(90deg,var(--good),#3fb985);transition:width .6s var(--ease)}
+  .compbar .pct{font-weight:800;color:var(--good);font-size:15px}
+  .compbar .ro{font-size:10.5px;color:var(--faint);background:rgba(107,116,136,.12);border:1px solid var(--line);padding:3px 9px;border-radius:999px}
+
+  .strip{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:16px}
+  @media(max-width:760px){.strip{grid-template-columns:repeat(4,1fr)}}
+  .stage{position:relative;border:1px solid var(--line);border-radius:11px;padding:11px 12px;background:var(--panel);overflow:hidden}
+  .stage .n{font-size:11px;color:var(--faint);font-weight:700}
+  .stage .t{font-size:13px;font-weight:600;margin-top:2px}
+  .stage.done{border-color:rgba(90,209,154,.3)}.stage.done .n{color:var(--good)}
+  .stage.active{border-color:rgba(110,168,254,.55);background:linear-gradient(180deg,rgba(110,168,254,.1),var(--panel))}
+  .stage.active::after{content:"";position:absolute;left:0;bottom:0;height:2px;width:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));animation:sweep 2.1s linear infinite}
+  @keyframes sweep{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+
+  .cols{display:grid;grid-template-columns:1.4fr 1fr;gap:20px}
+  @media(max-width:980px){.cols{grid-template-columns:1fr}}
+  .sect{display:flex;align-items:center;gap:10px;margin:0 0 13px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent2);font-weight:700}
+  .sect .c{color:var(--faint);font-weight:600;letter-spacing:0;text-transform:none;font-size:12px}
+
+  .agents{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+  @media(max-width:560px){.agents{grid-template-columns:1fr}}
+  .agent{border:1px solid var(--line);border-radius:13px;padding:14px;background:linear-gradient(180deg,var(--panel),var(--bg-soft))}
+  .agent.working{border-color:rgba(110,168,254,.4);box-shadow:0 16px 40px -26px rgba(110,168,254,.6)}
+  .agent.done{border-color:rgba(90,209,154,.25)}
+  .agent .h{display:flex;align-items:center;gap:10px}
+  .agent .av{width:34px;height:34px;border-radius:9px;flex:none;display:grid;place-items:center;font-size:16px;background:var(--panel2);border:1px solid var(--line)}
+  .agent .nm{font-weight:700;font-size:14px}.agent .role{font-size:11px;color:var(--faint)}
+  .badge{margin-left:auto;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:.04em;display:inline-flex;align-items:center;gap:6px}
+  .badge .bd{width:6px;height:6px;border-radius:50%;background:currentColor}
+  .badge.working{color:var(--accent);background:rgba(110,168,254,.12);border:1px solid rgba(110,168,254,.3)}
+  .badge.working .bd{animation:pulse 1.3s var(--ease) infinite}
+  .badge.done{color:var(--good);background:rgba(90,209,154,.12);border:1px solid rgba(90,209,154,.3)}
+  .badge.queued{color:var(--faint);background:rgba(107,116,136,.12);border:1px solid var(--line)}
+  .agent .task{margin-top:11px;font-size:12.5px;color:var(--muted);min-height:34px}
+  .agent .task b{color:var(--text)}
+  .agent .live-src{margin-top:8px;font-size:10.5px;color:var(--faint);display:flex;align-items:center;gap:6px}
+  .agent .live-src .pid{color:var(--accent)}
+  .bar{margin-top:9px;height:6px;border-radius:999px;background:var(--panel2);overflow:hidden;border:1px solid var(--line)}
+  .bar>span{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .5s var(--ease)}
+  .agent.done .bar>span{background:linear-gradient(90deg,var(--good),#3fb985)}
+
+  .panel{border:1px solid var(--line);border-radius:13px;background:var(--panel);padding:8px 14px}
+  .feed{list-style:none;margin:0;padding:0;max-height:420px;overflow:auto;font-size:12.8px}
+  .feed li{display:grid;grid-template-columns:60px 13px 1fr;gap:9px;align-items:start;padding:8px 4px;border-bottom:1px solid rgba(38,44,58,.6);animation:fin .35s var(--ease)}
+  @keyframes fin{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+  .feed li:last-child{border-bottom:0}
+  .feed .t{color:var(--faint);font-size:11px}.feed .dt{width:8px;height:8px;border-radius:50%;margin-top:4px}
+  .feed .tx{color:var(--muted)}.feed .src{color:var(--accent);font-weight:600}
+
+  /* plan callout */
+  .callout{border:1px solid var(--line);border-left:3px solid var(--warn);border-radius:12px;background:rgba(245,201,123,.05);padding:14px 16px;margin:18px 0}
+  .callout h3{margin:0 0 8px;font-size:14px;color:var(--warn)}
+  .callout ul{margin:6px 0 0;padding-left:18px;font-size:13px;color:var(--muted)}
+  .callout li{margin:4px 0}
+  .callout code{font-size:12px;background:#0a0c11;border:1px solid var(--line);border-radius:5px;padding:1px 6px}
+  .flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:10px}
+  .flow .box{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-weight:600}
+  .flow .arr{color:var(--faint)}
+</style>
+</head>
+<body>
+  <div class="planbar">
+    <div class="brand"><span class="mark">P</span><span>PowerCodex <small>plan mockup · intake + live dashboard redesign</small></span></div>
+    <div class="sp"></div>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-view="intake">1 · New Project</button>
+      <button class="tab" role="tab" aria-selected="false" data-view="dash">2 · Live Dashboard</button>
+      <button class="tab" role="tab" aria-selected="false" data-view="plan">How live wiring works</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+
+  <!-- ============ SCREEN 1 — INTAKE ============ -->
+  <section class="view on" id="view-intake">
+    <div class="intake-shell">
+      <h1 class="intake-title">Start a project</h1>
+      <p class="intake-sub">Capture the why before the build. Everything below is stored together under your project name and handed to the coding agents as the source of truth.</p>
+
+      <div class="card">
+        <div class="field">
+          <div class="lbl">Project name <span class="req">*</span><span class="hint">becomes the storage key for all intake + run data</span></div>
+          <input class="tx" id="f-name" placeholder="e.g. Field-Service Task Tracker" />
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="field">
+          <div class="lbl"><span class="tag">story</span>User story <span class="req">*</span></div>
+          <textarea class="tx" id="f-story" placeholder="As a field technician, I want to see my assigned tasks with due dates, so that I never miss a service window."></textarea>
+        </div>
+        <div class="grid2">
+          <div class="field">
+            <div class="lbl"><span class="tag b">objective</span>Objective <span class="req">*</span></div>
+            <textarea class="tx" id="f-obj" placeholder="Ship a tracker that shows status + due dates and lets techs mark tasks done."></textarea>
+          </div>
+          <div class="field">
+            <div class="lbl"><span class="tag b">pain</span>Pain point <span class="req">*</span></div>
+            <textarea class="tx" id="f-pain" placeholder="Tasks live in email + spreadsheets today; nothing surfaces what's overdue."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="field">
+          <div class="lbl"><span class="tag">MVP</span>Repository — drag & drop your folders / files</div>
+          <div class="drop" id="drop">
+            <div class="ic">📁</div>
+            <div class="big">Drop your repo folder or files here</div>
+            <div class="small">or click to browse · the agents read this as the MVP starting point</div>
+            <input type="file" id="filein" multiple webkitdirectory style="display:none" />
+          </div>
+          <ul class="files" id="filelist"></ul>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="lbl" style="margin-bottom:12px">Compliance</div>
+        <div class="compliance-ro">
+          <div class="lock">🔒</div>
+          <div>
+            <div class="t">Scored by the coding agent — not editable</div>
+            <div class="d">After intake, the agent reads your story + objective + repo and computes how well the MVP aligns with the goal. You can read it on the dashboard; you can't set it.</div>
+          </div>
+          <div class="state">Pending — scored after intake</div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" id="create">Create project & open dashboard →</button>
+        <span class="msg" id="createmsg">Fields marked <span style="color:var(--bad)">*</span> are required.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SCREEN 2 — DASHBOARD ============ -->
+  <section class="view" id="view-dash">
+    <div class="topbar">
+      <div class="proj">
+        <span class="nm" id="d-name">Field-Service Task Tracker</span>
+        <span class="meta">created 2026-06-03 · stored under <span class="mono" id="d-key">field-service-task-tracker</span></span>
+      </div>
+      <span class="pill live"><span class="d"></span> live · SSE</span>
+      <span class="pill real">real engines</span>
+      <div class="sp"></div>
+      <div class="stat"><div class="v">r2 / 3</div><div class="l">rotation</div></div>
+      <div class="stat"><div class="v mono" id="d-last">—</div><div class="l">last event</div></div>
+    </div>
+
+    <div class="ctx">
+      <div class="c"><div class="k">User story</div><div class="vv" id="d-story">As a field technician, I want to see my assigned tasks with due dates…</div></div>
+      <div class="c"><div class="k">Objective</div><div class="vv" id="d-obj">Ship a tracker that shows status + due dates…</div></div>
+      <div class="c"><div class="k">Pain point</div><div class="vv" id="d-pain">Tasks live in email + spreadsheets; nothing surfaces what's overdue.</div></div>
+    </div>
+
+    <div class="compbar">
+      <div class="lock">🔒</div>
+      <div style="font-size:12.5px;color:var(--muted);min-width:88px">Compliance <span class="ro">agent-scored</span></div>
+      <div class="cmeter"><span style="width:88%"></span></div>
+      <div class="pct">88%</div>
+    </div>
+
+    <div class="strip">
+      <div class="stage done"><div class="n">0 · Intake ✓</div><div class="t">done</div></div>
+      <div class="stage done"><div class="n">1 · Plan ✓</div><div class="t">done</div></div>
+      <div class="stage done"><div class="n">2 · Approve ✓</div><div class="t">done</div></div>
+      <div class="stage active"><div class="n">3 · Build</div><div class="t">in progress…</div></div>
+      <div class="stage"><div class="n">4 · Run</div><div class="t">queued</div></div>
+      <div class="stage"><div class="n">5 · Test</div><div class="t">queued</div></div>
+      <div class="stage"><div class="n">6 · Observe</div><div class="t">queued</div></div>
+    </div>
+
+    <div class="cols">
+      <div>
+        <div class="sect">Agents at work <span class="c" id="d-agentcount">· 1 active</span></div>
+        <div class="agents">
+          <div class="agent done"><div class="h"><span class="av">🚦</span><div><div class="nm">Intake</div><div class="role">goal + MVP gate</div></div><span class="badge done"><span class="bd"></span>done</span></div><div class="task">Story + objective + pain captured · repo ingested (42 files)</div><div class="bar"><span style="width:100%"></span></div></div>
+          <div class="agent done"><div class="h"><span class="av">🧭</span><div><div class="nm">Planner</div><div class="role">HTML spec artifacts</div></div><span class="badge done"><span class="bd"></span>done</span></div><div class="task">Spec authored & approved</div><div class="bar"><span style="width:100%"></span></div></div>
+          <div class="agent working"><div class="h"><span class="av">🛠</span><div><div class="nm">Build Executor</div><div class="role">Engine 1 · MDM browser</div></div><span class="badge working"><span class="bd"></span>working</span></div><div class="task" id="d-build"><b>Executing</b> dataverse.column.add · DueDate (datetime)</div><div class="live-src">⎯ live from <span class="pid">claude-code pid 18244</span> · stream tool_use</div><div class="bar"><span id="d-buildbar" style="width:64%"></span></div></div>
+          <div class="agent"><div class="h"><span class="av">🧪</span><div><div class="nm">E2E Tester</div><div class="role">Engine 2 · self-heal</div></div><span class="badge queued"><span class="bd"></span>queued</span></div><div class="task">waiting for build…</div><div class="bar"><span style="width:0%"></span></div></div>
+        </div>
+      </div>
+      <div>
+        <div class="sect">Live activity <span class="c">streamed, newest first</span></div>
+        <div class="panel"><ul class="feed" id="d-feed"></ul></div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <h3>What changed vs. today's dashboard</h3>
+      <ul>
+        <li>Compliance bar is <b>read-only</b> with a lock — the agent scores it; the manual number input is gone.</li>
+        <li>Header carries the <b>project name</b> + storage key; the story / objective / pain ride along as a context strip.</li>
+        <li>Each working agent shows its <b>live source</b> (the real Claude Code process + stream), not a scripted timer.</li>
+        <li>The status pill reads <b>live · SSE</b> and <b>real engines</b> — see the next tab for how that's wired.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ PLAN — LIVE WIRING ============ -->
+  <section class="view" id="view-plan">
+    <div class="planhead">The live-status gap</div>
+    <p class="lead">Today the dashboard polls <code class="mono">/api/state</code> every 1.2s and that state is derived from an append-only event bus. The problem: the events are written by <b>a simulated loop</b> (<code class="mono">tools/lifecycle/lib/loop.js</code>) that emits hardcoded messages on a <code class="mono">setTimeout</code>. Real Claude Code agents never write to the bus, so the page shows a convincing demo — not live work.</p>
+
+    <div class="callout" style="border-left-color:var(--good);background:rgba(90,209,154,.05)">
+      <h3 style="color:var(--good)">The fix — bridge real agents into the bus you already have</h3>
+      <p style="font-size:13px;color:var(--muted);margin:0 0 4px">The server already exposes <code class="mono">POST /api/emit</code>. Nothing calls it. Wire the real agents to it and the existing dashboard becomes genuinely live with no UI rewrite.</p>
+      <div class="flow">
+        <span class="box">Claude Code agent</span><span class="arr">→</span>
+        <span class="box">hook / wrapper</span><span class="arr">→</span>
+        <span class="box">POST /api/emit</span><span class="arr">→</span>
+        <span class="box">status bus (append-only)</span><span class="arr">→</span>
+        <span class="box">SSE push</span><span class="arr">→</span>
+        <span class="box">dashboard</span>
+      </div>
+    </div>
+
+    <div class="planhead">Concrete steps</div>
+    <div class="callout" style="border-left-color:var(--accent);background:rgba(110,168,254,.05)">
+      <ul>
+        <li><b>Emit from real runs.</b> Add a thin reporter that each spawned Claude Code agent calls (a <code class="mono">PostToolUse</code> / Stop hook, or a wrapper around the agent invocation) which POSTs <code class="mono">{rotation, stage, agent, level, message, data}</code> to <code class="mono">/api/emit</code>. The bus + <code class="mono">deriveState</code> already understand that shape.</li>
+        <li><b>Drop polling, add push.</b> Replace the 1.2s <code class="mono">setInterval(poll)</code> with a Server-Sent Events endpoint (<code class="mono">/api/stream</code>) that flushes a new state on every bus append. The "live · SSE" pill turns green only while the stream is connected.</li>
+        <li><b>Map real stages → agents.</b> Keep the existing <code class="mono">AGENTS</code> stage mapping; tag each emit with the real OS process id / stream so each card can show "live from claude-code pid …" instead of a fake progress bar.</li>
+        <li><b>Default to real.</b> Flip <code class="mono">simulate</code> off for live runs; keep <code class="mono">--demo</code> for the scripted walkthrough so the demo path still exists.</li>
+        <li><b>Freshness watchdog.</b> If no event arrives for N seconds while an agent is "working", show a stale badge instead of a forever-spinning bar — so "live" never lies.</li>
+      </ul>
+    </div>
+
+    <div class="planhead">Files this touches</div>
+    <div class="callout" style="border-left-color:var(--accent2);background:rgba(167,139,250,.05)">
+      <ul>
+        <li><code class="mono">lib/server.js</code> — add <code class="mono">/api/stream</code> (SSE); intake action stores project name + story/objective/pain.</li>
+        <li><code class="mono">lib/control.js</code> + <code class="mono">lib/state.js</code> — extend intake to {projectName, userStory, objective, painPoint, repo}; compliance becomes agent-computed only (remove the editable input path).</li>
+        <li><code class="mono">assets/dashboard.html</code> — split into intake screen → dashboard; SSE client; read-only compliance; live-source line per agent.</li>
+        <li><b>new</b> <code class="mono">lib/reporter.js</code> + a Claude Code hook — the bridge that turns real agent activity into <code class="mono">/api/emit</code> calls.</li>
+      </ul>
+    </div>
+
+    <p class="note">This is a mockup for review — no real data is sent anywhere. Tabs above switch between the proposed intake screen, the redesigned dashboard, and this wiring plan.</p>
+  </section>
+
+  </div>
+
+<script>
+  const $ = (id)=>document.getElementById(id);
+  const views = { intake:$('view-intake'), dash:$('view-dash'), plan:$('view-plan') };
+  document.querySelectorAll('.tab').forEach(t=>{
+    t.addEventListener('click',()=>{
+      document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected', x===t));
+      Object.values(views).forEach(v=>v.classList.remove('on'));
+      views[t.dataset.view].classList.add('on');
+      window.scrollTo({top:0,behavior:'smooth'});
+    });
+  });
+
+  // ---- intake: drag & drop ----
+  const drop=$('drop'), filein=$('filein'), filelist=$('filelist');
+  const sampleFiles=[
+    {name:'src/App.tsx',ext:'TSX',sz:'4.2 KB'},
+    {name:'src/components/TaskList.tsx',ext:'TSX',sz:'2.8 KB'},
+    {name:'package.json',ext:'JSON',sz:'1.1 KB'},
+    {name:'README.md',ext:'MD',sz:'3.4 KB'},
+  ];
+  function renderFiles(list){
+    filelist.innerHTML=list.map(f=>`<li><span class="ext">${f.ext}</span><span>${f.name}</span><span class="sz">${f.sz}</span></li>`).join('');
+  }
+  drop.addEventListener('click',()=>filein.click());
+  drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('over')});
+  drop.addEventListener('dragleave',()=>drop.classList.remove('over'));
+  drop.addEventListener('drop',e=>{
+    e.preventDefault();drop.classList.remove('over');
+    const fs=[...(e.dataTransfer.files||[])].slice(0,8).map(f=>({name:f.name,ext:(f.name.split('.').pop()||'').toUpperCase().slice(0,4),sz:(f.size/1024).toFixed(1)+' KB'}));
+    renderFiles(fs.length?fs:sampleFiles);
+  });
+  filein.addEventListener('change',e=>{
+    const fs=[...(e.target.files||[])].slice(0,8).map(f=>({name:f.webkitRelativePath||f.name,ext:(f.name.split('.').pop()||'').toUpperCase().slice(0,4),sz:(f.size/1024).toFixed(1)+' KB'}));
+    renderFiles(fs.length?fs:sampleFiles);
+  });
+
+  // ---- intake: create -> dashboard, carrying values over ----
+  $('create').addEventListener('click',()=>{
+    const name=$('f-name').value.trim()||'Field-Service Task Tracker';
+    const story=$('f-story').value.trim();
+    const obj=$('f-obj').value.trim();
+    const pain=$('f-pain').value.trim();
+    if(!$('f-name').value.trim()||!story||!obj||!pain){
+      $('createmsg').innerHTML='<span style="color:var(--warn)">Fill project name, story, objective and pain point first (demo will use placeholders).</span>';
+    }
+    $('d-name').textContent=name;
+    $('d-key').textContent=name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+    if(story)$('d-story').textContent=story;
+    if(obj)$('d-obj').textContent=obj;
+    if(pain)$('d-pain').textContent=pain;
+    document.querySelector('[data-view="dash"]').click();
+  });
+
+  // ---- dashboard: simulated *live* feed so the mockup visibly moves ----
+  const LEVEL={info:'#6ea8fe',good:'#5ad19a',warn:'#f5c97b',bad:'#f08a8a'};
+  const scripted=[
+    {a:'build-executor',l:'good',m:'DueDate (datetime) created · verified-in-portal=true'},
+    {a:'build-executor',l:'info',m:'Executing dataverse.column.add · Status (choice)'},
+    {a:'build-executor',l:'good',m:'Status (choice) created · verified-in-portal=true'},
+    {a:'runner',l:'good',m:'Dataverse connected → npx power-apps push · got app link'},
+    {a:'e2e-tester',l:'info',m:'Running projects-grid.spec.ts'},
+    {a:'e2e-tester',l:'bad',m:'1 spec red · coverage 71%'},
+    {a:'e2e-tester',l:'info',m:'Self-heal: opsx:explore → propose → apply'},
+    {a:'e2e-tester',l:'good',m:'Green · 3/3 specs · 92% MVP coverage'},
+  ];
+  const feed=$('d-feed'); let fi=0; const events=[];
+  function tick(){
+    const e=scripted[fi%scripted.length]; fi++;
+    const ts=new Date().toTimeString().slice(0,8);
+    events.unshift({ts,...e}); if(events.length>24)events.pop();
+    feed.innerHTML=events.map(x=>`<li><span class="t mono">${x.ts}</span><span class="dt" style="background:${LEVEL[x.l]}"></span><span class="tx"><span class="src">${x.a}</span> · ${x.m}</span></li>`).join('');
+    $('d-last').textContent=ts;
+    const bb=$('d-buildbar'); const w=Math.min(100,(parseInt(bb.style.width)||60)+9); bb.style.width=w+'%';
+    if(w>=100)bb.style.width='64%';
+  }
+  let timer=null;
+  const dashObserver=new MutationObserver(()=>{
+    if(views.dash.classList.contains('on')){ if(!timer){tick();timer=setInterval(tick,1600);} }
+    else if(timer){clearInterval(timer);timer=null;}
+  });
+  dashObserver.observe(views.dash,{attributes:true,attributeFilter:['class']});
+</script>
+</body>
+</html>

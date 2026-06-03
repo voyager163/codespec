@@ -1,23 +1,23 @@
 ## Purpose
 
-Define public-facing repository documentation and community readiness expectations for CodeSpec as an open source project.
+Define public-facing repository documentation and community readiness expectations for PowerCodex as an open source project.
 
 ## Requirements
 
 ### Requirement: Public README Identity
 
-The repository README SHALL introduce CodeSpec as an open source project for creating Power Apps Code Apps projects with spec-driven development before presenting detailed CLI mechanics.
+The repository README SHALL introduce PowerCodex as an open source project for creating Power Apps Code Apps projects with spec-driven development before presenting detailed CLI mechanics.
 
 #### Scenario: New visitor opens the README
 
 - **WHEN** a new visitor reads the first screen of the README
-- **THEN** they SHALL see the CodeSpec name, a concise tagline, the intended audience, and the value of spec-driven development for Code Apps.
+- **THEN** they SHALL see the PowerCodex name, a concise tagline, the intended audience, and the value of spec-driven development for Code Apps.
 
 #### Scenario: Reader evaluates framework direction
 
 - **WHEN** a reader reviews the README philosophy or positioning section
 - **THEN** the README SHALL explain that OpenSpec is the current framework because it is lightweight and easy to learn
-- **AND** the README SHALL explain that CodeSpec may adopt a better spec-driven development framework in the future.
+- **AND** the README SHALL explain that PowerCodex may adopt a better spec-driven development framework in the future.
 
 ### Requirement: Repository Trust Signals
 
@@ -26,7 +26,7 @@ The repository README SHALL display public trust signals for project release sta
 #### Scenario: README badges are displayed
 
 - **WHEN** a reader views the README header
-- **THEN** badges SHALL link to the repository latest release, stargazers, license, and `@voyager163/codespec` npm package page.
+- **THEN** badges SHALL link to the repository latest release, stargazers, license, and `@voyager163/powercodex` npm package page.
 
 #### Scenario: Badge metadata changes upstream
 
@@ -35,12 +35,12 @@ The repository README SHALL display public trust signals for project release sta
 
 ### Requirement: Project Icon
 
-The repository SHALL include a lightweight CodeSpec icon asset suitable for README branding.
+The repository SHALL include a lightweight PowerCodex icon asset suitable for README branding.
 
 #### Scenario: README renders project branding
 
 - **WHEN** GitHub renders the README
-- **THEN** the README SHALL display the CodeSpec icon with accessible alternate text.
+- **THEN** the README SHALL display the PowerCodex icon with accessible alternate text.
 
 #### Scenario: Maintainer updates the icon
 

@@ -4,3 +4,11 @@ node_modules
 playwright-report
 test-results
 *.tsbuildinfo
+
+# PowerCodex lifecycle tool (self-contained, ships as-is)
+tools/lifecycle
+.powercodex
+Approved_rights
+
+# PowerCodex automation scaffold (wired to a tenant by the developer)
+automation

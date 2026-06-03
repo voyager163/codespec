@@ -2,7 +2,7 @@
 
 ## Our Pledge
 
-We want CodeSpec to be a welcoming, respectful project for everyone who wants to improve spec-driven development for Power Apps Code Apps.
+We want PowerCodex to be a welcoming, respectful project for everyone who wants to improve spec-driven development for Power Apps Code Apps.
 
 Project maintainers and contributors pledge to make participation in this community a harassment-free experience for people of every background, identity, and level of experience.
 
@@ -32,7 +32,7 @@ Maintainers may remove, edit, or reject comments, commits, issues, pull requests
 
 ## Scope
 
-This Code of Conduct applies in all CodeSpec project spaces. It also applies when someone is representing CodeSpec in public spaces, such as using an official project channel, participating in project-related discussions, or acting as an appointed project representative.
+This Code of Conduct applies in all PowerCodex project spaces. It also applies when someone is representing PowerCodex in public spaces, such as using an official project channel, participating in project-related discussions, or acting as an appointed project representative.
 
 ## Enforcement
 

@@ -1,11 +1,11 @@
 {
-  "name": "@voyager163/codespec",
+  "name": "@voyager163/powercodex",
   "version": "0.1.2",
   "description": "Create a Power Apps Code Apps project prepared for OpenSpec workflows.",
   "license": "MIT",
   "bin": {
-    "codespec": "bin/create-codespec.js",
-    "create-codespec": "bin/create-codespec.js"
+    "powercodex": "bin/create-powercodex.js",
+    "create-powercodex": "bin/create-powercodex.js"
   },
   "files": [
     "bin/",
@@ -15,7 +15,10 @@
     "LICENSE"
   ],
   "scripts": {
-    "verify": "node scripts/verify-generated-project.js"
+    "verify": "node scripts/verify-generated-project.js",
+    "lifecycle": "node tools/lifecycle/bin/powercodex-lifecycle.js",
+    "lifecycle:serve": "node tools/lifecycle/bin/powercodex-lifecycle.js serve",
+    "lifecycle:selftest": "node tools/lifecycle/bin/powercodex-lifecycle.js selftest"
   },
   "engines": {
     "node": ">=20.19.0"

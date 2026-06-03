@@ -6,7 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const readline = require('node:readline');
 
-const commandName = 'codespec';
+const commandName = 'powercodex';
 const minNodeVersion = [20, 19, 0];
 const openspecPackage = '@fission-ai/openspec@latest';
 
@@ -71,8 +71,8 @@ function parseArgs(args) {
 
 function printHelp() {
   console.log(`Usage: ${commandName} [project-name] [options]\n`);
-  console.log('Install: npm install -g @voyager163/codespec@latest');
-  console.log('Run without installing: npx @voyager163/codespec [project-name] [options]\n');
+  console.log('Install: npm install -g @voyager163/powercodex@latest');
+  console.log('Run without installing: npx @voyager163/powercodex [project-name] [options]\n');
   console.log('Options:');
   console.log('  --skip-install   Create the project without running npm install');
   console.log('  --skip-git       Create the project without running git init');
@@ -208,7 +208,7 @@ function normalizePackageName(projectName) {
     .replace(/[._-]+$/, '')
     .replace(/-{2,}/g, '-');
 
-  return normalized || 'codespec-app';
+  return normalized || 'powercodex-app';
 }
 
 function copyGithubOverlay(templateRoot, targetPath) {

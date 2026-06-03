@@ -1,0 +1,9 @@
+schema: spec-driven
+
+# Project context (shown to AI when creating artifacts).
+context: |
+  Project: MatFlow — a Power Platform Code App.
+  Built with PowerCodex inside this workspace.
+  Runtime, consent (Approved_rights/) and live view (.powercodex/) are
+  scoped to this project directory. Lessons are shared from the
+  workspace-root Learning_Experience/.

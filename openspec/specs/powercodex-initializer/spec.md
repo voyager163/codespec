@@ -1,35 +1,35 @@
 ## Purpose
 
-Define the behavior of the CodeSpec initializer for creating Power Apps Code Apps projects prepared for OpenSpec-driven development.
+Define the behavior of the PowerCodex initializer for creating Power Apps Code Apps projects prepared for OpenSpec-driven development.
 
 ## Requirements
 
-### Requirement: CodeSpec CLI Identity
+### Requirement: PowerCodex CLI Identity
 
-The initializer SHALL use `codespec` as the project identity, SHALL publish the npm package as `@voyager163/codespec`, and SHALL expose `codespec` as the primary executable command.
+The initializer SHALL use `powercodex` as the project identity, SHALL publish the npm package as `@voyager163/powercodex`, and SHALL expose `powercodex` as the primary executable command.
 
-#### Scenario: Package metadata names CodeSpec initializer
+#### Scenario: Package metadata names PowerCodex initializer
 
 Given a developer inspects the package metadata
 When the package name and binary entries are read
-Then the package name SHALL identify the initializer as `@voyager163/codespec`
-And the binary entries SHALL expose `codespec` as the primary command
-And they MAY expose `create-codespec` as a backwards-compatible bin alias.
+Then the package name SHALL identify the initializer as `@voyager163/powercodex`
+And the binary entries SHALL expose `powercodex` as the primary command
+And they MAY expose `create-powercodex` as a backwards-compatible bin alias.
 
-#### Scenario: Help output shows CodeSpec command
+#### Scenario: Help output shows PowerCodex command
 
 Given the developer runs the initializer help command
 When usage information is printed
-Then it SHALL show `codespec [project-name] [options]`
-And it SHALL mention `npm install -g @voyager163/codespec@latest` as the global install command.
+Then it SHALL show `powercodex [project-name] [options]`
+And it SHALL mention `npm install -g @voyager163/powercodex@latest` as the global install command.
 
-### Requirement: CodeSpec Documentation Identity
+### Requirement: PowerCodex Documentation Identity
 
-Repository documentation, verification scripts, OpenSpec artifacts, and community files SHALL use CodeSpec project naming for this initializer while preserving Power Apps Code Apps platform references and the project's open-source spec-driven development positioning.
+Repository documentation, verification scripts, OpenSpec artifacts, and community files SHALL use PowerCodex project naming for this initializer while preserving Power Apps Code Apps platform references and the project's open-source spec-driven development positioning.
 
 #### Scenario: Repository project identity is searched
 
-Given the repository has been renamed to CodeSpec
+Given the repository has been renamed to PowerCodex
 When maintainers search documentation, code, OpenSpec artifacts, and community files for old initializer identity terms
 Then legacy initializer, repository, and package fallback terms SHALL NOT remain as project identity references.
 
@@ -37,13 +37,13 @@ Then legacy initializer, repository, and package fallback terms SHALL NOT remain
 
 Given documentation describes the generated app platform or upstream starter source
 When maintainers review those references
-Then Power Apps Code Apps, `pac code init`, and `microsoft/PowerAppsCodeApps` references SHALL remain accurate and SHALL NOT be renamed to CodeSpec.
+Then Power Apps Code Apps, `pac code init`, and `microsoft/PowerAppsCodeApps` references SHALL remain accurate and SHALL NOT be renamed to PowerCodex.
 
 #### Scenario: Open-source positioning remains accurate
 
-Given documentation describes CodeSpec's public purpose
+Given documentation describes PowerCodex's public purpose
 When maintainers review README and community documentation
-Then the documentation SHALL describe CodeSpec as an open source setup for Power Apps Code Apps development with spec-driven workflows
+Then the documentation SHALL describe PowerCodex as an open source setup for Power Apps Code Apps development with spec-driven workflows
 And it SHALL identify OpenSpec as the current framework choice rather than an irreversible project constraint.
 
 ### Requirement: Project Name Handling
@@ -52,14 +52,14 @@ The initializer SHALL accept an optional project folder name as a positional arg
 
 #### Scenario: Project name is provided
 
-Given the developer runs `codespec my-app`
+Given the developer runs `powercodex my-app`
 When the initializer starts
 Then it SHALL use `my-app` as the target folder name
 And it SHALL not prompt for the project name.
 
 #### Scenario: Project name is omitted
 
-Given the developer runs `codespec`
+Given the developer runs `powercodex`
 When the initializer starts
 Then it SHALL prompt the developer for a project name
 And it SHALL use the provided value as the target folder name.
@@ -96,7 +96,7 @@ The initializer SHALL avoid overwriting an existing target folder by default.
 #### Scenario: Target folder already exists
 
 Given a folder named `my-app` already exists
-When the developer runs `codespec my-app`
+When the developer runs `powercodex my-app`
 Then the initializer SHALL stop before copying files
 And it SHALL explain that the target folder already exists.
 

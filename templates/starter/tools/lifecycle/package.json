@@ -1,0 +1,10 @@
+{
+  "name": "powercodex-lifecycle",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "description": "PowerCodex autonomous lifecycle loop + live monitoring dashboard (zero dependencies).",
+  "bin": {
+    "powercodex-lifecycle": "bin/powercodex-lifecycle.js"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "type": "dataverse.table.create",
+  "displayName": "Project",
+  "schemaName": "cr123_project",
+  "columns": [
+    { "name": "Status", "type": "choice" },
+    { "name": "DueDate", "type": "datetime" }
+  ],
+  "source": "powercodex-dataverse-model"
+}

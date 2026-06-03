@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PowerCodex · The Autonomous App-Lifecycle Loop — Higher-Level Plan</title>
+<style>
+  :root {
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+    --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+    --bg: #0b0d12;
+    --bg-soft: #12151d;
+    --panel: #161a24;
+    --panel-2: #1c2130;
+    --line: #262c3a;
+    --text: #e8ecf4;
+    --muted: #99a2b8;
+    --faint: #6b7488;
+    --accent: #6ea8fe;
+    --accent-2: #a78bfa;
+    --good: #5ad19a;
+    --bad: #f08a8a;
+    --warn: #f5c97b;
+    --radius: 16px;
+    --shadow: 0 20px 60px -20px rgba(0,0,0,0.6);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(167,139,250,0.14), transparent 60%),
+      radial-gradient(900px 500px at -10% 10%, rgba(110,168,254,0.12), transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 0 24px 120px; }
+
+  .rise { opacity: 0; transform: translateY(14px); animation: rise 600ms var(--ease-out) forwards; }
+  @keyframes rise { to { opacity: 1; transform: translateY(0); } }
+  .d1 { animation-delay: 40ms; } .d2 { animation-delay: 90ms; } .d3 { animation-delay: 140ms; }
+  .d4 { animation-delay: 190ms; } .d5 { animation-delay: 240ms; } .d6 { animation-delay: 290ms; }
+
+  header.hero { padding: 88px 24px 40px; text-align: center; max-width: 900px; margin: 0 auto; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--accent); background: rgba(110,168,254,0.1);
+    border: 1px solid rgba(110,168,254,0.25);
+    padding: 6px 14px; border-radius: 999px; margin-bottom: 22px;
+  }
+  .eyebrow .dot {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+    box-shadow: 0 0 0 0 rgba(110,168,254,0.6); animation: pulse 2.4s var(--ease-out) infinite;
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(110,168,254,0.5); }
+    70% { box-shadow: 0 0 0 9px rgba(110,168,254,0); }
+    100% { box-shadow: 0 0 0 0 rgba(110,168,254,0); }
+  }
+  h1 {
+    font-size: clamp(32px, 6vw, 54px); line-height: 1.08; margin: 0 0 18px; letter-spacing: -0.02em;
+    background: linear-gradient(180deg, #fff, #b9c2d8);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .sub { color: var(--muted); font-size: 18px; max-width: 720px; margin: 0 auto; }
+  .meta { margin-top: 26px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; color: var(--faint); font-size: 13px; }
+  .meta span { border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; }
+
+  section { margin-top: 64px; }
+  .kicker { color: var(--accent-2); font-weight: 600; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; margin: 0 0 10px; }
+  h2 { font-size: 28px; margin: 0 0 14px; letter-spacing: -0.01em; }
+  h3 { font-size: 18px; margin: 0 0 8px; }
+  p.lead { color: var(--muted); font-size: 16px; max-width: 780px; }
+
+  .panel {
+    background: linear-gradient(180deg, var(--panel), var(--bg-soft));
+    border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow);
+  }
+
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 820px) { .grid, .grid3 { grid-template-columns: 1fr; } }
+
+  .card { background: var(--panel-2); border: 1px solid var(--line); border-radius: 14px; padding: 20px;
+    transition: transform 200ms var(--ease-out), border-color 200ms var(--ease-out), box-shadow 200ms var(--ease-out); }
+  .card:hover { transform: translateY(-3px); border-color: rgba(110,168,254,0.4); box-shadow: 0 18px 40px -22px rgba(110,168,254,0.5); }
+  .card h3 { display: flex; align-items: center; gap: 10px; }
+  .card .ic { width: 30px; height: 30px; flex: none; display: grid; place-items: center; border-radius: 9px; background: rgba(110,168,254,0.12); color: var(--accent); font-size: 15px; }
+  .card p { color: var(--muted); font-size: 14.5px; margin: 6px 0 0; }
+
+  .pill { display: inline-block; font-size: 12px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .pill.good { color: var(--good); border-color: rgba(90,209,154,0.35); background: rgba(90,209,154,0.08); }
+  .pill.warn { color: var(--warn); border-color: rgba(245,201,123,0.35); background: rgba(245,201,123,0.08); }
+  .pill.acc { color: var(--accent); border-color: rgba(110,168,254,0.35); background: rgba(110,168,254,0.08); }
+  .pill.pur { color: var(--accent-2); border-color: rgba(167,139,250,0.35); background: rgba(167,139,250,0.08); }
+
+  pre {
+    background: #0a0c11; border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px;
+    overflow-x: auto; font-size: 13px; line-height: 1.55; color: #cdd6e6; margin: 14px 0 0;
+    font-family: "SF Mono", "JetBrains Mono", Consolas, Menlo, monospace;
+  }
+  pre .c { color: var(--faint); } pre .k { color: var(--accent-2); } pre .s { color: var(--good); } pre .f { color: var(--accent); }
+
+  ul.clean { list-style: none; padding: 0; margin: 12px 0 0; }
+  ul.clean li { position: relative; padding-left: 26px; margin: 9px 0; color: var(--muted); font-size: 14.5px; }
+  ul.clean li::before { content: "→"; position: absolute; left: 0; color: var(--accent); }
+  ul.clean li b { color: var(--text); font-weight: 600; }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 14px; }
+  th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--faint); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+  td { color: var(--muted); } td b { color: var(--text); }
+
+  .callout { border-left: 3px solid var(--warn); background: rgba(245,201,123,0.06); padding: 16px 18px; border-radius: 0 12px 12px 0; margin-top: 16px; }
+  .callout.acc { border-left-color: var(--accent); background: rgba(110,168,254,0.06); }
+  .callout.good { border-left-color: var(--good); background: rgba(90,209,154,0.06); }
+  .callout h3 { margin: 0 0 6px; color: var(--text); }
+  .callout p { margin: 0; color: var(--muted); font-size: 14.5px; }
+
+  .tree { font-family: "SF Mono", Consolas, monospace; font-size: 13px; line-height: 1.7; color: #cdd6e6; }
+  .tree .dir { color: var(--accent); } .tree .new { color: var(--good); } .tree .cm { color: var(--faint); }
+
+  /* ---------- The loop diagram (circular) ---------- */
+  .loop {
+    position: relative; width: 100%; max-width: 560px; aspect-ratio: 1 / 1; margin: 8px auto 0;
+  }
+  .loop .ring {
+    position: absolute; inset: 8%; border-radius: 50%;
+    border: 1px dashed var(--line);
+  }
+  .loop .ring::before {
+    content: ""; position: absolute; inset: -1px; border-radius: 50%;
+    border: 2px solid transparent;
+    background: conic-gradient(from 0deg, var(--accent), var(--accent-2), var(--good), var(--accent)) border-box;
+    -webkit-mask: linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    opacity: 0.5; animation: spin 18s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loop .core {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 40%; height: 40%; border-radius: 50%; display: grid; place-items: center; text-align: center;
+    background: radial-gradient(circle at 50% 30%, rgba(110,168,254,0.18), rgba(167,139,250,0.06));
+    border: 1px solid var(--line); padding: 10px;
+  }
+  .loop .core b { font-size: 14px; color: var(--text); display: block; }
+  .loop .core span { font-size: 11.5px; color: var(--faint); }
+  .node {
+    position: absolute; width: 132px; transform: translate(-50%, -50%); text-align: center;
+  }
+  .node .bub {
+    background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 8px;
+    transition: transform 200ms var(--ease-out), border-color 200ms var(--ease-out);
+  }
+  .node .bub:hover { transform: scale(1.04); border-color: rgba(110,168,254,0.5); }
+  .node .n { font-weight: 700; color: var(--accent); font-size: 12px; }
+  .node .t { font-size: 13px; color: var(--text); font-weight: 600; margin-top: 2px; }
+  .node .s { font-size: 11px; color: var(--faint); margin-top: 2px; line-height: 1.35; }
+  .node.n1 { top: 4%; left: 50%; }
+  .node.n2 { top: 28%; left: 95%; }
+  .node.n3 { top: 76%; left: 90%; }
+  .node.n4 { top: 99%; left: 50%; }
+  .node.n5 { top: 76%; left: 10%; }
+  .node.n6 { top: 28%; left: 5%; }
+  @media (max-width: 620px) {
+    .loop { max-width: 100%; aspect-ratio: auto; height: auto; }
+    .loop .ring, .loop .core { display: none; }
+    .node { position: static; transform: none; width: 100%; margin: 8px 0; }
+  }
+
+  .flow { display: flex; flex-direction: column; gap: 0; margin-top: 8px; }
+  .step { display: grid; grid-template-columns: 44px 1fr; gap: 16px; padding: 16px 0; border-bottom: 1px dashed var(--line); }
+  .step:last-child { border-bottom: 0; }
+  .step .nm { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; color: var(--bg); background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+  .step h3 { margin: 4px 0 4px; }
+  .step p { color: var(--muted); font-size: 14.5px; margin: 0; }
+
+  .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 760px) { .twocol { grid-template-columns: 1fr; } }
+
+  .linkbar { display: grid; grid-template-columns: 1fr auto 1fr; gap: 14px; align-items: stretch; margin-top: 20px; }
+  @media (max-width: 760px) { .linkbar { grid-template-columns: 1fr; } .linkbar .mid { transform: rotate(90deg); } }
+  .planbox { border: 1px solid var(--line); border-radius: 14px; padding: 18px; background: var(--panel-2); }
+  .planbox .tag { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .planbox.a .tag { color: var(--accent); } .planbox.b .tag { color: var(--accent-2); }
+  .planbox h3 { margin: 8px 0 6px; }
+  .planbox p { color: var(--muted); font-size: 13.5px; margin: 0; }
+  .linkbar .mid { display: grid; place-items: center; color: var(--good); font-size: 26px; font-weight: 800; }
+
+  footer { margin-top: 80px; text-align: center; color: var(--faint); font-size: 13px; }
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--line), transparent); margin: 8px 0; }
+  a { color: var(--accent); }
+  .doclinks { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 14px; }
+  .doclinks a { border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px; text-decoration: none; color: var(--muted); font-size: 13px; transition: border-color 160ms var(--ease-out), color 160ms var(--ease-out); }
+  .doclinks a:hover { border-color: var(--accent); color: var(--text); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rise { animation: none; opacity: 1; transform: none; }
+    .eyebrow .dot, .loop .ring::before { animation: none; }
+    *, *::before, *::after { transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+  <header class="hero">
+    <div class="eyebrow rise d1"><span class="dot"></span> Higher-level plan · the whole system</div>
+    <h1 class="rise d2">One Closed Loop:<br/>Plan, Build, Test, Observe, Re-spec</h1>
+    <p class="sub rise d3">How the <b>HTML-first OpenSpec workflow</b> and the <b>Playwright-for-MDM automation</b> snap together into a single <b>autonomous app-creation lifecycle</b> — seeded by your <b>goal</b> and an <b>MVP</b>, writing its own specs from what it observes, telling you about it, and showing everything live on local HTML dashboards that never stop updating.</p>
+    <div class="meta rise d4">
+      <span>Today: 2026-06-03</span>
+      <span>Branch: feat/openspec-redesigned-output</span>
+      <span>Status: plan for endorsement</span>
+    </div>
+    <div class="doclinks rise d5">
+      <a href="./openspec-html-workflow-plan.html">◂ Plan A · HTML workflow</a>
+      <a href="./mdm-automation-workflow-plan.html">◂ Plan B · MDM automation</a>
+      <a href="./live-dashboard-system.html">▸ Live dashboard demo</a>
+    </div>
+  </header>
+
+  <div class="wrap">
+
+    <!-- THE LINK -->
+    <section class="rise d2">
+      <p class="kicker">The link you asked me to find</p>
+      <h2>Two plans, two halves of one circle</h2>
+      <p class="lead">On their own, the two plans look separate — one redesigns how specs are <i>presented</i>, the other automates how the app is <i>built and tested</i>. But they share one object: <b>the HTML spec artifact</b>. Plan A <b>produces</b> it; Plan B <b>consumes</b> it to build and verify; and when Plan B <b>observes</b> something new, it <b>produces another one</b> — handing control straight back to Plan A. That handoff is the link, and it's what turns a one-way pipeline into a self-feeding loop.</p>
+
+      <div class="linkbar">
+        <div class="planbox a">
+          <div class="tag">Plan A · front of the pipe</div>
+          <h3>HTML-first OpenSpec workflow</h3>
+          <p>Authors a change as a living HTML artifact: Now→After, a stated recommendation with pros/cons, every question asked once, a suggested proposal, and the "I am completely ready" sign-off. This is the <b>approved source of truth</b>.</p>
+        </div>
+        <div class="mid">⟲</div>
+        <div class="planbox b">
+          <div class="tag">Plan B · execution + verification</div>
+          <h3>Playwright-for-MDM automation</h3>
+          <p>Engine 1 builds the real Dataverse tables / flows / connections through the managed browser. Engine 2 tests the running app against the approved MVP and self-heals via <code>opsx</code> until green.</p>
+        </div>
+      </div>
+
+      <div class="callout good">
+        <h3>The missing piece that closes it</h3>
+        <p>Plan B already scaffolds an OpenSpec change on a failure. We make that scaffold come out in <b>Plan A's exact HTML artifact format</b> — and we widen the trigger from "a test failed" to "the observer noticed <i>anything</i> worth a spec." Now the e2e/observer engine is also a <b>spec author</b>, and the output of Plan B is a valid input to Plan A. The pipe becomes a wheel.</p>
+      </div>
+    </section>
+
+    <!-- STEP 0 — THE TWO INPUTS -->
+    <section>
+      <p class="kicker rise">Step 0 · before a single line is built</p>
+      <h2 class="rise">Two inputs seed the whole loop — and nothing starts without them</h2>
+      <p class="lead rise">The loop is only as good as what it's aimed at. So before the wheel turns, the dashboard collects <b>two things</b> and refuses to build until it has both. They become the loop's north star and its benchmark.</p>
+
+      <div class="twocol" style="margin-top:20px;">
+        <div class="panel rise">
+          <div class="planbox a" style="border:0;padding:0;background:transparent;">
+            <div class="tag">Input 1 · the north star</div>
+            <h3>Summarised meeting transcript → goal &amp; objective</h3>
+          </div>
+          <p style="color:var(--muted);font-size:14.5px;margin:8px 0 0;">You paste a <b>summary of the meeting</b> where the solution was discussed — what it's for, who uses it, what success looks like. This becomes the <b>full user story + objective</b> that every later decision is measured against. It is stored with the project and <b>always kept in context</b>, never discarded.</p>
+          <ul class="clean">
+            <li><b>Always present</b> — the goal travels with every spec, build task, and test.</li>
+            <li><b>The tie-breaker</b> — when options conflict, the one closest to the stated objective wins.</li>
+          </ul>
+        </div>
+        <div class="panel rise">
+          <div class="planbox b" style="border:0;padding:0;background:transparent;">
+            <div class="tag">Input 2 · the benchmark</div>
+            <h3>An MVP — paste yours, or I propose one</h3>
+          </div>
+          <p style="color:var(--muted);font-size:14.5px;margin:8px 0 0;">Two ways in, your choice:</p>
+          <ul class="clean">
+            <li><b>You have a prototype</b> — paste the quick build you made in an external AI tool (Google AI Studio, v0, etc.) as a URL or HTML. I adopt it as-is.</li>
+            <li><b>You don't</b> — I <b>propose an HTML MVP</b> showing what your product could look like, and you keep prompting me to refine it until it's right.</li>
+            <li><b>Either way it becomes the benchmark</b> — the approved MVP is the target the entire app is built and tested against. Scaling happens <i>after</i>, from this baseline.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="callout">
+        <h3>⚠ Continuous compliance: the MVP must always serve the goal</h3>
+        <p>Every time the MVP changes — your refinements, my proposals, or specs authored from observation — I <b>re-validate it against the meeting transcript / objective</b>. If the MVP starts <b>drifting away</b> from what you originally set out to build, I <b>stop and clarify with you</b> rather than quietly steering off-course. You confirm the new direction (or correct it) before the build continues. The goal anchors the MVP; the MVP anchors the app.</p>
+      </div>
+
+      <div class="callout acc">
+        <h3>Where this happens: the dashboard, not an IDE</h3>
+        <p>Both inputs are collected right in the <b>live dashboard</b>, which <b>opens automatically whenever you start a project</b>. If you've already typed the goal or a prototype into chat, the dashboard <b>auto-fills</b> those fields so you just confirm — no jumping into an editor. The "Verify &amp; start build" gate stays locked until <b>both</b> a goal/objective and an MVP are present and the MVP reads as compliant with the goal.</p>
+      </div>
+    </section>
+
+    <!-- THE LOOP -->
+    <section>
+      <p class="kicker rise">The full lifecycle</p>
+      <h2 class="rise">The autonomous loop, one rotation</h2>
+      <p class="lead rise">Each node hands its output to the next. The only deliberate stop is "green &amp; matches the approved MVP" — and even then the observer keeps watching for new ideas, ready to start a fresh rotation when it sees one.</p>
+
+      <div class="panel rise" style="margin-top:20px;">
+        <div class="loop">
+          <div class="ring"></div>
+          <div class="core"><div><b>Goal + Approved MVP</b><span>the north star &amp; benchmark</span></div></div>
+          <div class="node n1"><div class="bub"><div class="n">1</div><div class="t">Plan (Plan A)</div><div class="s">HTML artifact: recommend, ask once, ready</div></div></div>
+          <div class="node n2"><div class="bub"><div class="n">2</div><div class="t">Approve</div><div class="s">You endorse the artifact in chat</div></div></div>
+          <div class="node n3"><div class="bub"><div class="n">3</div><div class="t">Build (Engine 1)</div><div class="s">MDM browser builds Dataverse / flows</div></div></div>
+          <div class="node n4"><div class="bub"><div class="n">4</div><div class="t">Run</div><div class="s">push (Dataverse) or dev (local)</div></div></div>
+          <div class="node n5"><div class="bub"><div class="n">5</div><div class="t">Test (Engine 2)</div><div class="s">e2e vs MVP, self-heal via opsx</div></div></div>
+          <div class="node n6"><div class="bub"><div class="n">6</div><div class="t">Observe → Re-spec</div><div class="s">writes a new HTML spec, notifies you</div></div></div>
+        </div>
+      </div>
+      <p class="lead rise" style="margin-top:14px;text-align:center;">Node 6 loops straight back to Node 1 — but the artifact is now <b>machine-authored from observation</b>, waiting for your nod.</p>
+    </section>
+
+    <!-- SPECS FROM OBSERVATION -->
+    <section>
+      <p class="kicker rise">The heart of it · self-authored specs</p>
+      <h2 class="rise">It writes its own specs from what it sees — then tells you</h2>
+      <p class="lead rise">The observer doesn't only react to red tests. As it drives the real app it watches for three classes of signal, and any one of them can mint a new change — rendered in the same HTML you already approve from.</p>
+
+      <div class="grid3" style="margin-top:20px;">
+        <div class="card rise d1"><h3><span class="ic">🐞</span> Defects</h3><p>A spec assertion fails, a console error fires, a screen drifts from the approved Now→After. Classic self-heal trigger.</p></div>
+        <div class="card rise d2"><h3><span class="ic">🧭</span> Gaps</h3><p>An approved MVP surface has no covering spec, a Dataverse field is referenced but never built, a flow is missing. Coverage holes become proposals.</p></div>
+        <div class="card rise d3"><h3><span class="ic">✨</span> Improvements</h3><p>A slow interaction, a clumsy empty-state, an accessibility miss. Lower-priority, but logged and offered — never silently applied.</p></div>
+      </div>
+
+      <div class="twocol" style="margin-top:18px;">
+        <div class="panel rise">
+          <h3>What the observer emits</h3>
+<pre><span class="c">// openspec/changes/&lt;auto-fix-table-drift&gt;/observation.json</span>
+{
+  <span class="f">"origin"</span>: <span class="s">"e2e-observer"</span>,
+  <span class="f">"signal"</span>: <span class="s">"defect"</span>,        <span class="c">// defect | gap | improvement</span>
+  <span class="f">"evidence"</span>: [<span class="s">"trace.zip"</span>, <span class="s">"shots/drift.png"</span>],
+  <span class="f">"confidence"</span>: <span class="s">0.86</span>,
+  <span class="f">"suggestedProposal"</span>: <span class="s">"Restore Status choice column…"</span>,
+  <span class="f">"renderedArtifact"</span>: <span class="s">"preview.html"</span>,   <span class="c">// Plan A format</span>
+  <span class="f">"needsApproval"</span>: <span class="k">true</span>
+}</pre>
+        </div>
+        <div class="panel rise">
+          <h3>How you hear about it</h3>
+          <ul class="clean">
+            <li><b>Dashboard notification</b> — a new card appears in the live "Specs authored from observation" panel the instant it's written.</li>
+            <li><b>Chat ping</b> — a one-line summary with a link to the rendered <code>preview.html</code>.</li>
+            <li><b>Ready-gated</b> — the artifact still ends with Plan A's <i>"I am completely ready, I have no more questions to ask."</i> only when it truly is.</li>
+            <li><b>Your call</b> — defects can auto-apply (if you allowed it); gaps and improvements wait for endorsement.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="callout acc"><h3>Consent is inherited, not invented</h3><p>Autonomy is bounded by the same <code>Approved_rights/</code> gate from Plan B. "Author specs from observation" and "auto-apply defect fixes" are explicit flags. With them off, the loop still observes and drafts — it just stops at "here's a proposal, endorse it?" instead of applying.</p></div>
+    </section>
+
+    <!-- LIVE DASHBOARD SYSTEM -->
+    <section>
+      <p class="kicker rise">Your second ask · the live view</p>
+      <h2 class="rise">Every stage — and every past stage — has a local HTML page that never stops updating</h2>
+      <p class="lead rise">You should never have to guess what the agents are doing. So every stage writes its state to a structured status file, and a tiny writer re-renders self-contained HTML on every change. Open the dashboard once and watch the whole loop breathe.</p>
+
+      <div class="twocol" style="margin-top:18px;">
+        <div class="panel rise">
+          <h3>How "live" works without a server</h3>
+          <ul class="clean">
+            <li><b>One status bus</b> — each agent appends events to <code>.powercodex/live/status.json</code> (append-only, timestamped).</li>
+            <li><b>A writer re-renders</b> — <code>dashboard-writer</code> watches the bus and rewrites the HTML pages on every event.</li>
+            <li><b>The page self-refreshes</b> — the dashboard polls its own status file (or uses a file-watch live-reload) so it updates with no manual reload.</li>
+            <li><b>Past stages persist</b> — each completed stage keeps its own frozen HTML page; nothing is overwritten, so history stays browsable.</li>
+          </ul>
+        </div>
+        <div class="panel rise">
+          <h3>Where the live pages live</h3>
+<div class="tree">
+.powercodex/<span class="dir">live/</span>                      <span class="cm"># NEW — the live view root</span>
+├── status.json                <span class="cm"># append-only event bus</span>
+├── <span class="new">index.html</span>                 <span class="cm"># the always-on dashboard</span>
+├── stages/
+│   ├── <span class="new">01-plan.html</span>            <span class="cm"># per-stage page, kept</span>
+│   ├── <span class="new">03-build.html</span>           <span class="cm"># live while running…</span>
+│   ├── <span class="new">05-e2e.html</span>             <span class="cm"># …frozen when done</span>
+│   └── …
+├── agents/
+│   └── <span class="new">*.agent.json</span>            <span class="cm"># per-agent heartbeat + task</span>
+└── observations/
+    └── <span class="new">*.html</span>                  <span class="cm"># rendered proposals (Plan A)</span>
+</div>
+        </div>
+      </div>
+
+      <div class="callout acc"><h3>See it for real</h3><p>I built a working, animated mock of this dashboard with the <code>/emil-design-eng</code> pass — agent cards with live progress, a streaming activity feed, the loop position indicator, past-stage history, and the observation/notification panel. Open <a href="./live-dashboard-system.html"><b>live-dashboard-system.html</b></a> next to this plan.</p></div>
+    </section>
+
+    <!-- THE AGENTS -->
+    <section>
+      <p class="kicker rise">Who's working</p>
+      <h2 class="rise">The agents in the loop</h2>
+      <table class="rise">
+        <tr><th>Agent</th><th>Owns</th><th>Writes to the bus</th></tr>
+        <tr><td><b>Planner</b></td><td>Plan A — authors / updates the HTML change artifact, batches questions</td><td>plan progress, open-question count, ready signal</td></tr>
+        <tr><td><b>Build executor</b></td><td>Engine 1 — runs task contracts in the maker portal via MDM browser</td><td>per-task status, screenshots, verified-in-portal</td></tr>
+        <tr><td><b>E2E tester</b></td><td>Engine 2 — runs specs against the live app, drives self-heal</td><td>pass/fail per spec, MVP coverage %, loop iteration</td></tr>
+        <tr><td><b>Observer / spec author</b></td><td>Watches the run, classifies signals, mints new HTML specs</td><td>new observations, confidence, needs-approval flags</td></tr>
+        <tr><td><b>Dashboard writer</b></td><td>Re-renders all live HTML pages from the bus</td><td>nothing — it only reads &amp; renders</td></tr>
+      </table>
+      <div class="callout"><h3>They never block each other</h3><p>Agents communicate only through the append-only bus and the file system (task contracts, results, observations). No agent waits on another's memory — so the build executor can be mid-task while the planner drafts the next change and the dashboard reflects both at once.</p></div>
+    </section>
+
+    <!-- GUARDRAILS -->
+    <section>
+      <p class="kicker rise">So "autonomous" stays safe</p>
+      <h2 class="rise">Guardrails on the loop</h2>
+      <div class="grid">
+        <div class="card rise d1"><h3><span class="ic">🛑</span> No-progress detector</h3><p>Same failure twice with no spec change → stop and escalate to you. Relentless, not reckless.</p></div>
+        <div class="card rise d2"><h3><span class="ic">🔢</span> Iteration &amp; attempt caps</h3><p>Per-iteration cap and max-attempts-per-failure stop runaway loops before they burn the tenant or your time.</p></div>
+        <div class="card rise d3"><h3><span class="ic">🔐</span> Rights-gated autonomy</h3><p>Build, push, profile launch, autonomous re-spec, and auto-apply are each separate <code>Approved_rights/</code> flags, re-read every run.</p></div>
+        <div class="card rise d4"><h3><span class="ic">🔔</span> Notify before, not after</h3><p>Gap/improvement specs surface as a proposal you approve. Only defect fixes (if allowed) apply unattended.</p></div>
+      </div>
+    </section>
+
+    <!-- DELIVERABLES -->
+    <section>
+      <p class="kicker rise">What I'll actually build</p>
+      <h2 class="rise">Deliverables to close the loop</h2>
+      <table class="rise">
+        <tr><th>Area</th><th>Change</th><th>Type</th></tr>
+        <tr><td><b>intake gate (Step 0)</b></td><td>Dashboard collects goal/transcript + MVP, auto-fills from chat, blocks build until both present &amp; compliant</td><td><span class="pill good">new</span></td></tr>
+        <tr><td><b>goal ↔ MVP compliance check</b></td><td>Re-validate the MVP against the objective on every change; on drift, stop and clarify with you</td><td><span class="pill good">new</span></td></tr>
+        <tr><td><b>MVP proposer</b></td><td>When no prototype exists, generate an HTML MVP (Plan A style) the user refines by prompting</td><td><span class="pill good">new</span></td></tr>
+        <tr><td><b>auto-open dashboard</b></td><td>Project start always launches <code>.powercodex/live/index.html</code> as the intake + live surface</td><td><span class="pill good">new</span></td></tr>
+        <tr><td><b>observation → artifact bridge</b></td><td>Make Engine 2's <code>failure-to-change.ts</code> emit Plan A's HTML artifact; widen trigger to defect / gap / improvement</td><td><span class="pill good">new</span></td></tr>
+        <tr><td><b>.powercodex/live/</b></td><td>Status bus, <code>dashboard-writer</code>, <code>index.html</code> + per-stage + per-agent + observation pages</td><td><span class="pill good">new</span></td></tr>
+        <tr><td><b>status emit helpers</b></td><td>Shared <code>emit(event)</code> used by planner, build executor, e2e, observer</td><td><span class="pill good">new</span></td></tr>
+        <tr><td><b>Approved_rights/</b></td><td>Add <code>allowAutoRespec</code> + <code>allowAutoApplyDefects</code> flags</td><td><span class="pill warn">edit</span></td></tr>
+        <tr><td><b>OPSX prompts</b></td><td>Accept an observation as a valid starting input, not only a human request</td><td><span class="pill warn">edit</span></td></tr>
+        <tr><td><b>package.json</b></td><td><code>live:dashboard</code> (start writer + open page), <code>loop:run</code> (full lifecycle)</td><td><span class="pill warn">edit</span></td></tr>
+        <tr><td><b>OpenSpec change</b></td><td><code>add-autonomous-lifecycle-loop</code> — proposal + tasks + spec deltas, done the PowerCodex way</td><td><span class="pill good">new</span></td></tr>
+      </table>
+      <div class="callout good"><h3>Dog-fooded</h3><p>This whole thing is captured as an OpenSpec change first — authored as a Plan A HTML artifact, built and verified through Plan B. The system bootstraps itself.</p></div>
+    </section>
+
+    <!-- PHASES -->
+    <section>
+      <p class="kicker rise">Order of work</p>
+      <h2 class="rise">Four phases</h2>
+      <div class="panel rise" style="margin-top:18px;">
+        <div class="flow">
+          <div class="step"><div class="nm">1</div><div><h3>The status bus + dashboard writer</h3><p>Stand up <code>.powercodex/live/</code>, the append-only bus, and the writer that re-renders HTML on every event. Ship the live dashboard page (the demo becomes the template).</p></div></div>
+          <div class="step"><div class="nm">2</div><div><h3>Wire every agent to emit</h3><p>Planner, build executor, e2e, observer all call <code>emit()</code> at each meaningful step. Per-stage and per-agent pages start updating live.</p></div></div>
+          <div class="step"><div class="nm">3</div><div><h3>The observation → Plan-A bridge</h3><p>Teach Engine 2 to classify signals and render new HTML spec artifacts; OPSX prompts accept them. Notifications fire to dashboard + chat.</p></div></div>
+          <div class="step"><div class="nm">4</div><div><h3>Close &amp; gate the loop</h3><p>Connect Node 6 back to Node 1 under <code>Approved_rights/</code> flags. Add guardrails, verify with a real end-to-end rotation, document.</p></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- OPEN QUESTIONS -->
+    <section>
+      <p class="kicker rise">Practicing what Plan A preaches · asked once</p>
+      <h2 class="rise">Decisions I'd lock before building</h2>
+      <div class="grid">
+        <div class="card rise d1"><h3><span class="ic">①</span> Auto-apply scope</h3><p>Should defect fixes apply unattended once trusted, while gaps/improvements always wait for you? I recommend yes — defects auto, the rest gated. <span class="pill acc">suggested: yes</span></p></div>
+        <div class="card rise d2"><h3><span class="ic">②</span> Live-refresh mechanism</h3><p>Self-polling the status file (zero deps) or a tiny live-reload watcher (snappier)? I recommend polling for portability. <span class="pill acc">suggested: poll</span></p></div>
+        <div class="card rise d3"><h3><span class="ic">③</span> Where live/ lives</h3><p><code>.powercodex/live/</code> at repo root (gitignored) vs inside <code>automation/</code>. I recommend repo root so all agents share one view. <span class="pill acc">suggested: repo root</span></p></div>
+        <div class="card rise d4"><h3><span class="ic">④</span> Observation noise budget</h3><p>A confidence threshold below which improvements are logged but not surfaced, to avoid notification spam? I recommend 0.6. <span class="pill acc">suggested: 0.6</span></p></div>
+      </div>
+      <div class="callout good" style="margin-top:18px;"><h3>I am completely ready, I have no more questions to ask.</h3><p>Endorse this and I'll open the <code>add-autonomous-lifecycle-loop</code> OpenSpec change, starting with the live dashboard so you can watch the rest get built.</p></div>
+    </section>
+
+    <div class="divider" style="margin-top:64px;"></div>
+    <footer>
+      <p>PowerCodex · The Autonomous App-Lifecycle Loop · drafted 2026-06-03 · <code>docs/plans/autonomous-lifecycle-loop-plan.html</code></p>
+      <div class="doclinks">
+        <a href="./openspec-html-workflow-plan.html">Plan A · HTML workflow</a>
+        <a href="./mdm-automation-workflow-plan.html">Plan B · MDM automation</a>
+        <a href="./live-dashboard-system.html">Live dashboard demo</a>
+      </div>
+    </footer>
+
+  </div>
+</body>
+</html>

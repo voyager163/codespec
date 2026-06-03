@@ -72,7 +72,19 @@ When ready to implement, run /opsx:apply
       - Use **AskUserQuestion tool** to clarify
       - Then continue with creation
 
-5. **Show final status**
+5. **Generate the HTML review artifact (`preview.html`)**
+
+   After the markdown artifacts exist, produce a self-contained HTML review surface at `openspec/changes/<name>/preview.html` following the shared convention in [`_html-artifact.md`](./_html-artifact.md):
+   - a **Now → After** comparison of the delta,
+   - a **stated recommendation** with **pros & cons** per option,
+   - **every open question batched once**, each with a suggested answer,
+   - the **suggested proposal** drawn from `proposal.md`,
+   - a required **`/emil-design-eng` pass** (custom easings, scale-on-press, reduced-motion),
+   - and the readiness line **only** when nothing is left to clarify.
+
+   Open it (or tell the user the path). The markdown stays canonical; the HTML is the review surface.
+
+6. **Show final status**
    ```bash
    openspec status --change "<name>"
    ```
@@ -81,9 +93,10 @@ When ready to implement, run /opsx:apply
 
 After completing all artifacts, summarize:
 - Change name and location
-- List of artifacts created with brief descriptions
+- List of artifacts created with brief descriptions, including `preview.html`
 - What's ready: "All artifacts created! Ready for implementation."
 - Prompt: "Run `/opsx:apply` to start implementing."
+- When, and only when, every question is resolved and a proposal + Now/After are present, end on: "I am completely ready, I have no more questions to ask."
 
 **Artifact Creation Guidelines**
 
