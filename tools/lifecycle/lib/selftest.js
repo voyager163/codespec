@@ -13,6 +13,10 @@ const { scoreCompliance } = require('./compliance');
 const { proposeMvp } = require('./mvp');
 const { reflect } = require('./reflect');
 const { initWorkspace } = require('./workspace');
+const providers = require('./providers');
+const planRegistry = require('./plans');
+const { createSession } = require('./cockpit');
+const { importInto, detectStack } = require('./import');
 
 // Minimal HTTP helper for the live-server checks.
 function req(port, method, pathName, body) {
@@ -148,6 +152,81 @@ async function selftest() {
     const gated = await runLoop(gateRoot, { fresh: true, simulate: false, rotations: 1, render: false });
     check('rights gate blocks build when not allowed (real mode)', gated.stopped === true);
     fs.rmSync(gateRoot, { recursive: true, force: true });
+
+    // ── v2 cockpit · providers · plans · import ──────────────────────────────
+    // Providers: registry always usable, simulated streams tokens, switch works.
+    const provList = providers.list();
+    check('providers registry lists claude-code + github-copilot + simulated', ['claude-code', 'github-copilot', 'simulated'].every((id) => provList.some((p) => p.id === id)));
+    check('a provider always resolves (simulated fallback never null)', !!providers.resolve('does-not-exist'));
+    let streamed = '';
+    const sim = await providers.resolve('simulated').send({ prompt: 'add a due-date column', onToken: (t) => (streamed += t) });
+    check('simulated provider streams tokens to onToken', streamed.length > 0 && sim.text === streamed);
+    const ac = new AbortController();
+    ac.abort();
+    const aborted = await providers.resolve('simulated').send({ prompt: 'long task', signal: ac.signal });
+    check('provider send honors an abort signal (interrupt)', aborted.aborted === true);
+
+    // Plan registry + viewer.
+    planRegistry.ensurePlans(root);
+    fs.writeFileSync(path.join(planRegistry.plansDir(root), 'sample-plan.html'), '<!doctype html><title>sample</title>');
+    const planEntry = planRegistry.registerPlan(root, { title: 'Sample plan', file: '.powercodex/plans/sample-plan.html', provider: 'simulated', sections: 3 });
+    check('plan registry records a plan with an id', /^P\d+$/.test(planEntry.id));
+    check('plan registry lists + finds the latest plan', planRegistry.latestPlan(root) && planRegistry.latestPlan(root).id === planEntry.id);
+    const resolvedPlan = planRegistry.resolvePlan(root, 'latest', 4321);
+    check('plan resolver returns a servable url + path', resolvedPlan && /\/\.powercodex\//.test(resolvedPlan.url) && fs.existsSync(resolvedPlan.absPath));
+
+    // Cockpit session: command routing + chat streaming, no TTY required.
+    const session = createSession(root, { provider: 'simulated' });
+    const help = await session.handle('/help');
+    check('cockpit /help lists commands', help.kind === 'command' && help.lines.some((l) => /\/provider/.test(l)));
+    const provCmd = await session.handle('/provider');
+    check('cockpit /provider shows the active brain', provCmd.lines.some((l) => /simulated/.test(l)));
+    const rightsCmd = await session.handle('/rights build on');
+    check('cockpit /rights toggles the consent gate on disk', rightsCmd.sideEffect === 'rights' && fs.existsSync(approvalFile(root)));
+    let chatStream = '';
+    const chat = await session.handle('add a status chip to the list', { onToken: (t) => (chatStream += t) });
+    check('cockpit chat turn streams an assistant reply', chat.kind === 'chat' && chatStream.length > 0);
+    check('cockpit records prompt history', session.history.includes('/help') && session.history.length >= 4);
+    const planList = await session.handle('/plan list');
+    check('cockpit /plan list surfaces registered plans', planList.lines.some((l) => /Sample plan/.test(l)));
+
+    // Live server now serves /api/plans and the plan HTML itself.
+    const planServerChecks = await new Promise((resolve) => {
+      const srv = serve(root, { port: 0 });
+      srv.on('listening', async () => {
+        const port = srv.address().port;
+        try {
+          const apiPlans = await req(port, 'GET', '/api/plans');
+          const planPage = await new Promise((res2) => {
+            http.get({ host: '127.0.0.1', port, path: '/' + resolvedPlan.entry.file }, (r) => {
+              let d = '';
+              r.on('data', (c) => (d += c));
+              r.on('end', () => res2({ code: r.statusCode, body: d }));
+            }).on('error', () => res2({ code: 0, body: '' }));
+          });
+          srv.close(() => resolve({
+            apiOk: apiPlans.code === 200 && Array.isArray(apiPlans.json.plans) && apiPlans.json.plans.length >= 1,
+            pageOk: planPage.code === 200 && /sample/.test(planPage.body),
+          }));
+        } catch {
+          srv.close(() => resolve({}));
+        }
+      });
+    });
+    check('live server answers /api/plans', planServerChecks.apiOk);
+    check('live server serves the generated plan HTML', planServerChecks.pageOk);
+
+    // Portable import into a throwaway "any project".
+    const impRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-import-'));
+    fs.writeFileSync(path.join(impRoot, 'package.json'), JSON.stringify({ name: 'acme-portal', scripts: { dev: 'vite' }, devDependencies: { vite: '^5' } }, null, 2));
+    const imp = importInto(impRoot, { providers: 'both' });
+    check('import detects the stack (local-run for non-Dataverse)', detectStack(impRoot).mode === 'local-run');
+    check('import scaffolds .powercodex/config.json', fs.existsSync(path.join(impRoot, '.powercodex', 'config.json')));
+    check('import creates the consent gate + plan registry', fs.existsSync(approvalFile(impRoot)) && fs.existsSync(path.join(impRoot, '.powercodex', 'plans', 'index.json')));
+    const impPkg = JSON.parse(fs.readFileSync(path.join(impRoot, 'package.json'), 'utf8'));
+    check('import wires a "cockpit" script into package.json', impPkg.scripts.cockpit === 'powercodex');
+    check('import configures the chosen providers', Array.isArray(imp.config.providers) && imp.config.providers.length >= 1);
+    fs.rmSync(impRoot, { recursive: true, force: true });
 
     const passed = checks.filter(Boolean).length;
     const ok = checks.every(Boolean);

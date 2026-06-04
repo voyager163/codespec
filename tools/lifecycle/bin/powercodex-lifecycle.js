@@ -11,6 +11,10 @@ const { proposeMvp } = require('../lib/mvp');
 const { reflect } = require('../lib/reflect');
 const { initWorkspace, registerProject, summary: workspaceSummary } = require('../lib/workspace');
 const { liveDir } = require('../lib/paths');
+const { run: runCockpit } = require('../lib/cockpit');
+const { importInto } = require('../lib/import');
+const providers = require('../lib/providers');
+const planRegistry = require('../lib/plans');
 
 const root = process.cwd();
 const [command, ...rest] = process.argv.slice(2);
@@ -28,6 +32,10 @@ function help() {
 Usage: powercodex-lifecycle <command> [options]
 
 Commands:
+  cockpit [--provider <id>] launch the real terminal cockpit (TUI) — talk to your AI, drive the loop
+  import [--providers <x>]  add PowerCodex to the current project (consent gate, plan registry, script)
+  provider <list>           list available AI providers (claude-code · github-copilot · simulated)
+  plan <list|open|register> view or record generated HTML plans
   serve [options]           start the live dashboard server and monitor progress live
   loop [options]            run the lifecycle loop (Intake→Plan→…→Observe)
   emit <agent> <message>    append one event to the live board (any process can call this)
@@ -60,6 +68,62 @@ Open http://localhost:4321 (serve) — it polls /api/state and updates live.`);
 
 async function main() {
   switch (command) {
+    case 'cockpit': {
+      runCockpit(root, {
+        provider: typeof flag('provider') === 'string' ? flag('provider') : undefined,
+        port: Number.parseInt(flag('port'), 10) || 4321,
+      });
+      break; // the TUI keeps the process alive
+    }
+    case 'import': {
+      const result = importInto(root, {
+        providers: typeof flag('providers') === 'string' ? flag('providers') : 'both',
+      });
+      console.log('PowerCodex · imported into', result.stack.name);
+      for (const line of result.created) console.log('  ✓', line);
+      console.log('\nLaunch the cockpit:  npm run cockpit   (or: powercodex cockpit)');
+      break;
+    }
+    case 'provider': {
+      const sub = rest[0] || 'list';
+      if (sub === 'list') {
+        console.log('AI providers:');
+        for (const p of providers.list()) {
+          console.log(`  ${p.available ? '✓' : '·'} ${p.id} · ${p.model}${p.simulated ? ' (fallback)' : p.available ? '' : ' (not installed)'}`);
+        }
+      } else {
+        console.log('usage: provider list');
+      }
+      break;
+    }
+    case 'plan': {
+      const sub = rest[0] || 'list';
+      if (sub === 'list') {
+        const list = planRegistry.listPlans(root);
+        if (!list.length) console.log('No plans recorded yet.');
+        else for (const p of list) console.log(`  ${p.id} · ${p.title} · ${p.provider} · ${p.file}`);
+      } else if (sub === 'open') {
+        const resolved = planRegistry.resolvePlan(root, rest[1] || 'latest', Number.parseInt(flag('port'), 10) || 4321);
+        if (!resolved) {
+          console.log('No matching plan. Try: plan list');
+        } else {
+          console.log('Open in a browser (with the server running):', resolved.url);
+          console.log('File:', resolved.absPath);
+        }
+      } else if (sub === 'register') {
+        const entry = planRegistry.registerPlan(root, {
+          title: typeof flag('title') === 'string' ? flag('title') : 'Untitled plan',
+          file: typeof flag('file') === 'string' ? flag('file') : undefined,
+          provider: typeof flag('provider') === 'string' ? flag('provider') : 'unknown',
+          sections: flag('sections') != null ? Number(flag('sections')) : undefined,
+          mockups: flag('mockups') != null ? Number(flag('mockups')) : undefined,
+        });
+        console.log(`Registered ${entry.id} → ${entry.file}`);
+      } else {
+        console.log('usage: plan <list | open [ref] | register --title <t> --file <f> [--provider <p>]>');
+      }
+      break;
+    }
     case 'serve': {
       serve(root, {
         port: Number.parseInt(flag('port'), 10) || 4321,

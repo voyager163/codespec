@@ -6,7 +6,39 @@ The autonomous app-lifecycle loop from the [master plan](../../docs/plans/powerc
 Intake → Plan → Approve → Build → Run → Test → Observe → (loop)
 ```
 
-around two inputs — a **goal** and an approved **MVP** — and streams everything to an always-on **live dashboard** you keep open to monitor progress in real time.
+around two inputs — a **goal** and an approved **MVP** — and streams everything to two interchangeable surfaces: an always-on **graphical Studio dashboard** and a **real terminal cockpit (TUI)**. Same engine underneath — pick your comfort level.
+
+## Two surfaces, one engine
+
+```bash
+npm run cockpit                    # the real terminal cockpit (TUI)
+npm run cockpit -- --provider github-copilot   # talk to a specific AI
+npm run lifecycle:serve -- --open  # the graphical Studio dashboard in a browser
+```
+
+The **Cockpit** is a real terminal interface: type a request to talk to your AI, or `/` for slash commands (Tab completes, ↑/↓ recalls history, Ctrl-C interrupts a generation). Commands: `/provider` (switch AI), `/plan open·list`, `/start`, `/status`, `/rights`, `/studio`, `/help`. The **Studio** is the same data as a clickable dashboard with a Plans panel — friendlier for anyone who'd rather not live in a terminal.
+
+### Bring your own AI
+
+A provider bridge sits between the cockpit and the model, so you can switch brains with `/provider` and the lifecycle/consent gate wrap all of them equally:
+
+```bash
+npm run lifecycle -- provider list   # claude-code · github-copilot · simulated
+```
+
+Each provider is an adapter (`lib/providers/*.js`) exposing one streaming interface; auth is delegated to each vendor's own CLI. If a CLI isn't installed, the registry falls back to a built-in **simulated** brain so the cockpit is always usable.
+
+### Generated plans, viewable on demand
+
+When the agent finishes an HTML plan it's recorded in `.powercodex/plans/index.json`. `/plan open` (cockpit) or the **Generated plans** panel (Studio) serves and opens it in your browser — no hunting for files.
+
+### Drop it into any project
+
+```bash
+npm run lifecycle -- import          # scaffold consent gate, plan registry, providers, a cockpit script
+```
+
+`import` detects the stack (Power Platform → tenant engines; otherwise local-run), creates per-project `.powercodex/` state, and wires a `cockpit` npm script — so the same loop runs the rest of that project.
 
 ## Live monitoring (the dashboard)
 
@@ -37,6 +69,10 @@ Run the loop in another terminal (`npm run lifecycle -- loop --rotations 3`) and
 | Static dashboard snapshot (`.powercodex/live/index.html`) | **real**, regenerated on every event |
 | Loop orchestrator + guardrails (rights gate, no-progress detector) | **real** |
 | Build executor (Engine 1) & e2e tester (Engine 2) | **adapters** — they emit the real event stream but run in **simulation** by default |
+| Cockpit TUI (`cockpit`) + slash commands + streaming | **real** |
+| Provider bridge (`provider list`, `/provider`) — claude-code · github-copilot | **real** — uses each vendor's CLI; falls back to a simulated brain when absent |
+| Plan registry + viewer (`/plan open`, `/api/plans`) | **real** |
+| Portable `import` into any project | **real** |
 
 The two engines drive a managed Edge browser against a Power Platform tenant in production. That can't run without a tenant + MFA, so they ship as adapters with a simulation fallback. Swap the two functions in [`lib/engines.js`](lib/engines.js) for real Playwright-for-MDM adapters and nothing else changes.
 
@@ -73,4 +109,4 @@ npm run lifecycle -- workspace list        # projects + shared lesson count
 
 ## Self-test
 
-`npm run lifecycle:selftest` runs the full loop in a throwaway workspace and asserts the product produced what the plan promises — all 7 stages, build assets, the push-vs-dev rule, a self-heal, an observation, the rendered dashboard, well-formed derived state, the **live server + control endpoints** (`/api/state`, `/api/action` intake/rights/propose-mvp/reflect, `/api/emit`), **real compliance scoring**, the **MVP proposer**, the **reflection** lesson writer, **computed insights**, **notifications**, **cross-project shared learning**, and the rights gate blocking an un-approved build. **33/33 checks.**
+`npm run lifecycle:selftest` runs the full loop in a throwaway workspace and asserts the product produced what the plan promises — all 7 stages, build assets, the push-vs-dev rule, a self-heal, an observation, the rendered dashboard, well-formed derived state, the **live server + control endpoints** (`/api/state`, `/api/action` intake/rights/propose-mvp/reflect, `/api/emit`), **real compliance scoring**, the **MVP proposer**, the **reflection** lesson writer, **computed insights**, **notifications**, **cross-project shared learning**, the rights gate blocking an un-approved build, and the **v2 cockpit** pillars — the provider bridge (streaming + interrupt), the plan registry + viewer (served over HTTP), cockpit command routing + chat streaming, and the portable `import`. **53/53 checks.**

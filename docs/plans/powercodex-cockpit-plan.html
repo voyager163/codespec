@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PowerCodex Cockpit — Portable, Bring-Your-Own-AI, Real-Terminal Plan</title>
+<style>
+  :root{
+    --ease-out:cubic-bezier(0.23,1,0.32,1);
+    --bg:#0b0d12;--bg-soft:#12151d;--panel:#161a24;--panel-2:#1c2130;--line:#262c3a;--line-2:#313a4d;
+    --text:#e8ecf4;--muted:#99a2b8;--faint:#6b7488;
+    --accent:#6ea8fe;--accent-2:#a78bfa;--good:#5ad19a;--bad:#f08a8a;--warn:#f5c97b;--cyan:#67e8f9;
+    --radius:16px;--shadow:0 20px 60px -20px rgba(0,0,0,0.6);
+    --term-bg:#0a0c11;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 600px at 80% -10%,rgba(167,139,250,0.14),transparent 60%),
+      radial-gradient(900px 500px at -10% 10%,rgba(110,168,254,0.12),transparent 55%),
+      var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.6;-webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px 120px}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .mono{font-family:"SF Mono",ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace}
+
+  .rise{opacity:0;transform:translateY(14px);animation:rise 600ms var(--ease-out) forwards}
+  @keyframes rise{to{opacity:1;transform:translateY(0)}}
+  .d1{animation-delay:40ms}.d2{animation-delay:90ms}.d3{animation-delay:140ms}
+  .d4{animation-delay:190ms}.d5{animation-delay:240ms}.d6{animation-delay:290ms}
+
+  nav.top{position:sticky;top:0;z-index:30;backdrop-filter:blur(10px);background:rgba(11,13,18,0.72);border-bottom:1px solid var(--line)}
+  nav.top .inner{max-width:1080px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;gap:18px}
+  nav.top .brand{font-weight:700;letter-spacing:-0.01em;display:flex;align-items:center;gap:9px}
+  nav.top .brand .mark{width:24px;height:24px;border-radius:7px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#06203f;font-weight:900;font-size:13px}
+  nav.top .brand small{display:block;font-weight:500;font-size:11px;color:var(--faint)}
+  nav.top .links{margin-left:auto;display:flex;gap:18px;font-size:14px}
+  nav.top .links a{color:var(--muted)}
+  nav.top .links a:hover{color:var(--text);text-decoration:none}
+
+  header.hero{padding:84px 24px 30px;text-align:center;max-width:920px;margin:0 auto}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);background:rgba(110,168,254,0.1);border:1px solid rgba(110,168,254,0.25);padding:6px 14px;border-radius:999px;margin-bottom:22px}
+  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 0 rgba(110,168,254,0.6);animation:pulse 2.4s var(--ease-out) infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(110,168,254,0.5)}70%{box-shadow:0 0 0 9px rgba(110,168,254,0)}100%{box-shadow:0 0 0 0 rgba(110,168,254,0)}}
+  h1{font-size:clamp(34px,6.2vw,56px);line-height:1.06;margin:0 0 18px;letter-spacing:-0.02em;background:linear-gradient(180deg,#fff,#b9c2d8);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--muted);font-size:18px;max-width:760px;margin:0 auto}
+  .meta{margin-top:26px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;color:var(--faint);font-size:13px}
+  .meta span{border:1px solid var(--line);border-radius:999px;padding:5px 12px}
+
+  section{margin-top:74px}
+  .kicker{color:var(--accent-2);font-weight:600;font-size:13px;letter-spacing:0.14em;text-transform:uppercase;margin:0 0 10px}
+  h2{font-size:28px;margin:0 0 14px;letter-spacing:-0.01em}
+  h3{font-size:17px;margin:0 0 8px}
+  p.lead{color:var(--muted);font-size:16px;max-width:840px}
+
+  .panel{background:linear-gradient(180deg,var(--panel),var(--bg-soft));border:1px solid var(--line);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow)}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media (max-width:820px){.grid,.grid3{grid-template-columns:1fr}}
+
+  .card{background:var(--panel-2);border:1px solid var(--line);border-radius:13px;padding:20px;transition:transform .2s var(--ease-out),border-color .2s var(--ease-out)}
+  .card:hover{transform:translateY(-3px);border-color:rgba(110,168,254,0.4)}
+  .card .ic{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font-size:17px;margin-bottom:12px;background:rgba(110,168,254,0.12);border:1px solid rgba(110,168,254,0.25)}
+  .card .num{font-size:12px;font-weight:800;color:var(--faint);letter-spacing:0.08em}
+  .card p{color:var(--muted);font-size:14.5px;margin:6px 0 0}
+
+  .pill{display:inline-block;font-size:12px;padding:3px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+  .pill.good{color:var(--good);border-color:rgba(90,209,154,0.35);background:rgba(90,209,154,0.08)}
+  .pill.warn{color:var(--warn);border-color:rgba(245,201,123,0.35);background:rgba(245,201,123,0.08)}
+  .pill.acc{color:var(--accent);border-color:rgba(110,168,254,0.35);background:rgba(110,168,254,0.08)}
+  .pill.pur{color:var(--accent-2);border-color:rgba(167,139,250,0.35);background:rgba(167,139,250,0.08)}
+
+  ul.clean{list-style:none;padding:0;margin:12px 0 0}
+  ul.clean li{position:relative;padding-left:26px;margin:9px 0;color:var(--muted);font-size:14.5px}
+  ul.clean li::before{content:"→";position:absolute;left:0;color:var(--accent)}
+  ul.clean li b{color:var(--text);font-weight:600}
+
+  table{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--faint);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:0.06em}
+  td{color:var(--muted)}td b{color:var(--text)}
+  .tag{font-size:11px;padding:2px 9px;border-radius:999px;border:1px solid var(--line);white-space:nowrap}
+  .tag.real{color:var(--good);border-color:rgba(90,209,154,0.4);background:rgba(90,209,154,0.08)}
+  .tag.build{color:var(--warn);border-color:rgba(245,201,123,0.4);background:rgba(245,201,123,0.08)}
+  .tag.new{color:var(--accent-2);border-color:rgba(167,139,250,0.4);background:rgba(167,139,250,0.08)}
+
+  .callout{border-left:3px solid var(--accent);background:rgba(110,168,254,0.06);padding:14px 16px;border-radius:0 10px 10px 0;color:var(--muted);font-size:14.5px}
+  code.inl{background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:1px 7px;font-size:13px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;color:#cdd6ea}
+
+  .shot{margin-top:18px}
+  .shot .cap{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--faint);margin-bottom:10px}
+  .shot .cap .badge{font-size:10.5px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#06203f;background:var(--accent);border-radius:5px;padding:2px 8px}
+  .shot .cap .badge.b{background:var(--accent-2)}
+
+  /* ---------- terminal window chrome ---------- */
+  .term{border:1px solid var(--line-2);border-radius:13px;overflow:hidden;box-shadow:var(--shadow);background:var(--term-bg)}
+  .term .bar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#11151e;border-bottom:1px solid var(--line)}
+  .term .lights{display:flex;gap:7px}
+  .term .lights i{width:11px;height:11px;border-radius:50%;display:block}
+  .term .lights .r{background:#f0635e}.term .lights .y{background:#f5bf4f}.term .lights .g{background:#5ad19a}
+  .term .ttl{font-size:12px;color:var(--faint);font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace}
+  .term .ttl b{color:var(--muted);font-weight:600}
+  .term .tabs{margin-left:auto;display:flex;gap:6px}
+  .term .tabs .t{font-size:11px;padding:3px 9px;border-radius:6px;color:var(--faint);border:1px solid transparent}
+  .term .tabs .t.on{color:var(--text);background:var(--panel-2);border-color:var(--line)}
+  .term .body{padding:16px 18px;font-family:"SF Mono",ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;font-size:13px;line-height:1.65;color:#d7def0}
+  .term .body .dim{color:var(--faint)}
+  .term .u{color:var(--cyan)}
+  .term .ai{color:var(--accent-2)}
+  .term .ok{color:var(--good)}
+  .term .er{color:var(--bad)}
+  .term .wn{color:var(--warn)}
+  .term .ac{color:var(--accent)}
+  .term .row{white-space:pre-wrap}
+  .term .gut{color:var(--faint);user-select:none}
+
+  /* prompt line + cursor */
+  .promptline{display:flex;align-items:flex-start;gap:8px;border-top:1px solid var(--line);padding:12px 18px;background:#0c0f16}
+  .promptline .ps{color:var(--good);flex:none}
+  .promptline .ed{flex:1;color:#eaf0ff;white-space:pre-wrap}
+  .cur{display:inline-block;width:8px;height:16px;background:var(--accent);vertical-align:-3px;animation:blink 1.05s steps(1) infinite;border-radius:1px}
+  @keyframes blink{0%,50%{opacity:1}51%,100%{opacity:0}}
+
+  /* slash autocomplete popup */
+  .popwrap{position:relative}
+  .pop{border:1px solid var(--line-2);border-radius:10px;background:#0e131c;box-shadow:0 18px 40px -16px rgba(0,0,0,0.7);overflow:hidden;max-width:420px}
+  .pop .ph{font-size:10.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--faint);padding:8px 12px 6px}
+  .pop .it{display:flex;align-items:center;gap:10px;padding:7px 12px;font-size:12.5px;color:var(--muted);border-top:1px solid rgba(38,44,58,0.6)}
+  .pop .it .cmd{color:var(--accent);min-width:108px}
+  .pop .it.sel{background:linear-gradient(90deg,rgba(110,168,254,0.14),transparent)}
+  .pop .it.sel .cmd{color:var(--text)}
+  .pop .it .arr{margin-left:auto;color:var(--faint)}
+
+  /* tool output block */
+  .tool{border:1px solid var(--line);border-radius:9px;margin:8px 0;background:#0c0f16;overflow:hidden}
+  .tool .th{display:flex;align-items:center;gap:9px;padding:7px 12px;font-size:12px;background:#10141d;border-bottom:1px solid var(--line)}
+  .tool .th .ico{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 1.6s infinite}
+  .tool .th .ico.done{background:var(--good);animation:none}
+  .tool .th .nm{color:var(--text);font-weight:600}
+  .tool .th .meta{margin-left:auto;color:var(--faint);font-size:11px}
+  .tool .tb{padding:8px 12px;font-size:12px;color:var(--muted);white-space:pre-wrap}
+
+  /* interrupt banner */
+  .intr{display:flex;align-items:center;gap:10px;border:1px solid rgba(245,201,123,0.4);background:rgba(245,201,123,0.08);border-radius:9px;padding:8px 12px;margin:8px 0;font-size:12.5px;color:var(--warn)}
+  .intr .k{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.05em;color:#06203f;background:var(--warn);border-radius:5px;padding:2px 7px}
+
+  /* provider chips */
+  .provrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+  .prov{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:9px;padding:6px 11px;font-size:12px;color:var(--muted)}
+  .prov.on{border-color:rgba(90,209,154,0.45);background:rgba(90,209,154,0.07);color:var(--text)}
+  .prov .d{width:8px;height:8px;border-radius:50%;background:var(--faint)}
+  .prov.on .d{background:var(--good);box-shadow:0 0 8px rgba(90,209,154,0.7)}
+
+  /* architecture stack */
+  .arch{display:grid;gap:10px;margin-top:6px}
+  .layer{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--panel-2)}
+  .layer .lh{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700}
+  .layer .lh .lt{font-size:10.5px;font-weight:800;color:var(--accent);letter-spacing:0.08em;text-transform:uppercase;background:rgba(110,168,254,0.1);border:1px solid rgba(110,168,254,0.25);padding:2px 8px;border-radius:6px}
+  .layer p{margin:7px 0 0;color:var(--muted);font-size:13.5px}
+  .layer.hl{border-color:rgba(167,139,250,0.45);background:linear-gradient(180deg,rgba(167,139,250,0.07),var(--panel-2))}
+  .layer.hl .lt{color:var(--accent-2);background:rgba(167,139,250,0.12);border-color:rgba(167,139,250,0.3)}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+  .chips .c{font-size:11.5px;padding:3px 9px;border-radius:7px;border:1px solid var(--line);color:var(--muted);background:#0e121b}
+  .down{text-align:center;color:var(--faint);font-size:16px;line-height:1}
+
+  /* file tree */
+  pre.tree{background:#0c0f16;border:1px solid var(--line);border-radius:12px;padding:16px 18px;overflow-x:auto;font-size:12.8px;line-height:1.7;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;color:#d7def0;margin:12px 0 0}
+  pre.tree .dir{color:var(--accent)}
+  pre.tree .new{color:var(--good)}
+  pre.tree .c{color:var(--faint)}
+
+  /* phase steps */
+  ol.steps{list-style:none;counter-reset:s;padding:0;margin:18px 0 0}
+  ol.steps li{counter-increment:s;position:relative;padding:0 0 22px 52px}
+  ol.steps li::before{content:counter(s);position:absolute;left:0;top:0;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:14px;color:#06203f;background:linear-gradient(135deg,var(--accent),var(--accent-2))}
+  ol.steps li::after{content:"";position:absolute;left:16px;top:38px;bottom:2px;width:2px;background:linear-gradient(180deg,rgba(110,168,254,0.4),transparent)}
+  ol.steps li:last-child{padding-bottom:0}
+  ol.steps li:last-child::after{display:none}
+  ol.steps h3{margin:4px 0 6px}
+  ol.steps p{color:var(--muted);font-size:14.5px;margin:0}
+
+  footer{margin-top:90px;padding-top:28px;border-top:1px solid var(--line);text-align:center;color:var(--faint);font-size:13px}
+  footer a{color:var(--muted)}
+
+  /* ---------- mode toggle ---------- */
+  .toggle{display:inline-flex;border:1px solid var(--line);border-radius:11px;overflow:hidden;background:var(--panel-2)}
+  .toggle .opt{display:flex;align-items:center;gap:8px;padding:9px 16px;font-size:13px;font-weight:600;color:var(--muted);cursor:default}
+  .toggle .opt.on{color:#06203f;background:linear-gradient(135deg,var(--accent),var(--accent-2))}
+  .toggle .opt .ti{font-size:14px}
+
+  /* ---------- browser window chrome ---------- */
+  .win{border:1px solid var(--line-2);border-radius:13px;overflow:hidden;box-shadow:var(--shadow);background:var(--panel)}
+  .win .wbar{display:flex;align-items:center;gap:10px;padding:9px 13px;background:#11151e;border-bottom:1px solid var(--line)}
+  .win .lights{display:flex;gap:7px}
+  .win .lights i{width:11px;height:11px;border-radius:50%}
+  .win .lights .r{background:#f0635e}.win .lights .y{background:#f5bf4f}.win .lights .g{background:#5ad19a}
+  .win .addr{flex:1;display:flex;align-items:center;gap:8px;background:#0a0c11;border:1px solid var(--line);border-radius:8px;padding:5px 11px;font-size:11.5px;color:var(--muted);font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace}
+  .win .addr .lock{color:var(--good)}
+  .win .wtog{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:10.5px;font-weight:700}
+  .win .wtog span{padding:4px 9px;color:var(--faint)}
+  .win .wtog span.on{color:#06203f;background:var(--accent)}
+  .win .wbody{padding:14px}
+
+  /* studio mini widgets */
+  .sd-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  .sd-brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:13px}
+  .sd-brand .m{width:24px;height:24px;border-radius:7px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#06203f;font-weight:900;font-size:12px}
+  .sd-stat{margin-left:auto;display:flex;gap:8px;align-items:center}
+  .micro{font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+  .micro.live{color:var(--accent);border-color:rgba(110,168,254,.35);background:rgba(110,168,254,.08)}
+  .micro.live .d{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pulse 1.5s infinite}
+  .micro.good{color:var(--good);border-color:rgba(90,209,154,.35);background:rgba(90,209,154,.08)}
+  .micro.pur{color:var(--accent-2);border-color:rgba(167,139,250,.35);background:rgba(167,139,250,.08)}
+
+  .sd-intake{display:flex;gap:12px;flex-wrap:wrap;align-items:center;border:1px solid var(--line);border-radius:11px;background:linear-gradient(180deg,rgba(110,168,254,.05),var(--panel-2));padding:10px 13px;margin-bottom:11px;font-size:12px;color:var(--muted)}
+  .sd-intake .tg{font-size:9.5px;font-weight:800;color:#06203f;background:var(--accent);border-radius:4px;padding:1px 6px;margin-right:5px}
+  .sd-intake .tg.b{background:var(--accent-2)}
+  .sd-rights{display:flex;gap:5px;margin-left:auto;flex-wrap:wrap}
+  .rchip{font-size:10.5px;padding:3px 8px;border-radius:999px;border:1px solid var(--line);color:var(--faint)}
+  .rchip.on{color:var(--good);border-color:rgba(90,209,154,.35);background:rgba(90,209,154,.08)}
+
+  .sd-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:11px}
+  @media(max-width:680px){.sd-strip{grid-template-columns:repeat(4,1fr)}}
+  .sd-st{position:relative;border:1px solid var(--line);border-radius:9px;padding:8px 8px;background:var(--panel-2);overflow:hidden}
+  .sd-st .n{font-size:9.5px;color:var(--faint);font-weight:700}
+  .sd-st .t{font-size:11px;font-weight:600;margin-top:1px}
+  .sd-st.done{border-color:rgba(90,209,154,.3)}.sd-st.done .n{color:var(--good)}
+  .sd-st.active{border-color:rgba(110,168,254,.55);background:linear-gradient(180deg,rgba(110,168,254,.1),var(--panel-2))}
+  .sd-st.active::after{content:"";position:absolute;left:0;bottom:0;height:2px;width:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));animation:sweep 2.1s linear infinite}
+  @keyframes sweep{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+
+  .sd-grid{display:grid;grid-template-columns:1.35fr 1fr;gap:12px}
+  @media(max-width:680px){.sd-grid{grid-template-columns:1fr}}
+  .sd-lbl{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-2);font-weight:700;margin:0 0 8px}
+  .sd-agents{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  @media(max-width:480px){.sd-agents{grid-template-columns:1fr}}
+  .sd-ag{border:1px solid var(--line);border-radius:10px;padding:10px;background:linear-gradient(180deg,var(--panel-2),var(--bg-soft))}
+  .sd-ag.work{border-color:rgba(110,168,254,.4)}
+  .sd-ag .h{display:flex;align-items:center;gap:8px}
+  .sd-ag .av{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;font-size:13px;background:var(--panel);border:1px solid var(--line)}
+  .sd-ag .nm{font-size:12px;font-weight:700}
+  .sd-ag .bg{margin-left:auto;font-size:9px;font-weight:700;text-transform:uppercase;padding:2px 7px;border-radius:999px}
+  .sd-ag .bg.work{color:var(--accent);background:rgba(110,168,254,.12)}
+  .sd-ag .bg.done{color:var(--good);background:rgba(90,209,154,.12)}
+  .sd-ag .bg.idle{color:var(--faint);background:rgba(107,116,136,.12)}
+  .sd-ag .pb{margin-top:8px;height:5px;border-radius:999px;background:var(--panel);overflow:hidden;border:1px solid var(--line)}
+  .sd-ag .pb>span{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+  .sd-feed{border:1px solid var(--line);border-radius:10px;background:var(--panel-2);padding:6px 11px;font-size:11.5px}
+  .sd-feed .f{display:grid;grid-template-columns:46px 9px 1fr;gap:7px;align-items:start;padding:6px 0;border-bottom:1px solid rgba(38,44,58,.6)}
+  .sd-feed .f:last-child{border-bottom:0}
+  .sd-feed .ts{color:var(--faint);font-size:10px}
+  .sd-feed .dt{width:7px;height:7px;border-radius:50%;margin-top:4px}
+  .sd-feed .src{color:var(--accent);font-weight:600}
+
+  /* the docked terminal drawer — the "terminal power" inside Studio */
+  .dock{margin-top:12px;border:1px solid var(--line-2);border-radius:11px;overflow:hidden;background:var(--term-bg);box-shadow:0 -10px 30px -20px rgba(0,0,0,.6)}
+  .dock .dh{display:flex;align-items:center;gap:10px;padding:8px 13px;background:#10141d;border-bottom:1px solid var(--line);font-size:11.5px}
+  .dock .dh .gico{color:var(--good)}
+  .dock .dh .nm{font-weight:700;color:var(--text)}
+  .dock .dh .kk{margin-left:auto;font-size:10.5px;color:var(--faint);border:1px solid var(--line);border-radius:6px;padding:2px 7px}
+  .dock .db{padding:11px 14px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.6;color:#d7def0}
+  .dock .pl{display:flex;gap:8px;align-items:center;border-top:1px solid var(--line);padding:9px 14px;background:#0c0f16;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:12px}
+  .dock .pl .ps{color:var(--good)}.dock .pl .tx{color:#eaf0ff}
+
+  /* tool catalog */
+  .toolcat{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:6px}
+  @media(max-width:820px){.toolcat{grid-template-columns:1fr}}
+  .tg2{border:1px solid var(--line);border-radius:13px;background:var(--panel-2);padding:16px 18px}
+  .tg2 .gh{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:700;margin-bottom:4px}
+  .tg2 .gh .gi{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-size:14px;background:rgba(110,168,254,.12);border:1px solid rgba(110,168,254,.25)}
+  .tg2 .gs{font-size:12px;color:var(--faint);margin:0 0 10px}
+  .tg2 ul{list-style:none;margin:0;padding:0}
+  .tg2 li{display:flex;gap:9px;align-items:baseline;padding:5px 0;border-top:1px dashed rgba(38,44,58,.7);font-size:12.5px;color:var(--muted)}
+  .tg2 li:first-of-type{border-top:0}
+  .tg2 li code{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;color:var(--accent);font-size:11.5px;min-width:118px;flex:none}
+  .tg2 li b{color:var(--text);font-weight:600}
+
+  /* end-to-end flow strip of mini screenshots */
+  .flow{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:6px}
+  @media(max-width:760px){.flow{grid-template-columns:1fr}}
+  .step{border:1px solid var(--line);border-radius:13px;background:var(--panel);overflow:hidden}
+  .step .sh{display:flex;align-items:center;gap:9px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--panel-2)}
+  .step .sn{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:12px;color:#06203f;background:linear-gradient(135deg,var(--accent),var(--accent-2));flex:none}
+  .step .st{font-size:13.5px;font-weight:700}
+  .step .sb{padding:13px 14px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:11.8px;line-height:1.6;color:#d7def0;min-height:96px}
+  .step .sb .dim{color:var(--faint)}.step .sb .ok{color:var(--good)}.step .sb .ac{color:var(--accent)}
+  .step .sb .ai{color:var(--accent-2)}.step .sb .u{color:var(--cyan)}.step .sb .wn{color:var(--warn)}
+
+  /* form mock inside a step */
+  .fld{margin:0 0 9px}
+  .fld label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);margin-bottom:4px}
+  .fld .box{background:#0a0c11;border:1px solid var(--line);border-radius:7px;padding:7px 10px;font-size:12px;color:var(--text);font-family:-apple-system,"Segoe UI",sans-serif}
+  .fld .box.ph{color:var(--faint)}
+  .gobtn{display:inline-block;margin-top:2px;font-size:12px;font-weight:700;color:#06203f;background:linear-gradient(135deg,var(--accent),var(--accent-2));border-radius:8px;padding:7px 14px;font-family:-apple-system,"Segoe UI",sans-serif}
+
+  .finale{background:linear-gradient(180deg,rgba(167,139,250,.08),var(--panel));border:1px solid rgba(167,139,250,.3)}
+
+  @media (prefers-reduced-motion:reduce){
+    .rise{animation:none;opacity:1;transform:none}
+    .eyebrow .dot,.cur,.tool .th .ico,.micro.live .d,.sd-st.active::after{animation:none}
+    *,*::before,*::after{transition-duration:0.01ms!important}
+  }
+</style>
+</head>
+<body>
+  <nav class="top">
+    <div class="inner">
+      <div class="brand"><span class="mark">P</span><span>PowerCodex <small>cockpit plan · v2 direction</small></span></div>
+      <div class="links">
+        <a href="#what">What changes</a>
+        <a href="#cockpit">The cockpit</a>
+        <a href="#studio">Studio</a>
+        <a href="#tools">Tools</a>
+        <a href="#build">Build a project</a>
+        <a href="#arch">Architecture</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="eyebrow rise d1"><span class="dot"></span> The Hermes-inspired redirection</div>
+    <h1 class="rise d2">Drop PowerCodex into any project.<br/>Drive it from a real terminal.</h1>
+    <p class="sub rise d3">A new direction for PowerCodex: an <b>importable lifecycle</b> you add to any repo, a <b>bring-your-own-AI</b> bridge so you talk to Claude Code <i>or</i> GitHub Copilot from one place, a <b>plan viewer</b> that pops open the HTML plan the moment the agent finishes it, and — replacing the localhost dashboard — a <b>real terminal cockpit</b> with multiline editing, slash-command autocomplete, history, interrupt-and-redirect, and streaming tool output.</p>
+    <div class="meta rise d5">
+      <span>Inspired by Nous Research · Hermes Agent</span>
+      <span>Provider-agnostic</span>
+      <span>TUI-first, browser on demand</span>
+      <span>Mockups below — exactly how it looks</span>
+    </div>
+  </header>
+
+  <div class="wrap">
+
+    <!-- WHAT CHANGES -->
+    <section id="what" class="rise d2">
+      <p class="kicker">The four changes</p>
+      <h2>What you asked for, as one product</h2>
+      <p class="lead">Today PowerCodex serves a static dashboard at <code class="inl">localhost:4321</code> for one workflow. The v2 direction turns it into a portable cockpit you can carry between projects and point at any AI. Four moves:</p>
+
+      <div class="grid" style="margin-top:18px">
+        <div class="card">
+          <div class="num">01</div>
+          <div class="ic">📦</div>
+          <h3>Import into any project</h3>
+          <p>One command copies the PowerCodex core, lifecycle loop, and consent gate into an existing repo and wires up scripts — so the same loop runs the rest of <i>that</i> project, Power Platform or not.</p>
+        </div>
+        <div class="card">
+          <div class="num">02</div>
+          <div class="ic">🔀</div>
+          <h3>Talk to the AI of your choice</h3>
+          <p>A provider layer (Hermes-style) lets you switch between <b>Claude Code</b> and <b>GitHub Copilot</b> with <code class="inl">/provider</code> — same cockpit, same lifecycle, different brain behind it.</p>
+        </div>
+        <div class="card">
+          <div class="num">03</div>
+          <div class="ic">📄</div>
+          <h3>View the plan the instant it's ready</h3>
+          <p>When the agent finishes generating an HTML plan, the cockpit announces it and offers <code class="inl">/plan open</code> — the rendered plan opens in your browser, no hunting for files.</p>
+        </div>
+        <div class="card">
+          <div class="num">04</div>
+          <div class="ic">⌨️</div>
+          <h3>A real terminal, not a web page</h3>
+          <p>The localhost HTML view is replaced by a full TUI cockpit: multiline editing, slash autocomplete, scrollable conversation history, interrupt-and-redirect, and live streaming tool output.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- THE COCKPIT (hero screenshot) -->
+    <section id="cockpit" class="rise d2">
+      <p class="kicker">Screenshot 1 · the cockpit</p>
+      <h2>The real terminal interface</h2>
+      <p class="lead">This is what launches instead of a browser. <code class="inl">npx powercodex</code> opens a full-screen TUI: a header strip with project, provider, and lifecycle stage; a scrollable transcript; streaming tool output inline; and a multiline composer with a live cursor at the bottom.</p>
+
+      <div class="shot">
+        <div class="cap"><span class="badge">TUI</span> Main cockpit · <code class="inl">npx powercodex</code> · provider: Claude Code · stage: Build</div>
+        <div class="term">
+          <div class="bar">
+            <div class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></div>
+            <div class="ttl"><b>powercodex</b> — field-tasks · loop ▸ rotation 2/3 · ⌥⏎ newline · / for commands</div>
+            <div class="tabs"><span class="t on">Chat</span><span class="t">Lifecycle</span><span class="t">Plans</span><span class="t">Logs</span></div>
+          </div>
+          <div class="body">
+<div class="row"><span class="dim">┌─ context ───────────────────────────────────────────────────────────────┐</span></div>
+<div class="row"><span class="dim">│</span> project <span class="ac">field-tasks</span>  ·  provider <span class="ai">claude-code</span>  ·  rights <span class="ok">build✓ push✗ auto-fix✓</span>  <span class="dim">│</span></div>
+<div class="row"><span class="dim">│</span> goal <span class="dim">"field techs see assigned tasks with due dates"</span>  ·  MVP compliance <span class="ok">82%</span> <span class="dim">  │</span></div>
+<div class="row"><span class="dim">└───────────────────────────────────────────────────────────────────────────┘</span></div>
+<div class="row">&nbsp;</div>
+<div class="row"><span class="u">you ▸</span> add a due-date column to the task list and sort soonest-first</div>
+<div class="row">&nbsp;</div>
+<div class="row"><span class="ai">codex ▸</span> Planning. I'll edit the list view, add a <span class="ac">DueDate</span> field, sort ascending,</div>
+<div class="row">       then run the e2e check against the running app.</div>
+
+            <div class="tool">
+              <div class="th"><span class="ico done"></span><span class="nm">edit</span><span class="dim">screens/TaskList.fx.yaml</span><span class="meta">+14 −3 · 120ms</span></div>
+              <div class="tb"><span class="ok">+</span>   Items: =Sort(Tasks, DueDate, Ascending)
+<span class="ok">+</span>   ThisItem.DueDate  →  formatted "ddd d mmm"</div>
+            </div>
+
+            <div class="tool">
+              <div class="th"><span class="ico"></span><span class="nm">e2e · build-executor</span><span class="dim">edge ▸ tenant</span><span class="meta">streaming…</span></div>
+              <div class="tb"><span class="dim">▸ launch app   </span><span class="ok">ok</span>
+<span class="dim">▸ open Tasks   </span><span class="ok">ok</span>  6 rows rendered
+<span class="dim">▸ assert sort  </span><span class="wn">checking…</span> <span class="cur" style="height:13px"></span></div>
+            </div>
+
+<div class="row">&nbsp;</div>
+<div class="row"><span class="dim">history · 47 turns · ↑/↓ recall · Ctrl-R search · Esc to interrupt</span></div>
+          </div>
+          <div class="promptline">
+            <span class="ps">▸</span>
+            <span class="ed">also make overdue rows red, and<br/>group by site<span class="cur"></span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top:16px">
+        <div class="card"><h3>⌨️ Multiline editing</h3><p><code class="inl">⌥⏎</code> / <code class="inl">Shift-↵</code> inserts a newline; <code class="inl">↵</code> sends. The composer grows as you type — paste a whole spec without it firing early.</p></div>
+        <div class="card"><h3>🕑 Conversation history</h3><p><code class="inl">↑/↓</code> recalls previous prompts, <code class="inl">Ctrl-R</code> fuzzy-searches the transcript. History persists per project across sessions.</p></div>
+        <div class="card"><h3>⏸ Interrupt & redirect</h3><p><code class="inl">Esc</code> stops the agent mid-stream without losing context — you type a correction and it picks up from where it was.</p></div>
+        <div class="card"><h3>📡 Streaming tool output</h3><p>Edits, browser steps, and e2e assertions render inline as they happen — the same live event bus that fed the old dashboard, now in the terminal.</p></div>
+      </div>
+    </section>
+
+    <!-- SLASH AUTOCOMPLETE -->
+    <section class="rise d2">
+      <p class="kicker">Screenshot 2 · slash commands</p>
+      <h2>Slash-command autocomplete</h2>
+      <p class="lead">Type <code class="inl">/</code> and a filtered, keyboard-navigable palette appears above the composer — lifecycle controls, provider switching, plan viewing, and consent all live here. <code class="inl">Tab</code> completes, <code class="inl">↵</code> runs.</p>
+
+      <div class="shot">
+        <div class="cap"><span class="badge b">PALETTE</span> Composer showing <code class="inl">/p</code> filtered · ↑/↓ to move · Tab to complete</div>
+        <div class="term">
+          <div class="bar">
+            <div class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></div>
+            <div class="ttl"><b>powercodex</b> — command palette</div>
+          </div>
+          <div class="body" style="padding-bottom:8px">
+<div class="row"><span class="ai">codex ▸</span> Ready. Type a request, or <span class="ac">/</span> for commands.</div>
+<div class="row">&nbsp;</div>
+            <div class="popwrap">
+              <div class="pop">
+                <div class="ph">commands matching “/p”</div>
+                <div class="it sel"><span class="cmd">/provider</span><span>switch AI — claude-code · copilot</span><span class="arr">↵</span></div>
+                <div class="it"><span class="cmd">/plan open</span><span>open the latest HTML plan in the browser</span></div>
+                <div class="it"><span class="cmd">/plan list</span><span>show every generated plan + status</span></div>
+                <div class="it"><span class="cmd">/push</span><span>push the app to the tenant (needs right)</span></div>
+                <div class="it"><span class="cmd">/pause</span><span>halt the lifecycle loop at the next gate</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="promptline">
+            <span class="ps">▸</span>
+            <span class="ed">/p<span class="cur"></span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout" style="margin-top:14px">
+        <b>The consent gate is still real.</b> <code class="inl">/push</code>, <code class="inl">/build</code> and auto-fix all read <code class="inl">Approved_rights/</code> first. If the flag is off, the command is shown greyed in the palette and explains which right to enable — the loop never silently does something you didn't allow.
+      </div>
+    </section>
+
+    <!-- PROVIDERS -->
+    <section id="providers" class="rise d2">
+      <p class="kicker">Screenshot 3 · bring your own AI</p>
+      <h2>Claude Code or GitHub Copilot — your call</h2>
+      <p class="lead">A thin <b>provider adapter</b> sits between the cockpit and the model, exactly like Hermes' provider layer. The lifecycle loop, consent gate, and tool bus don't care which one is behind it — <code class="inl">/provider</code> swaps the brain mid-session and the transcript continues.</p>
+
+      <div class="shot">
+        <div class="cap"><span class="badge">SWITCH</span> Running <code class="inl">/provider copilot</code> mid-conversation</div>
+        <div class="term">
+          <div class="bar">
+            <div class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></div>
+            <div class="ttl"><b>powercodex</b> — provider switch</div>
+          </div>
+          <div class="body">
+            <div class="provrow" style="margin-bottom:12px">
+              <span class="prov on"><span class="d"></span>claude-code · Opus 4.8</span>
+              <span class="prov"><span class="d"></span>github-copilot · GPT-5</span>
+              <span class="prov"><span class="d"></span>+ add provider…</span>
+            </div>
+<div class="row"><span class="u">you ▸</span> /provider copilot</div>
+<div class="row"><span class="ac">⟳ switching provider…</span> handing off transcript + tool context</div>
+<div class="row"><span class="ok">✓ now on github-copilot</span> <span class="dim">(GPT-5 · authenticated via gh)</span></div>
+<div class="row">  <span class="dim">conversation preserved · 47 turns · same lifecycle stage (Build)</span></div>
+<div class="row">&nbsp;</div>
+<div class="row"><span class="ai">copilot ▸</span> Picking up where Claude left off — overdue rows red, grouped by site.</div>
+<div class="row">          Editing the list view now.</div>
+            <div class="tool">
+              <div class="th"><span class="ico done"></span><span class="nm">edit</span><span class="dim">screens/TaskList.fx.yaml</span><span class="meta">+9 −1 · 88ms</span></div>
+              <div class="tb"><span class="ok">+</span>   Color: =If(ThisItem.DueDate &lt; Today(), Red, Black)</div>
+            </div>
+          </div>
+          <div class="promptline">
+            <span class="ps">▸</span>
+            <span class="ed"><span class="cur"></span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top:16px">
+        <div class="card">
+          <h3>How the bridge works</h3>
+          <ul class="clean">
+            <li>Each provider is an adapter exposing one interface: <code class="inl">send()</code>, <code class="inl">stream()</code>, <code class="inl">tools()</code>.</li>
+            <li><b>Claude Code</b> adapter drives the Claude Agent SDK / CLI.</li>
+            <li><b>Copilot</b> adapter drives the GitHub Copilot CLI (<code class="inl">gh copilot</code> / agent).</li>
+            <li>Auth is delegated — you log in with each vendor's own CLI once.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Why route through the cockpit</h3>
+          <ul class="clean">
+            <li>One transcript, history, and slash palette regardless of brain.</li>
+            <li>The lifecycle loop + consent gate wrap <b>both</b> equally.</li>
+            <li>Compare answers: ask Claude, switch, ask Copilot, keep the better edit.</li>
+            <li>Adding a third provider later is just one more adapter file.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- PLAN VIEWER -->
+    <section id="planviewer" class="rise d2">
+      <p class="kicker">Screenshot 4 · the plan viewer</p>
+      <h2>The plan opens itself when it's done</h2>
+      <p class="lead">When the agent finishes writing an HTML plan (proposal, MVP, redesign — like the very file you're reading), the cockpit drops a <b>plan-ready card</b> into the transcript. Press <code class="inl">o</code> or run <code class="inl">/plan open</code> and PowerCodex serves it and launches your browser at the rendered page.</p>
+
+      <div class="shot">
+        <div class="cap"><span class="badge b">PLAN READY</span> Agent finished an HTML plan · one keystroke to view</div>
+        <div class="term">
+          <div class="bar">
+            <div class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></div>
+            <div class="ttl"><b>powercodex</b> — plan generated</div>
+            <div class="tabs"><span class="t">Chat</span><span class="t on">Plans</span></div>
+          </div>
+          <div class="body">
+<div class="row"><span class="ai">codex ▸</span> Plan written. <span class="ok">3 sections · 2 mockups · 6 tasks.</span></div>
+<div class="row">&nbsp;</div>
+            <div class="tool" style="border-color:rgba(167,139,250,0.4)">
+              <div class="th" style="background:rgba(167,139,250,0.08)">
+                <span class="ico done" style="background:var(--accent-2)"></span>
+                <span class="nm">📄 plan ready</span>
+                <span class="dim">.powercodex/plans/due-date-redesign.html</span>
+                <span class="meta">just now</span>
+              </div>
+              <div class="tb"><span class="ac">Due-date redesign — list view + overdue styling + grouping</span>
+generated by <span class="ai">claude-code</span> · 18 KB · self-contained
+
+  <span class="ok">[o] open in browser</span>   <span class="dim">[d] diff vs last plan   [a] approve → build   [/plan list] all plans</span></div>
+            </div>
+<div class="row">&nbsp;</div>
+<div class="row"><span class="u">you ▸</span> o</div>
+<div class="row"><span class="ac">⟳ serving plan</span> → http://127.0.0.1:4321/plans/due-date-redesign.html</div>
+<div class="row"><span class="ok">✓ opened in your default browser</span> <span class="dim">· cockpit stays focused here</span></div>
+          </div>
+          <div class="promptline">
+            <span class="ps">▸</span>
+            <span class="ed"><span class="cur"></span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout" style="margin-top:14px">
+        The plan viewer reuses PowerCodex's existing zero-dependency static server — it already knows how to serve <code class="inl">.html</code>. New bit: a tiny <b>plan registry</b> (<code class="inl">.powercodex/plans/index.json</code>) the agent appends to whenever it writes a plan, so <code class="inl">/plan list</code>, diffing, and "open latest" all work without scanning the disk.
+      </div>
+    </section>
+
+    <!-- IMPORT -->
+    <section class="rise d2">
+      <p class="kicker">Screenshot 5 · portability</p>
+      <h2>Import it into any project</h2>
+      <p class="lead">From the root of any repo, one command vendors the PowerCodex core, creates the per-project <code class="inl">.powercodex/</code> and <code class="inl">Approved_rights/</code>, and adds the cockpit script — then the same lifecycle drives the rest of that project.</p>
+
+      <div class="shot">
+        <div class="cap"><span class="badge">IMPORT</span> Run once inside an existing repo</div>
+        <div class="term">
+          <div class="bar">
+            <div class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></div>
+            <div class="ttl"><b>~/work/acme-portal</b> — bash</div>
+          </div>
+          <div class="body">
+<div class="row"><span class="ok">$</span> npx powercodex import</div>
+<div class="row"><span class="dim">PowerCodex · portable lifecycle cockpit</span></div>
+<div class="row"><span class="ok">✓</span> detected project       <span class="dim">node + vite · no Dataverse → local-run mode</span></div>
+<div class="row"><span class="ok">✓</span> vendored core          <span class="dim">.powercodex/core/  (zero-dependency)</span></div>
+<div class="row"><span class="ok">✓</span> created consent gate    <span class="dim">Approved_rights/approval.json  (all rights off)</span></div>
+<div class="row"><span class="ok">✓</span> created plan registry   <span class="dim">.powercodex/plans/index.json</span></div>
+<div class="row"><span class="ok">✓</span> wired script            <span class="dim">package.json → "cockpit": "powercodex"</span></div>
+<div class="row"><span class="wn">?</span> which AI provider?      <span class="ai">[1] claude-code  [2] github-copilot  [3] both</span> <span class="ok">▸ 3</span></div>
+<div class="row"><span class="ok">✓</span> providers configured    <span class="dim">claude-code · github-copilot</span></div>
+<div class="row">&nbsp;</div>
+<div class="row"><span class="ok">Done.</span> Launch the cockpit:</div>
+<div class="row">   <span class="ac">npm run cockpit</span>   <span class="dim"># or: npx powercodex</span></div>
+          </div>
+        </div>
+      </div>
+
+      <p class="lead" style="margin-top:14px">It stays honest about your stack: with Dataverse it uses the Power Platform engines; without it, the loop runs the project locally (<code class="inl">npm run dev</code>) and the e2e engine drives the local app — the same behaviour described in your existing testing-runtime notes, now portable to any repo.</p>
+    </section>
+
+    <!-- ARCHITECTURE -->
+    <section id="arch" class="rise d2">
+      <p class="kicker">Architecture</p>
+      <h2>One core, swappable edges</h2>
+      <p class="lead">The redesign cleanly separates four concerns so each of your asks is a self-contained layer. The middle two — <span class="pill pur">cockpit</span> and <span class="pill pur">providers</span> — are the new Hermes-inspired pieces; the bottom two already exist and are reused.</p>
+
+      <div class="panel" style="margin-top:18px">
+        <div class="arch">
+          <div class="layer">
+            <div class="lh"><span class="lt">surface</span> Real terminal cockpit (TUI)</div>
+            <p>Replaces the localhost browser as the default surface. Renders the transcript, composer, slash palette, and streaming tool output. Browser is opened only on demand (plan viewer / live dashboard).</p>
+            <div class="chips"><span class="c">multiline editor</span><span class="c">slash autocomplete</span><span class="c">history + Ctrl-R</span><span class="c">interrupt/redirect</span><span class="c">tabs: Chat·Lifecycle·Plans·Logs</span></div>
+          </div>
+          <div class="down">▾</div>
+          <div class="layer hl">
+            <div class="lh"><span class="lt">routing</span> Provider adapter layer</div>
+            <p>Normalizes any AI behind one interface so the cockpit and lifecycle never special-case a vendor. <code class="inl">/provider</code> hot-swaps mid-session, preserving transcript + tool context.</p>
+            <div class="chips"><span class="c">claude-code adapter</span><span class="c">github-copilot adapter</span><span class="c">send() · stream() · tools()</span><span class="c">delegated auth</span></div>
+          </div>
+          <div class="down">▾</div>
+          <div class="layer">
+            <div class="lh"><span class="lt">reused</span> Lifecycle loop + consent gate</div>
+            <p>The existing 7-stage loop (Intake→Plan→Approve→Build→Run→Test→Observe), <code class="inl">Approved_rights/</code> gate, status bus, and the two MDM engines — unchanged, now driven from the cockpit instead of the web page.</p>
+            <div class="chips"><span class="c">status bus</span><span class="c">build executor</span><span class="c">e2e self-heal</span><span class="c">rights gate</span><span class="c">plan registry</span></div>
+          </div>
+          <div class="down">▾</div>
+          <div class="layer">
+            <div class="lh"><span class="lt">portable</span> Vendored core + per-project state</div>
+            <p>The whole thing copies into any repo under <code class="inl">.powercodex/</code> with its own consent file, plan registry, and learnings — one shared core, isolated project state.</p>
+            <div class="chips"><span class="c">npx powercodex import</span><span class="c">.powercodex/core</span><span class="c">Approved_rights/</span><span class="c">Learning_Experience/</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HERMES MAPPING -->
+    <section class="rise d2">
+      <p class="kicker">Lineage</p>
+      <h2>Hermes Agent → PowerCodex</h2>
+      <p class="lead">What we borrow from <a href="https://github.com/nousresearch/hermes-agent">nousresearch/hermes-agent</a> and how it maps onto your loop.</p>
+      <div class="panel" style="margin-top:14px;padding:8px 24px">
+        <table>
+          <thead><tr><th style="width:34%">Hermes concept</th><th>Becomes in PowerCodex</th></tr></thead>
+          <tbody>
+            <tr><td><b>Real TUI</b> — multiline, slash autocomplete, history, interrupt-and-redirect, streaming output</td><td>The cockpit — the new default surface (Screenshot 1–2)</td></tr>
+            <tr><td><b>Providers layer</b> — 200+ models, switch with no code change</td><td>Provider adapters for Claude Code &amp; GitHub Copilot, swapped with <code class="inl">/provider</code> (Screenshot 3)</td></tr>
+            <tr><td><b>Skills from experience</b> — self-improving loop</td><td>Your existing <code class="inl">Learning_Experience/</code> + observe stage, surfaced in the Logs tab</td></tr>
+            <tr><td><b>Multi-surface gateway</b> — Telegram/Discord/etc.</td><td>Out of scope for v2 — noted as a later layer above the provider bridge</td></tr>
+            <tr><td><b>Terminal backends</b> — local/Docker/SSH/Modal</td><td>PowerCodex stays local-first; the engines already abstract local-run vs tenant</td></tr>
+            <tr><td><b>Cross-session memory</b> — session search + recall</td><td>Per-project persistent history + plan registry the cockpit recalls with <code class="inl">↑</code>/<code class="inl">Ctrl-R</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- FILE STRUCTURE -->
+    <section class="rise d2">
+      <p class="kicker">On disk</p>
+      <h2>What gets added</h2>
+      <p class="lead">Green = new for this direction. The cockpit and providers are new code; everything under <code class="inl">lifecycle/</code> already exists and is reused as-is.</p>
+      <pre class="tree">your-project/
+├─ <span class="dir">.powercodex/</span>
+│  ├─ <span class="dir new">core/</span>                  <span class="c"># vendored, zero-dependency</span>
+│  │  ├─ <span class="new">cockpit/</span>            <span class="c"># NEW · the TUI (render, input, slash, history)</span>
+│  │  │  ├─ app.js          <span class="c">#   full-screen terminal loop</span>
+│  │  │  ├─ composer.js     <span class="c">#   multiline editor + cursor</span>
+│  │  │  ├─ palette.js      <span class="c">#   slash-command autocomplete</span>
+│  │  │  └─ stream.js       <span class="c">#   streaming tool-output renderer</span>
+│  │  ├─ <span class="new">providers/</span>          <span class="c"># NEW · bring-your-own-AI bridge</span>
+│  │  │  ├─ index.js        <span class="c">#   registry + /provider switch</span>
+│  │  │  ├─ claude-code.js  <span class="c">#   adapter → Claude Agent SDK/CLI</span>
+│  │  │  └─ github-copilot.js <span class="c"># adapter → gh copilot</span>
+│  │  ├─ <span class="new">plan-viewer.js</span>      <span class="c"># NEW · serve + open HTML plans</span>
+│  │  └─ lifecycle/         <span class="c"># reused · loop, engines, status bus, gate</span>
+│  ├─ <span class="dir">plans/</span>                <span class="c"># generated HTML plans</span>
+│  │  └─ <span class="new">index.json</span>          <span class="c"># NEW · plan registry (list/diff/open-latest)</span>
+│  └─ live/                <span class="c"># status bus + optional web dashboard (on demand)</span>
+├─ <span class="dir">Approved_rights/</span>         <span class="c"># reused · consent gate</span>
+├─ <span class="dir">Learning_Experience/</span>     <span class="c"># reused · lessons feed the loop</span>
+└─ package.json            <span class="c"># + "cockpit": "powercodex"</span></pre>
+    </section>
+
+    <!-- ROLLOUT -->
+    <section class="rise d2">
+      <p class="kicker">Rollout</p>
+      <h2>How we'd build it</h2>
+      <p class="lead">Sequenced so each phase is usable on its own. Phase 1 already gives you the cockpit over the existing loop; later phases add portability and the second provider.</p>
+      <ol class="steps">
+        <li>
+          <h3>Cockpit shell over the current loop</h3>
+          <p>Build the TUI (composer, slash palette, history, streaming) and point it at the existing lifecycle + status bus. Default provider: Claude Code. The localhost page becomes optional.</p>
+        </li>
+        <li>
+          <h3>Provider adapter layer + Copilot</h3>
+          <p>Extract the AI calls behind the <code class="inl">send/stream/tools</code> interface, add the GitHub Copilot adapter, wire <code class="inl">/provider</code> hot-swap with transcript hand-off.</p>
+        </li>
+        <li>
+          <h3>Plan registry + viewer</h3>
+          <p>Have the agent append to <code class="inl">plans/index.json</code> on every HTML plan, add the plan-ready card, and <code class="inl">/plan open · list · diff</code> backed by the existing static server.</p>
+        </li>
+        <li>
+          <h3>Portable import</h3>
+          <p>Build <code class="inl">npx powercodex import</code>: detect stack, vendor core, scaffold consent + registry, pick providers, wire the script. Local-run fallback for non-Dataverse repos.</p>
+        </li>
+        <li>
+          <h3>Self-test the new surface</h3>
+          <p>Extend the existing self-test so the cockpit, provider swap, plan registry, and the rights gate are all asserted headlessly — same bar as today's 16/16 loop checks.</p>
+        </li>
+      </ol>
+    </section>
+
+    <!-- REAL VS BUILD -->
+    <section class="rise d2">
+      <p class="kicker">Honest by default</p>
+      <h2>What exists vs. what's new</h2>
+      <p class="lead">In the spirit of the existing plans — here's exactly what's reused, what's been built, and what's deliberately deferred.</p>
+
+      <div class="callout finale" style="margin-top:14px;border-left:3px solid var(--good);background:rgba(90,209,154,0.07)">
+        <b style="color:var(--good)">✓ Built &amp; tested.</b> This direction is now implemented in the zero-dependency lifecycle tool — the cockpit TUI, provider bridge, plan registry/viewer, and portable import all ship with a headless self-test (<b>53/53 checks</b>, both the repo tool and the starter template). Run it:
+        <div class="mono" style="margin-top:10px;font-size:12.5px;color:var(--muted)">
+          npm run cockpit&nbsp;&nbsp;<span style="color:var(--faint)"># the real terminal cockpit</span><br/>
+          npm run lifecycle -- provider list&nbsp;&nbsp;<span style="color:var(--faint)"># claude-code · github-copilot · simulated</span><br/>
+          npm run lifecycle -- import&nbsp;&nbsp;<span style="color:var(--faint)"># drop PowerCodex into any project</span><br/>
+          npm run lifecycle:serve -- --open&nbsp;&nbsp;<span style="color:var(--faint)"># the graphical Studio dashboard</span>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:14px;padding:8px 24px">
+        <table>
+          <thead><tr><th>Piece</th><th style="width:120px">Status</th></tr></thead>
+          <tbody>
+            <tr><td>Lifecycle loop · status bus · consent gate · MDM engines</td><td><span class="tag real">reused</span></td></tr>
+            <tr><td>Zero-dependency static server (now powers the plan viewer)</td><td><span class="tag real">reused</span></td></tr>
+            <tr><td>Real terminal cockpit (TUI surface)</td><td><span class="tag real">built ✓</span></td></tr>
+            <tr><td>Provider adapter layer + <code class="inl">/provider</code> switch</td><td><span class="tag real">built ✓</span></td></tr>
+            <tr><td>GitHub Copilot adapter (+ Claude Code adapter)</td><td><span class="tag real">built ✓</span></td></tr>
+            <tr><td>Plan registry + plan-ready card + <code class="inl">/plan</code> commands</td><td><span class="tag real">built ✓</span></td></tr>
+            <tr><td><code class="inl">import</code> for any repo + Studio Plans panel</td><td><span class="tag real">built ✓</span></td></tr>
+            <tr><td>Multi-surface gateway (Telegram/Discord, Hermes-style)</td><td><span class="tag build">deferred</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout" style="margin-top:16px">
+        <b>Note on the mockups.</b> The "screenshots" above are HTML/CSS renderings of the intended interface — the real cockpit renders the same content in your terminal. The provider adapters drive each vendor's own CLI (auth delegated); when a CLI isn't installed, a built-in <b>simulated</b> brain keeps the cockpit fully usable, so nothing is blocked on external setup.
+      </div>
+    </section>
+
+    <!-- =====================  THE FINALE  ===================== -->
+    <section id="studio" class="rise d2" style="margin-top:96px">
+      <div style="text-align:center;margin-bottom:8px"><span class="pill pur" style="font-size:13px">The finale · how PowerCodex actually feels to use</span></div>
+      <p class="kicker" style="text-align:center">Comfort, not compromise</p>
+      <h2 style="text-align:center">Not everyone loves a terminal. So it's optional.</h2>
+      <p class="lead" style="margin:0 auto;text-align:center">You said it well — the terminal is fast and powerful, but it can feel intimidating. The fix isn't to pick one or the other. PowerCodex runs <b>one engine behind two surfaces</b>, and you flip between them whenever you like. The graphical surface <i>is</i> the dashboard you already liked — with terminal power tucked into a drawer.</p>
+
+      <div style="display:flex;justify-content:center;margin:22px 0 6px"><div class="toggle">
+        <span class="opt on"><span class="ti">🪟</span> Studio <span style="font-weight:500;opacity:.8">· graphical</span></span>
+        <span class="opt"><span class="ti">⌨️</span> Cockpit <span style="font-weight:500;opacity:.8">· terminal</span></span>
+      </div></div>
+      <p style="text-align:center;font-size:12.5px;color:var(--faint);margin-top:8px">One keystroke (<code class="inl">⌘\</code>) or the toggle in the corner swaps the surface. Same project, same loop, same consent gate, same live data underneath.</p>
+
+      <div class="grid" style="margin-top:20px">
+        <div class="card">
+          <div class="ic">🪟</div>
+          <h3>Studio — recommended default</h3>
+          <p>The exact dashboard look you liked: intake, rights chips, the 7-stage loop strip, agent cards, live feed, coverage ring. Everything is a <b>button or a click</b> — no command memorisation. And a <b>terminal drawer</b> sits at the bottom for the moments you want raw speed.</p>
+        </div>
+        <div class="card">
+          <div class="ic">⌨️</div>
+          <h3>Cockpit — for power users</h3>
+          <p>The full TUI from the screenshots above. Keyboard-only, fastest possible. Everything the Studio buttons do maps to a slash command here, so muscle memory transfers either direction.</p>
+        </div>
+      </div>
+
+      <div class="callout" style="margin-top:16px">
+        <b>The key idea:</b> the graphical Studio doesn't <i>lose</i> terminal power — it <i>embeds</i> it. The bottom drawer is a real terminal driving the same agent. Beginners never have to open it; power users live in it. Same app, your comfort level.
+      </div>
+
+      <!-- STUDIO SCREENSHOT -->
+      <div class="shot" style="margin-top:24px">
+        <div class="cap"><span class="badge">STUDIO</span> Graphical dashboard + embedded terminal drawer · <code class="inl">npx powercodex --studio</code></div>
+        <div class="win">
+          <div class="wbar">
+            <div class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></div>
+            <div class="addr"><span class="lock">🔒</span> localhost:4321 — PowerCodex Studio · field-tasks</div>
+            <div class="wtog"><span class="on">Studio</span><span>Cockpit</span></div>
+          </div>
+          <div class="wbody">
+            <div class="sd-top">
+              <div class="sd-brand"><span class="m">P</span> PowerCodex Studio</div>
+              <div class="sd-stat">
+                <span class="micro live"><span class="d"></span> running</span>
+                <span class="micro">rotation 2/3</span>
+                <span class="micro pur">provider · claude-code</span>
+              </div>
+            </div>
+
+            <div class="sd-intake">
+              <span><span class="tg">goal</span>field techs see assigned tasks with due dates</span>
+              <span><span class="tg b">MVP</span>task list · due dates · approve</span>
+              <div class="sd-rights">
+                <span class="rchip on">build ✓</span><span class="rchip">push ✗</span><span class="rchip on">auto-fix ✓</span>
+              </div>
+            </div>
+
+            <div class="sd-strip">
+              <div class="sd-st done"><div class="n">01 ✓</div><div class="t">Intake</div></div>
+              <div class="sd-st done"><div class="n">02 ✓</div><div class="t">Plan</div></div>
+              <div class="sd-st done"><div class="n">03 ✓</div><div class="t">Approve</div></div>
+              <div class="sd-st active"><div class="n">04</div><div class="t">Build…</div></div>
+              <div class="sd-st"><div class="n">05</div><div class="t">Run</div></div>
+              <div class="sd-st"><div class="n">06</div><div class="t">Test</div></div>
+              <div class="sd-st"><div class="n">07</div><div class="t">Observe</div></div>
+            </div>
+
+            <div class="sd-grid">
+              <div>
+                <p class="sd-lbl">Agents at work · 2 active</p>
+                <div class="sd-agents">
+                  <div class="sd-ag work"><div class="h"><span class="av">🏗️</span><span class="nm">Build Executor</span><span class="bg work">working</span></div><div class="pb"><span style="width:62%"></span></div></div>
+                  <div class="sd-ag work"><div class="h"><span class="av">🧪</span><span class="nm">E2E Tester</span><span class="bg work">working</span></div><div class="pb"><span style="width:38%"></span></div></div>
+                  <div class="sd-ag"><div class="h"><span class="av">🧭</span><span class="nm">Planner</span><span class="bg done">done</span></div><div class="pb"><span style="width:100%"></span></div></div>
+                  <div class="sd-ag"><div class="h"><span class="av">🔭</span><span class="nm">Observer</span><span class="bg idle">queued</span></div><div class="pb"><span style="width:0%"></span></div></div>
+                </div>
+              </div>
+              <div>
+                <p class="sd-lbl">Live activity · newest first</p>
+                <div class="sd-feed">
+                  <div class="f"><span class="ts mono">14:02:51</span><span class="dt" style="background:var(--accent)"></span><span><span class="src">build</span> · added DueDate column, sort ascending</span></div>
+                  <div class="f"><span class="ts mono">14:02:44</span><span class="dt" style="background:var(--good)"></span><span><span class="src">e2e</span> · app launched, 6 rows render</span></div>
+                  <div class="f"><span class="ts mono">14:02:38</span><span class="dt" style="background:var(--accent-2)"></span><span><span class="src">plan</span> · approved → build</span></div>
+                  <div class="f"><span class="ts mono">14:02:30</span><span class="dt" style="background:var(--warn)"></span><span><span class="src">gate</span> · push blocked · right off</span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- the embedded terminal drawer -->
+            <div class="dock">
+              <div class="dh"><span class="gico">▸</span><span class="nm">Terminal</span><span style="color:var(--faint)">— same agent, raw speed · click to expand</span><span class="kk">⌘\ to focus</span></div>
+              <div class="db">
+<span style="color:var(--accent-2)">codex ▸</span> Building. Sorting tasks by due date, overdue rows in red.
+<span style="color:var(--good)">✓ edit</span> <span style="color:var(--faint)">screens/TaskList.fx.yaml +14 −3</span></div>
+              <div class="pl"><span class="ps">▸</span><span class="tx">also group by site<span class="cur"></span></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="lead" style="margin-top:14px">Everything that was a slash command in the Cockpit is a <b>button</b> in Studio — <code class="inl">Start</code>, <code class="inl">Pause</code>, <code class="inl">Approve</code>, <code class="inl">Propose MVP</code>, <code class="inl">Switch provider</code>, <code class="inl">Open plan</code>. The rights chips toggle consent with a click. The terminal drawer is collapsed by default, so a first-time user sees only a friendly dashboard; the power is there the moment they want it.</p>
+    </section>
+
+    <!-- TOOLS CATALOG -->
+    <section id="tools" class="rise d2">
+      <p class="kicker">Capabilities</p>
+      <h2>Everything PowerCodex can do</h2>
+      <p class="lead">The same toolbox is available from both surfaces — a button in Studio, a slash command in the Cockpit. Grouped by what you're trying to get done.</p>
+
+      <div class="toolcat">
+        <div class="tg2">
+          <div class="gh"><span class="gi">🔁</span> Lifecycle &amp; orchestration</div>
+          <p class="gs">Drive the 7-stage loop that owns the whole build.</p>
+          <ul>
+            <li><code>/start · /pause</code> <span><b>Run or hold</b> the loop; pauses land on the next safe gate.</span></li>
+            <li><code>/loop --rotations</code> <span><b>Iterate</b> — each rotation re-plans from what the last one observed.</span></li>
+            <li><code>/reflect</code> <span><b>Log a lesson</b> into Learning_Experience mid-run.</span></li>
+            <li><code>/reset</code> <span><b>Clear</b> the run state and start fresh.</span></li>
+          </ul>
+        </div>
+        <div class="tg2">
+          <div class="gh"><span class="gi">🛠️</span> Build &amp; test engines</div>
+          <p class="gs">The two MDM engines that build and verify the app.</p>
+          <ul>
+            <li><code>/build</code> <span><b>Engine 1</b> drives Edge against the tenant — or <code style="min-width:0">npm run dev</code> locally.</span></li>
+            <li><code>/run</code> <span><b>Launch</b> the app so it can be exercised.</span></li>
+            <li><code>/test</code> <span><b>Engine 2</b> runs e2e checks and powers self-heal.</span></li>
+            <li><code>/push</code> <span><b>Ship</b> to the tenant — gated on the push right.</span></li>
+          </ul>
+        </div>
+        <div class="tg2">
+          <div class="gh"><span class="gi">🔀</span> AI providers</div>
+          <p class="gs">Bring your own brain; the loop wraps all of them.</p>
+          <ul>
+            <li><code>/provider</code> <span><b>Switch</b> between claude-code &amp; github-copilot mid-session.</span></li>
+            <li><code>/model</code> <span><b>Pick a model</b> within the active provider.</span></li>
+            <li><code>/compare</code> <span><b>Ask both</b>, keep the better edit.</span></li>
+          </ul>
+        </div>
+        <div class="tg2">
+          <div class="gh"><span class="gi">📄</span> Plans &amp; specs</div>
+          <p class="gs">See what the agent intends before it acts.</p>
+          <ul>
+            <li><code>/plan open</code> <span><b>View</b> the latest HTML plan in the browser.</span></li>
+            <li><code>/plan list · diff</code> <span><b>Browse</b> every plan and compare versions.</span></li>
+            <li><code>/approve</code> <span><b>Endorse</b> a plan or an observed spec → build.</span></li>
+          </ul>
+        </div>
+        <div class="tg2">
+          <div class="gh"><span class="gi">🔒</span> Consent &amp; safety</div>
+          <p class="gs">Nothing touches your tenant without permission.</p>
+          <ul>
+            <li><code>rights chips</code> <span><b>Toggle</b> build / push / auto-respec / auto-fix.</span></li>
+            <li><code>/gate</code> <span><b>Inspect</b> exactly why a step is blocked.</span></li>
+            <li><code>compliance</code> <span><b>Goal↔MVP meter</b> keeps the build honest.</span></li>
+          </ul>
+        </div>
+        <div class="tg2">
+          <div class="gh"><span class="gi">📦</span> Projects &amp; portability</div>
+          <p class="gs">Carry the cockpit between repos.</p>
+          <ul>
+            <li><code>powercodex import</code> <span><b>Add</b> PowerCodex to any existing repo.</span></li>
+            <li><code>/new</code> <span><b>Create</b> a fresh project from a goal.</span></li>
+            <li><code>/open</code> <span><b>Switch</b> between projects in the workspace.</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- BUILD A PROJECT -->
+    <section id="build" class="rise d2">
+      <p class="kicker">End-to-end · creating</p>
+      <h2>If I want to <i>create</i> a project</h2>
+      <p class="lead">The whole create flow, in Studio, as you'd actually click through it. No terminal required — though the drawer is always one keystroke away.</p>
+
+      <div class="flow">
+        <div class="step">
+          <div class="sh"><span class="sn">1</span><span class="st">New project — describe the goal</span></div>
+          <div class="sb">
+            <div class="fld"><label>Project name</label><div class="box">field-tasks</div></div>
+            <div class="fld"><label>Goal · plain language</label><div class="box ph">"Field techs see their assigned tasks with due dates so they never miss a service window."</div></div>
+            <span class="gobtn">Create project →</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="sh"><span class="sn">2</span><span class="st">Agent proposes the MVP &amp; plan</span></div>
+          <div class="sb">
+<span class="ai">codex ▸</span> Proposed MVP: <span class="ac">task list · due dates · sort · approve flow</span>
+<span class="dim">drafting plan…</span>
+<span style="color:var(--accent-2)">📄 plan ready</span> field-tasks-mvp.html
+  <span class="ok">[Open plan]</span> <span class="dim">[Approve]  [Edit goal]</span>
+<span class="dim">Goal↔MVP compliance</span> <span class="ok">88%</span></div>
+        </div>
+        <div class="step">
+          <div class="sh"><span class="sn">3</span><span class="st">You review the plan &amp; grant rights</span></div>
+          <div class="sb">
+<span class="dim">Plan opens in your browser. You set consent:</span>
+<span class="ok">build ✓</span>  <span class="wn">push ✗</span>  <span class="ok">auto-fix ✓</span>
+<span class="u">you ▸</span> <span class="ac">[Approve → build]</span>
+<span class="dim">Gate passes — build right is on.</span></div>
+        </div>
+        <div class="step">
+          <div class="sh"><span class="sn">4</span><span class="st">It builds, runs, tests — live</span></div>
+          <div class="sb">
+<span class="ok">✓ build</span>  task list + due dates rendered
+<span class="ok">✓ run</span>    app launched (local · no Dataverse)
+<span class="ok">✓ test</span>   6/6 e2e green · MVP coverage 100%
+<span class="ai">observe ▸</span> no defects · MVP met. <span class="ok">App is live.</span></div>
+        </div>
+      </div>
+      <div class="callout" style="margin-top:16px">From a sentence to a verified, running app — every step visible on the dashboard, gated where it matters. With Dataverse it builds on the tenant; without it, it runs locally. You never had to touch a terminal.</div>
+    </section>
+
+    <section class="rise d2">
+      <p class="kicker">End-to-end · editing</p>
+      <h2>If I want to <i>edit</i> a project</h2>
+      <p class="lead">Open an existing project and ask for a change in plain language. Same loop, scoped to the edit — plan first, your approval, then applied and re-verified.</p>
+
+      <div class="flow">
+        <div class="step">
+          <div class="sh"><span class="sn">1</span><span class="st">Open project, ask for the change</span></div>
+          <div class="sb">
+<span class="dim">Workspace ▸</span> <span class="ac">[field-tasks]</span> · 1 app · all green
+<span class="u">you ▸</span> make overdue rows red and group the
+        list by site
+<span class="ai">codex ▸</span> Got it — scoping a focused change.</div>
+        </div>
+        <div class="step">
+          <div class="sh"><span class="sn">2</span><span class="st">Plan-ready card — review first</span></div>
+          <div class="sb">
+<span style="color:var(--accent-2)">📄 plan ready</span> overdue-and-grouping.html
+<span class="dim">2 edits · 1 new e2e assertion · no schema change</span>
+  <span class="ok">[Open plan]</span> <span class="dim">[Diff vs live]  [Approve]</span></div>
+        </div>
+        <div class="step">
+          <div class="sh"><span class="sn">3</span><span class="st">Approve — it applies the edit</span></div>
+          <div class="sb">
+<span class="u">you ▸</span> <span class="ac">[Approve]</span>
+<span class="ok">✓ edit</span> Color = If(DueDate &lt; Today(), Red…)
+<span class="ok">✓ edit</span> GroupBy(Tasks, Site)
+<span class="dim">auto-fix on · no manual steps needed</span></div>
+        </div>
+        <div class="step">
+          <div class="sh"><span class="sn">4</span><span class="st">Re-verified &amp; observed</span></div>
+          <div class="sb">
+<span class="ok">✓ test</span>   overdue styling asserted · 7/7 green
+<span class="ai">observe ▸</span> change met intent · no regressions
+<span class="dim">lesson logged · ready to</span> <span class="wn">/push</span> <span class="dim">when you are</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FINALE SUMMARY -->
+    <section class="rise d2">
+      <div class="panel finale">
+        <p class="kicker">In one breath</p>
+        <h2 style="margin-bottom:6px">PowerCodex, finalised</h2>
+        <p class="lead" style="margin-bottom:14px">Drop it into any repo. Talk to Claude Code or Copilot. See the plan before it builds. Watch the whole loop on a friendly dashboard — or drive it at full speed from a real terminal. Same engine, your comfort level.</p>
+        <div class="grid3">
+          <div class="card"><h3>🪟 Studio</h3><p>The dashboard you liked, every action a click, terminal power in a drawer. The gentle default.</p></div>
+          <div class="card"><h3>⌨️ Cockpit</h3><p>The full TUI — multiline, slash autocomplete, history, interrupt-and-redirect. The fast lane.</p></div>
+          <div class="card"><h3>🔁 One engine</h3><p>Portable loop, BYO-AI bridge, consent gate, plan viewer — identical under both surfaces.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      PowerCodex Cockpit · portable lifecycle, bring-your-own-AI, real terminal.<br/>
+      Related plans:
+      <a href="./powercodex-master-plan.html">Master</a> ·
+      <a href="./live-dashboard-system.html">Live dashboard</a> ·
+      <a href="./hermes-agent-gap-plan.html">Hermes gap</a> ·
+      <a href="./intake-and-live-dashboard-redesign.html">Intake redesign</a> ·
+      <a href="../index.html">Docs home</a>
+    </footer>
+
+  </div>
+</body>
+</html>

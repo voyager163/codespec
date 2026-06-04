@@ -6,6 +6,7 @@ const { deriveState } = require('./state');
 const { emit } = require('./bus');
 const { render } = require('./dashboard');
 const { Controller } = require('./control');
+const { listPlans, plansDir } = require('./plans');
 
 const CLIENT = path.join(__dirname, '..', 'assets', 'dashboard.html');
 
@@ -36,6 +37,23 @@ function serve(root, opts = {}) {
       }
       if (req.url.startsWith('/api/state')) {
         return json(res, 200, Object.assign(deriveState(root), { control: controller.status() }));
+      }
+      if (req.url.startsWith('/api/plans')) {
+        return json(res, 200, { plans: listPlans(root) });
+      }
+      // Serve generated HTML plans (the plan viewer). Path-traversal guarded:
+      // only files inside .powercodex/plans/ are served.
+      if (/\.powercodex\/plans\//.test(req.url) && req.url.endsWith('.html')) {
+        const rel = decodeURIComponent(req.url.split('?')[0].replace(/^\/+/, ''));
+        const abs = path.resolve(root, rel);
+        if (abs.startsWith(path.resolve(plansDir(root))) && fs.existsSync(abs)) {
+          res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+          res.end(fs.readFileSync(abs, 'utf8'));
+          return;
+        }
+        res.writeHead(404, { 'content-type': 'text/plain' });
+        res.end('Plan not found');
+        return;
       }
       if (!req.url || req.url === '/' || req.url.startsWith('/index') || req.url.startsWith('/?')) {
         res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
