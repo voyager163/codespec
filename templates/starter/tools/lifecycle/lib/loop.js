@@ -108,7 +108,7 @@ async function runLoop(root, opts = {}) {
       summary.stopped = true;
       break;
     }
-    await eng.buildExecutor({ emit, rotation: r, tasks });
+    await eng.buildExecutor({ emit, rotation: r, tasks, env: opts.env || rights.environmentId, maker: opts.maker || rights.makerUrl });
 
     // Step 4 — run (push vs dev). Capture the app URL so the tester can target it.
     const dataverse = opts.dataverse !== false;

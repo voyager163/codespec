@@ -343,6 +343,15 @@ async function selftest() {
     // Derived state carries the engine recommendation for the dashboard banner.
     check('deriveState exposes an engine recommendation', !!deriveState(root).engine && typeof deriveState(root).engine.message === 'string');
 
+    // Engine 1 entry — maker recipes map build tasks to real Power Platform surfaces.
+    const { recipeFor } = require('./maker-recipes');
+    const tableRecipe = recipeFor('dataverse.table.create');
+    check('every default build task has a maker recipe', ['dataverse.table.create', 'dataverse.column.add'].every((t) => !!recipeFor(t)));
+    check('a maker recipe builds an env-scoped Power Platform URL', /make\.powerapps\.com\/environments\/ENV123\/tables/.test(tableRecipe.url('ENV123')));
+    check('a maker recipe falls back to the portal home without an env', /^https:\/\/make\.powerapps\.com$/.test(tableRecipe.url(null)));
+    check('the Power Automate recipe targets make.powerautomate.com', /make\.powerautomate\.com/.test(recipeFor('powerautomate.flow.create').url('ENV123')));
+    check('maker recipes are honest that DOM creation is not automated yet', tableRecipe.automated === false && typeof tableRecipe.todo === 'string');
+
     const passed = checks.filter(Boolean).length;
     const ok = checks.every(Boolean);
     console.log(`\n${ok ? 'PASS' : 'FAIL'} · ${passed}/${checks.length} checks · summary ${JSON.stringify(summary)}`);

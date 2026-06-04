@@ -52,6 +52,41 @@ function create(root) {
     return { profile, profilePath, verified: true, reused: !!alreadyVerified, real: true };
   }
 
+  // Engine 1 — real build executor (step 1: entry). For each task, attach and
+  // NAVIGATE into the Power Platform maker surface where that asset lives, verifying
+  // it loaded. The field-by-field authoring (create the table/column/flow) is not
+  // automated yet — reported honestly as `created:false`, never faked as done.
+  async function buildExecutor({ emit, rotation, tasks, env, maker }) {
+    const { recipeFor } = require('./maker-recipes');
+    const m = await engine();
+    const context = await ensureContext(emit, rotation, null);
+    const results = [];
+    for (const task of tasks) {
+      const name = task.displayName || task.name || task.type;
+      const recipe = recipeFor(task.type);
+      if (!recipe) {
+        await emit({ rotation, stage: 3, agent: 'build-executor', level: 'warn', message: `No maker recipe for ${task.type} · skipped (front-end automation pending)` });
+        results.push({ task: task.type, name, status: 'skipped', created: false, automated: false });
+        continue;
+      }
+      const url = maker ? `${maker.replace(/\/$/, '')}` : recipe.url(env);
+      await emit({ rotation, stage: 3, agent: 'build-executor', level: 'info', message: `Entering Power Platform · ${recipe.describe} → ${url}` });
+      const nav = await m.runAppSmokeTest(context, url);
+      const reached = nav.ok;
+      results.push({ task: task.type, name, status: reached ? 'navigated' : 'unreachable', created: false, automated: false, finalUrl: nav.finalUrl });
+      await emit({
+        rotation,
+        stage: 3,
+        agent: 'build-executor',
+        level: reached ? 'good' : 'bad',
+        message: reached
+          ? `Reached ${recipe.surface} for "${name}" · creation step not yet automated (front-end pending · ${recipe.todo})`
+          : `Could not reach ${recipe.surface} for "${name}" · ${nav.error || 'navigation failed'}`,
+      });
+    }
+    return results;
+  }
+
   // Engine 2 — real e2e: navigate the live app and report real browser health.
   async function e2eTester({ emit, rotation, specs, baseUrl }) {
     if (!baseUrl) {
@@ -89,7 +124,7 @@ function create(root) {
     session.context = null;
   }
 
-  return { verifyProfile, e2eTester, close };
+  return { verifyProfile, buildExecutor, e2eTester, close };
 }
 
 module.exports = { create };

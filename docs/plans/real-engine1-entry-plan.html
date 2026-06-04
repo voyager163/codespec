@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PowerCodex · Engine 1 — real Power Platform entry (current vs. new)</title>
+<style>
+  :root{--bg:#0b0e14;--panel:#11151f;--panel2:#161b27;--ink:#e6e9ef;--dim:#9aa4b2;--line:#232a39;
+    --accent:#5b9dff;--good:#54d089;--warn:#f0b45a;--bad:#ef6f6f;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:1040px;margin:0 auto;padding:40px 28px 80px}
+  h1{font-size:30px;margin:0 0 6px;letter-spacing:-.02em}
+  h2{font-size:20px;margin:40px 0 14px}
+  h3{font-size:15px;margin:0 0 8px}
+  .sub{color:var(--dim);margin:0 0 4px}
+  .tag{display:inline-block;font:600 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.08em;
+    padding:5px 9px;border-radius:999px;border:1px solid var(--line);color:var(--dim)}
+  .tag.phase{color:var(--accent);border-color:#2c4a7a;background:#0f1726}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin:14px 0}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .now{border-left:3px solid var(--bad)} .new{border-left:3px solid var(--good)}
+  .col h3 .lbl{font:600 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--dim)}
+  code,.mono{font-family:var(--mono);font-size:13px}
+  .panel2{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:10px 0}
+  ul{margin:8px 0;padding-left:20px} li{margin:4px 0}
+  .dim{color:var(--dim)}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:14px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--dim);font:600 11px/1.4 var(--mono);text-transform:uppercase;letter-spacing:.06em}
+  .pill{font:600 11px/1 var(--mono);padding:3px 7px;border-radius:6px;white-space:nowrap}
+  .pill.real{color:var(--good);background:#11251a}
+  .pill.pending{color:var(--warn);background:#251f12}
+  .pill.none{color:var(--bad);background:#251313}
+  .flow{font-family:var(--mono);font-size:13px;color:var(--dim);background:var(--panel2);
+    border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-x:auto}
+  .keyword{color:var(--accent)}
+  .foot{margin-top:40px;color:var(--dim);font-size:13px;border-top:1px solid var(--line);padding-top:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="tag phase">Engine 1 · step 1 of 2 — entry, not yet creation</span>
+  <h1>Engine 1: real entry into Power Platform</h1>
+  <p class="sub">Incorporate the Playwright-for-MDM module into the build executor so it genuinely <strong>enters Power Platform</strong> and opens the Dataverse / Power Automate maker surfaces — honestly stopping short of the field-by-field creation, which is the remaining "front end" automation.</p>
+  <p class="dim">The module you added (<code>Playwright-for-MDM-browser-main/attach.js</code>) is byte-identical to the engine already vendored at <code>tools/lifecycle/engine/mdm-attach.mjs</code>. Its only capabilities are <em>pick Edge profile</em> and <em>navigate + smoke-test a URL</em> — it can <strong>enter</strong> the portal but does not contain create-table/create-flow steps.</p>
+
+  <h2>What the module can and cannot do</h2>
+  <table>
+    <thead><tr><th>Capability</th><th>In the module?</th><th>Used for Engine 1 as…</th></tr></thead>
+    <tbody>
+      <tr><td>Attach to managed Edge (CDP), reuse the signed-in session</td><td><span class="pill real">yes</span></td><td>Real — the build executor attaches to your tenant session.</td></tr>
+      <tr><td>Navigate to a URL &amp; confirm it loaded (page/console/network)</td><td><span class="pill real">yes</span></td><td>Real — navigate to the maker surface for each task and verify it's reachable.</td></tr>
+      <tr><td>Create a Dataverse table / column</td><td><span class="pill none">no</span></td><td>Pending — the DOM "front end" steps (open New table → fill name → Save) aren't written yet.</td></tr>
+      <tr><td>Create a Power Automate flow</td><td><span class="pill none">no</span></td><td>Pending — same: navigation is real, authoring steps are not.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Change — a real, honest Engine 1</h2>
+  <div class="cols">
+    <div class="panel col now">
+      <h3><span class="lbl">Now</span></h3>
+      <ul>
+        <li><code>buildExecutor()</code> is fully simulated: for each task it just emits <em>"X created (simulated)"</em>.</li>
+        <li>Nothing opens a browser; Power Platform is never touched.</li>
+        <li>No mapping from a task contract to where it lives in the maker portal.</li>
+      </ul>
+    </div>
+    <div class="panel col new">
+      <h3><span class="lbl">New</span></h3>
+      <ul>
+        <li>New <code>lib/maker-recipes.js</code> maps each task type → the real maker surface URL (Dataverse tables/columns/connections on <code>make.powerapps.com</code>, flows on <code>make.powerautomate.com</code>), env-scoped when you supply one.</li>
+        <li>Real <code>buildExecutor</code> in <code>lib/engines.real.js</code>: attach → for each task, <strong>navigate into the maker surface and verify it loaded</strong>.</li>
+        <li>Reports the truth: <em>"reached the Tables surface · field-by-field creation not yet automated (front-end pending)"</em>, with <code>created:false, automated:false</code>. <strong>It never claims to have created an asset it didn't.</strong></li>
+        <li>Gated by <code>Approved_rights/ allowBuild</code> — entering the portal is a real tenant action.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="panel2">
+    <h3>Per-task behavior (real mode)</h3>
+    <div class="flow"><span class="keyword">for</span> task <span class="keyword">in</span> tasks:<br>
+&nbsp;&nbsp;url   = makerRecipe(task.type).url(env)        <span class="dim"># e.g. make.powerapps.com/environments/&lt;env&gt;/tables</span><br>
+&nbsp;&nbsp;nav   = runAppSmokeTest(context, url)          <span class="dim"># REAL: open the surface, confirm it loaded</span><br>
+&nbsp;&nbsp;emit  "<span style="color:var(--good)">reached Tables surface</span> · <span style="color:var(--warn)">creation step not yet automated</span>"<br>
+&nbsp;&nbsp;result = { status:"navigated", created:<span style="color:var(--bad)">false</span>, automated:<span style="color:var(--bad)">false</span> }</div>
+  </div>
+
+  <h2>What you'll run</h2>
+  <div class="panel">
+    <p class="mono" style="font-size:13px">npm i -D playwright<br>
+    npm run lifecycle -- loop --real --app-url https://&lt;your-app&gt; <span class="dim">[--env &lt;environmentId&gt;]</span></p>
+    <p class="dim">With <code>--real</code> + Playwright + granted <code>allowBuild</code>, the loop attaches to your managed Edge and opens each maker surface in turn. Supply <code>--env</code> to land directly in your environment's Tables/Flows list; without it, it enters the portal home and your default environment.</p>
+  </div>
+
+  <h2>The remaining "front end" (Engine 1, step 2 — next)</h2>
+  <p class="dim">Each recipe carries a documented <code>todo</code> describing the DOM steps still to automate. This is the work you flagged as still needed:</p>
+  <table>
+    <thead><tr><th>Surface</th><th>Front-end steps to automate</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>Dataverse table</td><td>New table → set display/plural name → add primary column → Save &amp; verify in the table list</td><td><span class="pill pending">pending</span></td></tr>
+      <tr><td>Dataverse column</td><td>Open table → + New column → name + type (choice/datetime/…) → Save</td><td><span class="pill pending">pending</span></td></tr>
+      <tr><td>Power Automate flow</td><td>New flow → trigger → action(s) → Save &amp; test</td><td><span class="pill pending">pending</span></td></tr>
+    </tbody>
+  </table>
+  <p class="dim">These are fragile, tenant-specific, and untestable without a live signed-in tenant — so they're built and verified <strong>against your tenant</strong> as a deliberate next step, not guessed blind.</p>
+
+  <h2>Files touched</h2>
+  <div class="panel2 mono" style="font-size:13px">
+    <div><span style="color:var(--good)">new</span> &nbsp;tools/lifecycle/lib/maker-recipes.js</div>
+    <div><span style="color:var(--accent)">edit</span> tools/lifecycle/lib/engines.real.js &nbsp;<span class="dim">(real buildExecutor)</span></div>
+    <div><span style="color:var(--accent)">edit</span> tools/lifecycle/lib/engines.js &nbsp;<span class="dim">(real bundle uses real build)</span></div>
+    <div><span style="color:var(--accent)">edit</span> tools/lifecycle/lib/loop.js &nbsp;<span class="dim">(thread env/maker into build)</span> · bin (--env) · selftest · README</div>
+    <div class="dim">+ mirror into templates/starter/tools/lifecycle/</div>
+  </div>
+
+  <p class="foot">Step 1 makes Engine 1 genuinely enter Power Platform via your module, with the asset-creation DOM steps as explicit, honest seams. Step 2 (writing those steps against your tenant) follows when you're ready to test live. — generated for your review.</p>
+</div>
+</body>
+</html>

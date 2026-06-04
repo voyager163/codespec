@@ -67,6 +67,7 @@ loop options:
                             project + Playwright installed · npm i -D playwright).
                             Falls back to simulation with a recommendation otherwise.
   --app-url <url>           the live app URL the real e2e engine should smoke-test
+  --env <environmentId>     Power Platform environment for Engine 1 to enter (maker surfaces)
 
 Open http://localhost:4321 (serve) — it polls /api/state and updates live.`);
 }
@@ -209,6 +210,7 @@ async function main() {
         rotations,
         simulate: flag('real') !== true,
         appUrl: typeof flag('app-url') === 'string' ? flag('app-url') : undefined,
+        env: typeof flag('env') === 'string' ? flag('env') : undefined,
       });
       console.log('\nSummary:', JSON.stringify(summary));
       console.log('Dashboard:', path.join(liveDir(root), 'index.html'));

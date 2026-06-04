@@ -87,13 +87,14 @@ async function resolveEngines(root, { simulate, emit } = {}) {
   }
   try {
     const real = require('./engines.real').create(root);
-    // Engine 1 (build) has no real implementation yet — keep it simulated, honestly.
+    // Engine 1 now really enters Power Platform (navigates the maker surfaces); the
+    // field-by-field asset authoring is not automated yet (reported honestly).
     return {
       verifyProfile: real.verifyProfile,
-      buildExecutor: (a) => buildExecutor({ ...a, simulate: true }),
+      buildExecutor: real.buildExecutor,
       e2eTester: real.e2eTester,
       close: real.close,
-      mode: 'real (e2e + profile; build still simulated)',
+      mode: 'real (Power Platform entry + e2e + profile; asset-creation DOM pending)',
       real: true,
     };
   } catch (e) {
