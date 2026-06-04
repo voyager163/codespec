@@ -1,0 +1,51 @@
+Minimal setup
+
+If you want Playwright to control only the Edge browser DOM, use the selectable profile workflow:
+
+1) Close normal Edge windows
+
+Close Edge first if you want the script to launch the selected profile with remote debugging.
+
+2) Start the workflow
+
+bash
+npm start
+
+The script lists installed Edge profiles from the local Edge metadata. Choose the profile that contains the account and browser state you want to test.
+
+3) Enter the app URL
+
+After Playwright attaches, paste the app link when prompted:
+
+Enter target app URL: https://example.com/app
+
+You can also pass the URL directly:
+
+bash
+npm start -- https://example.com/app
+
+4) Review the smoke-test report
+
+The script connects to http://127.0.0.1:9222, opens the target URL in a fresh page in the attached Edge context, and reports:
+
+navigation status
+final URL
+page title
+page errors
+console errors
+failed network requests
+
+Example DOM actions for future app-specific testing
+
+js
+await page.locator('input[name="search"]').fill('test');
+await page.locator('button:has-text("Save")').click();
+await page.evaluate(() => console.log(document.title));
+
+Notes
+
+This works for browser/page automation, not Windows screen control.
+If http://127.0.0.1:9222 is already available, the script attaches to that existing Edge session.
+Microsoft or organizational sign-in remains manual/profile-based; the script does not automate login.
+If Edge opens but Playwright cannot attach, fully close Edge and run npm start again.
+Run npm test to verify the profile discovery, formatting, selection validation, URL validation, and smoke-test helpers.
