@@ -352,6 +352,28 @@ async function selftest() {
     check('the Power Automate recipe targets make.powerautomate.com', /make\.powerautomate\.com/.test(recipeFor('powerautomate.flow.create').url('ENV123')));
     check('maker recipes are honest that DOM creation is not automated yet', tableRecipe.automated === false && typeof tableRecipe.todo === 'string');
 
+    // Edge profile picker — discover from a Local State file, resolve a selection, persist it.
+    const edgeProfiles = require('./edge-profiles');
+    const { setProfile, profileVerified, load: loadRights2 } = require('./rights');
+    const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-edge-'));
+    const statePath = path.join(stateDir, 'Local State');
+    fs.writeFileSync(statePath, JSON.stringify({ profile: { info_cache: {
+      'Default': { name: 'Personal', user_name: 'me@gmail.com' },
+      'Profile 1': { name: 'Work', user_name: 'you@tenant.com' },
+    } } }));
+    const discovered = edgeProfiles.discoverProfiles(statePath);
+    check('edge-profiles discovers profiles from Local State', discovered.length === 2 && discovered[1].directory === 'Profile 1');
+    check('profile selection resolves by 1-based index', edgeProfiles.resolveSelection(discovered, '2').directory === 'Profile 1');
+    check('profile selection resolves by email substring', edgeProfiles.resolveSelection(discovered, 'tenant.com').directory === 'Profile 1');
+    check('profile selection resolves by exact directory', edgeProfiles.resolveSelection(discovered, 'Default').directory === 'Default');
+    check('an unmatched selection returns null', edgeProfiles.resolveSelection(discovered, 'nope') === null);
+    const picked = edgeProfiles.resolveSelection(discovered, 'Work');
+    const pRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-prof-'));
+    setProfile(pRoot, { name: picked.directory, path: `./.profiles/${picked.directory}`, label: edgeProfiles.label(picked) });
+    check('selecting a profile persists it to Approved_rights (always reused)', profileVerified(pRoot) && loadRights2(pRoot).browserProfile === 'Profile 1' && /tenant\.com/.test(loadRights2(pRoot).browserProfileLabel));
+    fs.rmSync(stateDir, { recursive: true, force: true });
+    fs.rmSync(pRoot, { recursive: true, force: true });
+
     const passed = checks.filter(Boolean).length;
     const ok = checks.every(Boolean);
     console.log(`\n${ok ? 'PASS' : 'FAIL'} · ${passed}/${checks.length} checks · summary ${JSON.stringify(summary)}`);

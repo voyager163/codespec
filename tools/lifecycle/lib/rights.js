@@ -7,6 +7,8 @@ const { rightsDir } = require('./paths');
 // false flags mean the runtime stops and asks instead of acting.
 const DEFAULTS = {
   browserProfile: '',
+  // Human-friendly label for the chosen profile (e.g. "Work (you@tenant.com)").
+  browserProfileLabel: '',
   // Pointer to the verified MDM browser profile. The pointer is committed; the
   // real session lives under a gitignored .profiles/ dir so cookies never enter git.
   profilePath: '',
@@ -60,9 +62,10 @@ function profileVerified(root) {
 
 // Persist the verified-once profile pointer (name + local path). The actual
 // session dir lives under a gitignored .profiles/ and is never written here.
-function setProfile(root, { name, path: profilePath } = {}) {
+function setProfile(root, { name, path: profilePath, label } = {}) {
   const data = ensureRights(root);
   if (name) data.browserProfile = name;
+  if (label) data.browserProfileLabel = label;
   data.profilePath = profilePath || data.profilePath || (data.browserProfile ? `./.profiles/${data.browserProfile}` : '');
   return save(root, data);
 }

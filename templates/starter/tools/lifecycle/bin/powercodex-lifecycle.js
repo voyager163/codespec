@@ -3,7 +3,8 @@
 const path = require('node:path');
 const { runLoop } = require('../lib/loop');
 const { render } = require('../lib/dashboard');
-const { ensureRights } = require('../lib/rights');
+const { ensureRights, load: loadRights, setProfile } = require('../lib/rights');
+const edgeProfiles = require('../lib/edge-profiles');
 const { selftest } = require('../lib/selftest');
 const { serve } = require('../lib/server');
 const { emit } = require('../lib/bus');
@@ -38,6 +39,7 @@ Commands:
   stories [--goal "<text>"] generate code-grounded user stories from the digest (.powercodex/stories/)
   provider <list>           list available AI providers (claude-code · github-copilot · simulated)
   plan <list|open|register> view or record generated HTML plans
+  profiles [use <sel>]      list signed-in Edge profiles; pick the one --real runs always attach to
   serve [options]           start the live dashboard server and monitor progress live
   loop [options]            run the lifecycle loop (Intake→Plan→…→Observe)
   emit <agent> <message>    append one event to the live board (any process can call this)
@@ -197,6 +199,39 @@ async function main() {
       const out = render(root);
       console.log('Initialized .powercodex/live/ and Approved_rights/approval.json');
       console.log('Dashboard:', out, '· for live monitoring run: powercodex-lifecycle serve');
+      break;
+    }
+    case 'profiles': {
+      // List your signed-in Edge profiles, and persist which one the real engines
+      // (build entry + e2e runner) should always attach to.
+      const positional = rest.filter((a) => !a.startsWith('--'));
+      const sub = positional[0];
+      const profiles = edgeProfiles.discoverProfiles();
+      if (!profiles.length) {
+        console.log('No Edge profiles found. Looked in:', edgeProfiles.defaultLocalStatePath());
+        console.log('Open Microsoft Edge once and sign in to your tenant, then re-run.');
+        break;
+      }
+      const current = loadRights(root);
+      if (sub === 'use') {
+        const picked = edgeProfiles.resolveSelection(profiles, positional[1]);
+        if (!picked) {
+          console.log(`Could not match "${positional[1] || ''}". Use a number, profile directory, name, or email from:`);
+          profiles.forEach((p, i) => console.log(`  ${i + 1}. ${p.directory} — ${edgeProfiles.label(p)}`));
+          process.exitCode = 1;
+          break;
+        }
+        setProfile(root, { name: picked.directory, path: `./.profiles/${picked.directory}`, label: edgeProfiles.label(picked) });
+        console.log(`✓ Real engines will always use Edge profile "${picked.directory}" — ${edgeProfiles.label(picked)}`);
+        console.log('  Saved to Approved_rights/approval.json (browserProfile). Close normal Edge windows before a --real run.');
+        break;
+      }
+      console.log('Signed-in Edge profiles:');
+      profiles.forEach((p, i) => {
+        const mark = current && current.browserProfile === p.directory ? ' ★ (selected)' : '';
+        console.log(`  ${i + 1}. ${p.directory} — ${edgeProfiles.label(p)}${mark}`);
+      });
+      console.log('\nPick the one signed in to your tenant:  powercodex-lifecycle profiles use <number|email|directory>');
       break;
     }
     case 'dashboard': {
