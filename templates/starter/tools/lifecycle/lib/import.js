@@ -100,6 +100,10 @@ function importInto(targetRoot, opts = {}) {
     digest = buildDigest(targetRoot);
     const out = writeDigest(targetRoot, digest);
     note(`analyzed code · ${path.relative(targetRoot, out).split(path.sep).join('/')} · ${digest.routes.length} routes · ${digest.components.length} components${digest.coverage.partial ? ' (partial coverage)' : ''}`);
+    // Recommend Playwright for real browser engines when the project is browser-based
+    // and it isn't installed — stays quiet for non-browser projects.
+    const rec = require('./playwright-check').recommendation(targetRoot);
+    if (rec.needed) note(`to run real browser engines (loop --real) · ${rec.command}`);
   }
 
   return { stack, config, created, digest };

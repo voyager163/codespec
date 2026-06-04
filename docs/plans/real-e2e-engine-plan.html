@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PowerCodex · Real e2e engine — current vs. new</title>
+<style>
+  :root {
+    --bg: #0b0e14; --panel: #11151f; --panel2: #161b27; --ink: #e6e9ef; --dim: #9aa4b2;
+    --line: #232a39; --accent: #5b9dff; --good: #54d089; --warn: #f0b45a; --bad: #ef6f6f;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 40px 28px 80px; }
+  h1 { font-size: 30px; margin: 0 0 6px; letter-spacing: -0.02em; }
+  h2 { font-size: 20px; margin: 40px 0 14px; letter-spacing: -0.01em; }
+  h3 { font-size: 15px; margin: 0 0 8px; }
+  .sub { color: var(--dim); margin: 0 0 4px; }
+  .tag { display: inline-block; font: 600 11px/1 var(--mono); text-transform: uppercase;
+    letter-spacing: 0.08em; padding: 5px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--dim); }
+  .tag.phase { color: var(--accent); border-color: #2c4a7a; background: #0f1726; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px 22px; margin: 14px 0; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .now { border-left: 3px solid var(--bad); }
+  .new { border-left: 3px solid var(--good); }
+  .col h3 .lbl { font: 600 11px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); }
+  code, .mono { font-family: var(--mono); font-size: 13px; }
+  .panel2 { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin: 10px 0; }
+  ul { margin: 8px 0; padding-left: 20px; } li { margin: 4px 0; }
+  .dim { color: var(--dim); }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 14px; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--dim); font: 600 11px/1.4 var(--mono); text-transform: uppercase; letter-spacing: 0.06em; }
+  .pill { font: 600 11px/1 var(--mono); padding: 3px 7px; border-radius: 6px; white-space: nowrap; }
+  .pill.real { color: var(--good); background: #11251a; }
+  .pill.sim { color: var(--warn); background: #251f12; }
+  .pill.none { color: var(--bad); background: #251313; }
+  .flow { font-family: var(--mono); font-size: 13px; color: var(--dim); background: var(--panel2);
+    border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; overflow-x: auto; }
+  .step { display: flex; gap: 12px; margin: 10px 0; }
+  .step .n { flex: 0 0 26px; height: 26px; border-radius: 50%; border: 1px solid var(--line);
+    display: grid; place-items: center; font: 600 12px var(--mono); color: var(--accent); }
+  .arrow { color: var(--accent); }
+  .keyword { color: var(--accent); }
+  .foot { margin-top: 40px; color: var(--dim); font-size: 13px; border-top: 1px solid var(--line); padding-top: 16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="tag phase">Phase 1 of 2 · approved direction</span>
+  <h1>Make the engines real, not simulated</h1>
+  <p class="sub">Wire PowerCodex's lifecycle loop to your actual <strong>Playwright-for-MDM</strong> browser engine, starting with the e2e/run engine and managed-Edge profile verification — the parts that have real code to build on.</p>
+  <p class="dim">Reviewed against the code in <code>tools/lifecycle/lib/engines.js</code> (the simulation seam) and your <code>attach.js</code> (the real engine). This plan covers <strong>Phase 1</strong>. The build executor (Engine 1) is intentionally deferred to Phase 2 — see "Honest scope" below.</p>
+
+  <h2>The three pieces — and why they're not equal</h2>
+  <table>
+    <thead><tr><th>Engine piece</th><th>Real source exists?</th><th>Phase 1 outcome</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Profile verify</strong><br><span class="dim mono">verifyProfile()</span></td><td><span class="pill real">yes</span> your <code>attach.js</code></td><td>Real: discover Edge profiles → launch managed Edge once → wait for CDP → attach. Reuses the live session.</td></tr>
+      <tr><td><strong>Engine 2 · e2e tester</strong><br><span class="dim mono">e2eTester()</span></td><td><span class="pill real">yes</span> <code>runAppSmokeTest()</code></td><td>Real: navigate the live app, report real page errors, console errors, and failed network requests as pass/fail.</td></tr>
+      <tr><td><strong>Engine 1 · build executor</strong><br><span class="dim mono">buildExecutor()</span></td><td><span class="pill none">no</span> nothing builds portal assets</td><td><strong>Stays simulated</strong>, labelled honestly. No existing code creates tables/columns/screens — that is Phase 2.</td></tr>
+      <tr><td><strong>Runner</strong><br><span class="dim mono">push / dev</span></td><td><span class="pill sim">partial</span></td><td>Supplies the real app URL the e2e engine targets (captured app link, or a local dev server).</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Change A — vendor the engine + an optional-dependency bridge</h2>
+  <div class="cols">
+    <div class="panel col now">
+      <h3><span class="lbl">Now</span></h3>
+      <ul>
+        <li><code>engines.js</code> has placeholder <code>buildExecutor</code> / <code>e2eTester</code> / <code>verifyProfile</code> that emit the right event stream with <span class="mono">simulate:true</span> outcomes.</li>
+        <li>Zero dependencies. No browser is ever launched.</li>
+        <li>The real engine lives only in <code>~/Downloads/Playwright-for-MDM-Browser/</code> — ESM, depends on <code>playwright</code>.</li>
+      </ul>
+    </div>
+    <div class="panel col new">
+      <h3><span class="lbl">New</span></h3>
+      <ul>
+        <li>Vendor <code>attach.js</code> into the repo at <code>tools/lifecycle/engine/mdm-attach.mjs</code> (kept ESM, mirrored into the starter template).</li>
+        <li>New <code>lib/engines.real.js</code> — loads the vendored engine with a lazy <code>import()</code> (CJS→ESM), exposes real <code>verifyProfile</code> + <code>e2eTester</code>, and reuses one CDP session across rotations.</li>
+        <li><code>playwright</code> stays <strong>optional</strong>: the npm package keeps its zero-dependency guarantee. You install it only to go real: <code class="keyword">npm i -D playwright</code>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>Change B — resolve real vs. simulate, recommend Playwright by default</h2>
+  <div class="cols">
+    <div class="panel col now">
+      <h3><span class="lbl">Now</span></h3>
+      <ul>
+        <li><code>loop.js</code> statically imports the simulated engines.</li>
+        <li><code>--real</code> exists but only flips text and rights-gating; nothing actually drives a browser.</li>
+        <li>No signal to the user that real engines are even possible.</li>
+      </ul>
+    </div>
+    <div class="panel col new">
+      <h3><span class="lbl">New</span></h3>
+      <ul>
+        <li>New <code>resolveEngines(root, {simulate, emit})</code> picks the engine bundle at run time.</li>
+        <li>New <code>lib/playwright-check.js</code> decides if the project is <strong>browser-based</strong> (Power Platform tenant, or has web routes/components/dev-server — read from the digest).</li>
+        <li><strong>When real is requested but Playwright is missing</strong>: if browser-based → emit a clear <em>"install Playwright"</em> recommendation and fall back to simulation gracefully; if <em>not</em> browser-based → use simulation quietly, no nag.</li>
+        <li>The recommendation also surfaces in <code>import --analyze</code>, the dashboard banner, and <code>/api/state</code>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="panel2">
+    <h3>Decision logic (your requested rule, made concrete)</h3>
+    <div class="flow">if (--real requested)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">if</span> project is <strong>not</strong> browser-based  <span class="arrow">→</span> simulate quietly (no Playwright nag)<br>
+&nbsp;&nbsp;<span class="keyword">elif</span> Playwright not installed          <span class="arrow">→</span> <span style="color:var(--warn)">recommend "npm i -D playwright"</span> + simulate<br>
+&nbsp;&nbsp;<span class="keyword">else</span>                                   <span class="arrow">→</span> <span style="color:var(--good)">real engine: attach to managed Edge, run real smoke tests</span></div>
+  </div>
+
+  <h2>Change C — honest self-heal &amp; escalation in real mode</h2>
+  <div class="cols">
+    <div class="panel col now">
+      <h3><span class="lbl">Now</span></h3>
+      <ul>
+        <li>After a (simulated) failure, the loop re-runs and <strong>unconditionally</strong> emits "Green" — fine for simulation, where the second run is rigged to pass.</li>
+      </ul>
+    </div>
+    <div class="panel col new">
+      <h3><span class="lbl">New</span></h3>
+      <ul>
+        <li>The green emit becomes conditional. A real app that is still broken after the self-heal attempt emits <em>"Still red after self-heal · escalating to you"</em> and stops — no false green.</li>
+        <li>The no-progress guardrail (same failure twice → stop) now catches genuine, repeatable real failures.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>What you'll run</h2>
+  <div class="panel">
+    <div class="step"><div class="n">1</div><div><code>npm i -D playwright</code> <span class="dim">— once, in the app you want to drive for real (PowerCodex recommends this when it sees a browser-based project).</span></div></div>
+    <div class="step"><div class="n">2</div><div><code>npm run lifecycle -- import --analyze</code> <span class="dim">— so the loop knows the project is browser-based and where the app lives.</span></div></div>
+    <div class="step"><div class="n">3</div><div>Sign in once in the managed Edge profile (MFA cleared in the window) — the session persists; later runs reuse it.</div></div>
+    <div class="step"><div class="n">4</div><div><code>npm run lifecycle -- loop --real --app-url https://&lt;your-app&gt;</code> <span class="dim">— attaches to your live Edge, navigates the app, and reports <strong>real</strong> browser health.</span></div></div>
+  </div>
+
+  <h2>Honest scope &amp; risk</h2>
+  <table>
+    <thead><tr><th>Item</th><th>Status</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr><td>Real e2e / smoke test + profile verify</td><td><span class="pill real">in scope</span></td><td>Built on your existing <code>attach.js</code>. The genuine Phase-1 win.</td></tr>
+      <tr><td>Real runner (push → app URL)</td><td><span class="pill sim">light</span></td><td>Captures/uses a real URL for the tester; full <code>power-apps push</code> parsing stays modest.</td></tr>
+      <tr><td>Engine 1 · build executor (create portal assets)</td><td><span class="pill none">Phase 2</span></td><td>No existing source. Writing maker-portal DOM automation is a separate, larger, fragile effort — scoped deliberately, not smuggled in.</td></tr>
+      <tr><td>CI / self-test</td><td><span class="pill sim">simulated</span></td><td>Real mode needs Windows + Edge + a signed-in profile + a tenant; it can't run unattended. Self-test stays on simulation; new tests cover the <em>resolution &amp; recommendation</em> logic deterministically.</td></tr>
+      <tr><td>Zero-dependency guarantee</td><td><span class="pill real">kept</span></td><td>Playwright is opt-in; absent it, everything still works in simulation.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Files touched</h2>
+  <div class="panel2 mono" style="font-size:13px">
+    <div><span style="color:var(--good)">new</span> &nbsp;tools/lifecycle/engine/mdm-attach.mjs &nbsp;<span class="dim">(vendored engine)</span></div>
+    <div><span style="color:var(--good)">new</span> &nbsp;tools/lifecycle/lib/engines.real.js</div>
+    <div><span style="color:var(--good)">new</span> &nbsp;tools/lifecycle/lib/playwright-check.js</div>
+    <div><span style="color:var(--accent)">edit</span> tools/lifecycle/lib/engines.js &nbsp;<span class="dim">(resolveEngines)</span></div>
+    <div><span style="color:var(--accent)">edit</span> tools/lifecycle/lib/loop.js &nbsp;<span class="dim">(route real vs simulate, honest green)</span></div>
+    <div><span style="color:var(--accent)">edit</span> tools/lifecycle/lib/state.js · assets/dashboard.html · lib/import.js · bin · README</div>
+    <div><span style="color:var(--accent)">edit</span> tools/lifecycle/lib/selftest.js &nbsp;<span class="dim">(deterministic resolution/recommendation tests)</span></div>
+    <div class="dim">+ mirror every change into templates/starter/tools/lifecycle/</div>
+  </div>
+
+  <p class="foot">Phase 1 gives you a genuinely working browser engine end-to-end against your real app, with simulation as a safe fallback. Phase 2 (Engine 1 portal-asset automation) is a separate plan we scope when you're ready. — generated for your review before implementation.</p>
+</div>
+</body>
+</html>

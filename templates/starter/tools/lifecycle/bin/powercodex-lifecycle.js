@@ -63,7 +63,10 @@ serve options:
 loop options:
   --rotations <n>           number of loop rotations (default 1)
   --fresh                   reset the status bus before running
-  --real                    use real engine adapters instead of simulation
+  --real                    drive the real MDM browser engine (needs: a browser-based
+                            project + Playwright installed · npm i -D playwright).
+                            Falls back to simulation with a recommendation otherwise.
+  --app-url <url>           the live app URL the real e2e engine should smoke-test
 
 Open http://localhost:4321 (serve) — it polls /api/state and updates live.`);
 }
@@ -205,6 +208,7 @@ async function main() {
         fresh: flag('fresh') === true,
         rotations,
         simulate: flag('real') !== true,
+        appUrl: typeof flag('app-url') === 'string' ? flag('app-url') : undefined,
       });
       console.log('\nSummary:', JSON.stringify(summary));
       console.log('Dashboard:', path.join(liveDir(root), 'index.html'));

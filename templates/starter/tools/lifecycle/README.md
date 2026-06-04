@@ -81,7 +81,8 @@ Run the loop in another terminal (`npm run lifecycle -- loop --rotations 3`) and
 | Live dashboard server (`serve` → `http://localhost:4321` + `/api/state`) | **real** |
 | Static dashboard snapshot (`.powercodex/live/index.html`) | **real**, regenerated on every event |
 | Loop orchestrator + guardrails (rights gate, no-progress detector) | **real** |
-| Build executor (Engine 1) & e2e tester (Engine 2) | **adapters** — they emit the real event stream but run in **simulation** by default |
+| E2E tester (Engine 2) + managed-Edge profile verify | **real-capable** — drives a managed Edge over CDP via the vendored Playwright-for-MDM engine; runs a real smoke test (page/console/network errors). Simulates when Playwright is absent. |
+| Build executor (Engine 1) | **simulated** — no real implementation yet; emits the real event stream. Real maker-portal automation is a separate, larger effort (Phase 2). |
 | Cockpit TUI (`cockpit`) + slash commands + streaming | **real** |
 | Provider bridge (`provider list`, `/provider`) — claude-code · github-copilot | **real** — uses each vendor's CLI; falls back to a simulated brain when absent |
 | Plan registry + viewer (`/plan open`, `/api/plans`) | **real** |
@@ -90,7 +91,19 @@ Run the loop in another terminal (`npm run lifecycle -- loop --rotations 3`) and
 | Code-grounded user stories (`stories`) + grounded MVP, with provenance | **real** |
 | Review → refine → **freeze / unlock** (`.powercodex/freeze.json`) | **real** — the loop honors the frozen benchmark |
 
-The two engines drive a managed Edge browser against a Power Platform tenant in production. That can't run without a tenant + MFA, so they ship as adapters with a simulation fallback. Swap the two functions in [`lib/engines.js`](lib/engines.js) for real Playwright-for-MDM adapters and nothing else changes.
+### Going real (the e2e engine)
+
+Engine 2 and profile verification are wired to the **vendored Playwright-for-MDM engine** ([`engine/mdm-attach.mjs`](engine/mdm-attach.mjs)) — it attaches to a managed Edge over CDP and runs a real smoke test. To turn it on for a project:
+
+```bash
+npm i -D playwright                                   # optional dependency — only when you want real
+npm run lifecycle -- import --analyze                 # so the loop knows the project is browser-based
+npm run lifecycle -- loop --real --app-url https://<your-app>
+```
+
+`resolveEngines()` ([`lib/engines.js`](lib/engines.js)) picks the engine bundle at run time. Real runs need three things: `--real`, a **browser-based** project (Power Platform tenant, or web routes/components/dev-server — read from the digest), and Playwright installed. If any is missing it degrades **gracefully to simulation** — and, when the project is browser-based but Playwright is absent, it **recommends `npm i -D playwright`** (in the import output, the dashboard banner, and `/api/state`). A non-browser project (a library/CLI) just simulates quietly, with no nag. The npm package itself stays **zero-dependency**: Playwright is opt-in.
+
+Engine 1 (the build executor that creates portal assets) has no real implementation yet and stays simulated — writing maker-portal automation is a separate, larger effort.
 
 ## Usage
 
@@ -105,7 +118,7 @@ npm run lifecycle -- init                 # create .powercodex/live + Approved_r
 npm run lifecycle:selftest                # run the product against itself and assert it works
 ```
 
-Add `--real` to `loop` to use real engine adapters (requires a tenant and granted `Approved_rights/` flags). The dashboard also exposes these as buttons: Start/Pause/Approve/Reset, **Propose MVP**, **Reflect**, plus editable goal/MVP intake with a **real goal↔MVP compliance** meter (flags drift + missing terms), an **Insights** panel (rework rate, self-heals, lessons, mistakes-per-rotation), and a **notifications** banner for pending approvals.
+Add `--real` to `loop` to drive the real MDM browser engine (requires a browser-based project, `npm i -D playwright`, granted `Approved_rights/` flags, and `--app-url` for the tester; it degrades to simulation with a recommendation otherwise). The dashboard also exposes these as buttons: Start/Pause/Approve/Reset, **Propose MVP**, **Reflect**, plus editable goal/MVP intake with a **real goal↔MVP compliance** meter (flags drift + missing terms), an **Insights** panel (rework rate, self-heals, lessons, mistakes-per-rotation), and a **notifications** banner for pending approvals.
 
 ## Workspace — learn across many projects
 
@@ -125,4 +138,4 @@ npm run lifecycle -- workspace list        # projects + shared lesson count
 
 ## Self-test
 
-`npm run lifecycle:selftest` runs the full loop in a throwaway workspace and asserts the product produced what the plan promises — all 7 stages, build assets, the push-vs-dev rule, a self-heal, an observation, the rendered dashboard, well-formed derived state, the **live server + control endpoints** (`/api/state`, `/api/action` intake/rights/propose-mvp/reflect, `/api/emit`), **real compliance scoring**, the **MVP proposer**, the **reflection** lesson writer, **computed insights**, **notifications**, **cross-project shared learning**, the rights gate blocking an un-approved build, and the **v2 cockpit** pillars — the provider bridge (streaming + interrupt), the plan registry + viewer (served over HTTP), cockpit command routing + chat streaming, and the portable `import` — and the **brownfield** pillars: reading a pre-existing app into a digest (with provenance), generating code-grounded stories + a grounded MVP, the goal-only fallback, refine-preserves-edits, and the freeze/unlock contract (a frozen benchmark the loop never rewrites). **77/77 checks.**
+`npm run lifecycle:selftest` runs the full loop in a throwaway workspace and asserts the product produced what the plan promises — all 7 stages, build assets, the push-vs-dev rule, a self-heal, an observation, the rendered dashboard, well-formed derived state, the **live server + control endpoints** (`/api/state`, `/api/action` intake/rights/propose-mvp/reflect, `/api/emit`), **real compliance scoring**, the **MVP proposer**, the **reflection** lesson writer, **computed insights**, **notifications**, **cross-project shared learning**, the rights gate blocking an un-approved build, and the **v2 cockpit** pillars — the provider bridge (streaming + interrupt), the plan registry + viewer (served over HTTP), cockpit command routing + chat streaming, and the portable `import` — and the **brownfield** pillars: reading a pre-existing app into a digest (with provenance), generating code-grounded stories + a grounded MVP, the goal-only fallback, refine-preserves-edits, and the freeze/unlock contract (a frozen benchmark the loop never rewrites), and the **real-engine resolution** — the vendored MDM engine is present, `resolveEngines` returns the right bundle, a browser-based project without Playwright is recommended it (and falls back), and a non-browser project simulates without a nag. **86/86 checks.**

@@ -60,4 +60,46 @@ async function e2eTester({ emit, rotation, specs, injectDefect, baseUrl }) {
   return { failures, coverage, passed: failures.length === 0 };
 }
 
-module.exports = { buildExecutor, e2eTester, verifyProfile };
+// Pick the engine bundle for a run. Simulated by default; real only when `--real`
+// is requested AND the project is browser-based AND Playwright is installed. The user's
+// rule: recommend installing Playwright when a browser-based project is missing it, but
+// stay quiet (just simulate) for projects a browser can't meaningfully drive. Any
+// shortfall degrades gracefully to simulation so the loop always completes.
+async function resolveEngines(root, { simulate, emit } = {}) {
+  const sim = {
+    verifyProfile: (a) => verifyProfile({ ...a, simulate: true }),
+    buildExecutor: (a) => buildExecutor({ ...a, simulate: true }),
+    e2eTester,
+    close: async () => {},
+    mode: 'simulate',
+    real: false,
+  };
+  if (simulate) return sim;
+
+  const { hasPlaywright, browserBased } = require('./playwright-check');
+  if (!browserBased(root)) {
+    if (emit) await emit({ rotation: 0, stage: 0, agent: 'intake', level: 'info', message: 'Real engines skipped · this project is not browser-based · using simulation' });
+    return { ...sim, mode: 'simulate (non-browser project)' };
+  }
+  if (!hasPlaywright(root)) {
+    if (emit) await emit({ rotation: 0, stage: 0, agent: 'intake', level: 'warn', message: 'Real engines need Playwright · run: npm i -D playwright · falling back to simulation for now' });
+    return { ...sim, mode: 'simulate (Playwright not installed)' };
+  }
+  try {
+    const real = require('./engines.real').create(root);
+    // Engine 1 (build) has no real implementation yet — keep it simulated, honestly.
+    return {
+      verifyProfile: real.verifyProfile,
+      buildExecutor: (a) => buildExecutor({ ...a, simulate: true }),
+      e2eTester: real.e2eTester,
+      close: real.close,
+      mode: 'real (e2e + profile; build still simulated)',
+      real: true,
+    };
+  } catch (e) {
+    if (emit) await emit({ rotation: 0, stage: 0, agent: 'intake', level: 'warn', message: `Real engine load failed (${e.message}) · falling back to simulation` });
+    return { ...sim, mode: 'simulate (engine load failed)' };
+  }
+}
+
+module.exports = { buildExecutor, e2eTester, verifyProfile, resolveEngines };

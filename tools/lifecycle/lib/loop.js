@@ -1,7 +1,7 @@
 'use strict';
 const { emit: busEmit, reset } = require('./bus');
 const { ensureRights, allowed, profileVerified, setProfile, setAppUrl } = require('./rights');
-const { buildExecutor, e2eTester, verifyProfile } = require('./engines');
+const { resolveEngines } = require('./engines');
 const { render } = require('./dashboard');
 const { scoreCompliance } = require('./compliance');
 const freeze = require('./freeze');
@@ -33,7 +33,11 @@ async function runLoop(root, opts = {}) {
     return record;
   };
 
-  const summary = { rotations: 0, specsRun: 0, selfHeals: 0, observations: 0, stopped: false, mode: simulate ? 'simulate' : 'real' };
+  // Resolve the engine bundle up front: simulate, or real when requested + browser-based
+  // + Playwright present. `realMode` drives the rights gate and honest messaging below.
+  const eng = await resolveEngines(root, { simulate, emit });
+  const realMode = !!eng.real;
+  const summary = { rotations: 0, specsRun: 0, selfHeals: 0, observations: 0, stopped: false, mode: eng.mode };
 
   // Step 0 — intake + rights gate
   await emit({ rotation: 0, stage: 0, agent: 'intake', level: 'info', message: 'Project start · dashboard opened, intake gate active' });
@@ -72,13 +76,12 @@ async function runLoop(root, opts = {}) {
   // is stored in Approved_rights/; the real session stays under a gitignored .profiles/.
   const profile = opts.profile || rights.browserProfile || 'mdm-edge';
   const profilePath = rights.profilePath || `./.profiles/${profile}`;
-  await verifyProfile({
+  await eng.verifyProfile({
     emit,
     rotation: 0,
     profile,
     profilePath,
     alreadyVerified: profileVerified(root),
-    simulate,
     persist: (p) => setProfile(root, p),
   });
 
@@ -105,7 +108,7 @@ async function runLoop(root, opts = {}) {
       summary.stopped = true;
       break;
     }
-    await buildExecutor({ emit, rotation: r, tasks, simulate });
+    await eng.buildExecutor({ emit, rotation: r, tasks });
 
     // Step 4 — run (push vs dev). Capture the app URL so the tester can target it.
     const dataverse = opts.dataverse !== false;
@@ -116,9 +119,9 @@ async function runLoop(root, opts = {}) {
         summary.stopped = true;
         break;
       }
-      await emit({ rotation: r, stage: 4, agent: 'runner', level: 'good', message: `Dataverse connected → npx power-apps push · got app link${simulate ? ' (simulated)' : ''}` });
-      // Real mode parses the push output for the play URL; simulate uses a stable placeholder.
-      baseUrl = opts.appUrl || rights.appUrl || (simulate ? 'https://apps.powerapps.com/play/e/demo-env/a/demo-app' : '');
+      await emit({ rotation: r, stage: 4, agent: 'runner', level: 'good', message: `Dataverse connected → npx power-apps push · got app link${realMode ? '' : ' (simulated)'}` });
+      // Real mode uses the captured/approved play URL; simulate uses a stable placeholder.
+      baseUrl = opts.appUrl || rights.appUrl || (realMode ? '' : 'https://apps.powerapps.com/play/e/demo-env/a/demo-app');
       if (baseUrl) {
         setAppUrl(root, baseUrl);
         rights.appUrl = baseUrl;
@@ -133,7 +136,7 @@ async function runLoop(root, opts = {}) {
     const specs = opts.specs || ['projects-grid.spec.ts', 'status-chip.spec.ts', 'new-project.spec.ts'];
     const injectDefect = r === 1 && opts.selfHeal !== false ? specs[0] : null;
     summary.specsRun += specs.length;
-    let result = await e2eTester({ emit, rotation: r, specs, injectDefect, baseUrl });
+    let result = await eng.e2eTester({ emit, rotation: r, specs, injectDefect, baseUrl });
     if (!result.passed) {
       const signature = result.failures.join(',');
       if (signature === prevFailureSignature) {
@@ -145,9 +148,16 @@ async function runLoop(root, opts = {}) {
       await emit({ rotation: r, stage: 5, agent: 'e2e-tester', level: 'bad', message: `${result.failures.length} spec(s) red · coverage ${result.coverage}%` });
       await emit({ rotation: r, stage: 5, agent: 'e2e-tester', level: 'info', message: `Self-heal: opsx:explore → propose → apply on ${result.failures[0]}` });
       summary.selfHeals += 1;
-      result = await e2eTester({ emit, rotation: r, specs, injectDefect: null, baseUrl });
+      result = await eng.e2eTester({ emit, rotation: r, specs, injectDefect: null, baseUrl });
     }
-    await emit({ rotation: r, stage: 5, agent: 'e2e-tester', level: 'good', message: `Green · ${specs.length}/${specs.length} specs · ${result.coverage}% MVP coverage` });
+    // Only claim green when it actually is. A real app still red after self-heal escalates.
+    if (result.passed) {
+      await emit({ rotation: r, stage: 5, agent: 'e2e-tester', level: 'good', message: `Green · ${specs.length}/${specs.length} specs · ${result.coverage}% MVP coverage` });
+    } else {
+      await emit({ rotation: r, stage: 5, agent: 'e2e-tester', level: 'warn', message: `Still red after self-heal · ${result.failures.length} issue(s) · escalating to you` });
+      summary.stopped = true;
+      break;
+    }
 
     // Step 6 — observe -> re-spec
     const observation = pickObservation(r);
@@ -172,6 +182,7 @@ async function runLoop(root, opts = {}) {
     level: summary.stopped ? 'warn' : 'good',
     message: summary.stopped ? 'Loop stopped (guardrail / escalation to you)' : 'Loop complete · green & matches approved MVP',
   });
+  if (eng.close) await eng.close(); // release the CDP connection in real mode (no-op when simulated)
   if (liveRender) render(root);
   return summary;
 }

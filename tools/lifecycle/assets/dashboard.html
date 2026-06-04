@@ -516,11 +516,16 @@
       `<div class="lesson"><span class="id">${esc(l.id)}</span><span>${esc(l.title)}</span></div>`
     ).join('') : '<div class="empty">No lessons logged yet.</div>';
 
-    // notifications banner
-    const nt = s.notifications || [];
-    $('banner').innerHTML = nt.map((n)=>
+    // notifications banner (+ real-engine recommendation)
+    const nt = (s.notifications || []).map((n)=>
       `<div class="nt ${esc(n.kind)}"><span class="k">${esc(n.kind)}</span><span>${esc(n.title)}</span></div>`
-    ).join('');
+    );
+    const eng = s.engine;
+    if (eng && (eng.needed || eng.playwrightInstalled)){
+      const kind = eng.needed ? 'drift' : 'approval';
+      nt.push(`<div class="nt ${kind}"><span class="k">engine</span><span>${esc(eng.message)}${eng.needed?` — <code>${esc(eng.command)}</code>`:''}</span></div>`);
+    }
+    $('banner').innerHTML = nt.join('');
 
     // insights
     const ins = s.insights || {};

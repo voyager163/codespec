@@ -306,6 +306,43 @@ async function selftest() {
     check('plain import (no --analyze) produces no digest', !importInto(fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-plain-')), {}).digest);
     fs.rmSync(anRoot, { recursive: true, force: true });
 
+    // Real-engine resolution & the Playwright recommendation (deterministic — no browser).
+    const { resolveEngines } = require('./engines');
+    const { hasPlaywright, browserBased, recommendation } = require('./playwright-check');
+    const writeDigestFn = require('./digest').writeDigest;
+    const enginePath = path.join(__dirname, '..', 'engine', 'mdm-attach.mjs');
+    check('vendored MDM engine is present', fs.existsSync(enginePath));
+    check('vendored MDM engine exposes runAppSmokeTest', /export\s+async\s+function\s+runAppSmokeTest/.test(fs.readFileSync(enginePath, 'utf8')));
+
+    const simEng = await resolveEngines(root, { simulate: true });
+    check('resolveEngines(simulate) yields the simulated bundle', simEng.mode === 'simulate' && simEng.real === false && typeof simEng.e2eTester === 'function');
+
+    // A browser-based project (web routes/components) → real requested without Playwright recommends it.
+    const webRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-web-'));
+    writeDigestFn(webRoot, { name: 'web-app', mode: 'local-run', routes: [{ path: '/', source: 'a' }], components: [{ name: 'App', source: 'a' }], data: [], scripts: [{ name: 'dev', cmd: 'vite', source: 'package.json' }], coverage: {} });
+    check('browserBased() is true for a web app', browserBased(webRoot) === true);
+    const webNotes = [];
+    const webEng = await resolveEngines(webRoot, { simulate: false, emit: async (e) => webNotes.push(e.message) });
+    if (!hasPlaywright(webRoot)) {
+      check('real on a browser app without Playwright recommends it + falls back', /playwright/i.test(webNotes.join(' ')) && /Playwright not installed/.test(webEng.mode) && webEng.real === false);
+    } else {
+      check('real on a browser app with Playwright resolves the real bundle', webEng.real === true);
+    }
+    fs.rmSync(webRoot, { recursive: true, force: true });
+
+    // A UI-less project (library/CLI) → simulate quietly, no Playwright nag.
+    const libRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-lib-'));
+    writeDigestFn(libRoot, { name: 'lib', mode: 'local-run', routes: [], components: [], data: [], scripts: [{ name: 'build', cmd: 'tsc', source: 'package.json' }], coverage: {} });
+    check('browserBased() is false for a UI-less project', browserBased(libRoot) === false);
+    const libNotes = [];
+    const libEng = await resolveEngines(libRoot, { simulate: false, emit: async (e) => libNotes.push(e.message) });
+    check('a non-browser project is not nagged to install Playwright', !/playwright/i.test(libNotes.join(' ')) && /non-browser/.test(libEng.mode));
+    check('recommendation() explains real engines are not advised for a non-browser app', recommendation(libRoot).needed === false && recommendation(libRoot).browserBased === false);
+    fs.rmSync(libRoot, { recursive: true, force: true });
+
+    // Derived state carries the engine recommendation for the dashboard banner.
+    check('deriveState exposes an engine recommendation', !!deriveState(root).engine && typeof deriveState(root).engine.message === 'string');
+
     const passed = checks.filter(Boolean).length;
     const ok = checks.every(Boolean);
     console.log(`\n${ok ? 'PASS' : 'FAIL'} · ${passed}/${checks.length} checks · summary ${JSON.stringify(summary)}`);

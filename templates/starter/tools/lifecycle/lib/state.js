@@ -8,6 +8,7 @@ const { computeInsights } = require('./insights');
 const { summary: workspaceSummary, brainDir } = require('./workspace');
 const { readStories } = require('./stories');
 const { readDigest } = require('./digest');
+const { recommendation } = require('./playwright-check');
 const freeze = require('./freeze');
 
 const STAGES = ['Intake', 'Plan', 'Approve', 'Build', 'Run', 'Test', 'Observe'];
@@ -139,6 +140,7 @@ function deriveState(root) {
     },
     insights: computeInsights(root, events),
     ingestion,
+    engine: recommendation(root),
     workspace: workspaceSummary(root),
     notifications,
     test: {
