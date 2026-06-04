@@ -117,7 +117,7 @@
 
   .panel{border:1px solid var(--line);border-radius:13px;background:var(--panel);padding:8px 14px}
   .feed{list-style:none;margin:0;padding:0;max-height:420px;overflow:auto;font-size:12.8px}
-  .feed li{display:grid;grid-template-columns:60px 13px 1fr;gap:9px;align-items:start;padding:8px 4px;border-bottom:1px solid rgba(38,44,58,.6);animation:fin .35s var(--ease)}
+  .feed li{display:grid;grid-template-columns:60px 13px 1fr;gap:9px;align-items:start;padding:8px 4px;border-bottom:1px solid rgba(38,44,58,.6)}
   @keyframes fin{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
   .feed li:last-child{border-bottom:0}
   .feed .t{color:var(--faint);font-size:11px}.feed .dt{width:8px;height:8px;border-radius:50%;margin-top:4px}
@@ -128,7 +128,7 @@
   .ring .inner{width:50px;height:50px;border-radius:50%;background:var(--panel);display:grid;place-items:center;font-weight:700;font-size:14px}
   .tcard .l{font-size:12px;color:var(--faint)}.tcard .v{font-weight:700}
 
-  .obs{border:1px solid var(--line);border-left-width:3px;border-radius:11px;padding:12px;margin:0 0 10px;background:var(--panel2);animation:fin .4s var(--ease)}
+  .obs{border:1px solid var(--line);border-left-width:3px;border-radius:11px;padding:12px;margin:0 0 10px;background:var(--panel2)}
   .obs.gap{border-left-color:var(--accent)}.obs.improvement{border-left-color:var(--accent2)}.obs.defect{border-left-color:var(--bad)}
   .obs .r{display:flex;align-items:center;gap:8px}
   .sig{font-size:10.5px;font-weight:700;text-transform:uppercase;padding:2px 8px;border-radius:999px}
@@ -140,12 +140,62 @@
   .empty{color:var(--faint);text-align:center;padding:22px;font-size:12.5px}
   .note{color:var(--faint);font-size:12px;text-align:center;margin-top:26px}
   .off{position:fixed;inset:0;display:none;place-items:center;background:rgba(11,13,18,.85);z-index:50;color:var(--warn);font-weight:600}
+
+  /* ───────── screen flow: persistent context · stepper · staged views ───────── */
+  /* The summary bar stays pinned so you never lose the goal/MVP/rights while moving through steps. */
+  .context{margin:0 0 14px}
+  .context .intake{margin-bottom:0}
+
+  /* The stepper IS the sequence — sticky under the topbar so the phase you're in is always in view. */
+  .stepper{position:sticky;top:56px;z-index:14;display:flex;gap:6px;padding:10px;margin:0 0 8px;background:rgba(18,21,29,.82);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:14px;overflow-x:auto}
+  .step{flex:1 1 0;min-width:128px;display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid transparent;border-radius:11px;background:transparent;color:var(--muted);font:inherit;text-align:left;cursor:pointer;transition:background .16s var(--ease),border-color .16s var(--ease),color .16s var(--ease)}
+  .step:hover{border-color:var(--line2);color:var(--text)}
+  .step .sx{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;color:var(--faint);background:var(--panel);border:1px solid var(--line);transition:background .16s var(--ease),color .16s var(--ease),border-color .16s var(--ease)}
+  .step .sl{display:flex;flex-direction:column;line-height:1.25;font-size:12.5px;font-weight:700}
+  .step .sl small{font-weight:500;font-size:10.5px;color:var(--faint);letter-spacing:.01em}
+  .step.current{background:linear-gradient(180deg,rgba(110,168,254,.12),rgba(110,168,254,.04));border-color:rgba(110,168,254,.4);color:var(--text)}
+  .step.current .sx{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#06203f;border-color:transparent}
+  .step.done .sx{background:rgba(90,209,154,.16);color:var(--good);border-color:rgba(90,209,154,.35)}
+  .step.live .sx{position:relative}
+  .step.live .sx::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:1.5px solid var(--accent);opacity:.6;animation:ring 1.6s var(--ease) infinite}
+  @keyframes ring{0%{transform:scale(.85);opacity:.7}100%{transform:scale(1.25);opacity:0}}
+  .follow{flex:none;align-self:center;margin-left:4px;font-size:11px;font-weight:700;color:var(--accent);background:rgba(110,168,254,.1);border:1px solid rgba(110,168,254,.3);border-radius:999px;padding:5px 11px;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;transition:opacity .16s var(--ease)}
+  .follow .fd{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pulse 1.5s var(--ease) infinite}
+  .follow.off{color:var(--faint);background:transparent;border-color:var(--line)}
+  .follow.off .fd{background:var(--faint);animation:none}
+
+  /* One view at a time. Entering view: ease-out, short, tiny rise + blur to mask the swap. */
+  .view{display:none}
+  .view.active{display:block;animation:viewin .26s var(--ease) both}
+  @keyframes viewin{from{opacity:0;transform:translateY(6px);filter:blur(3px)}to{opacity:1;transform:none;filter:none}}
+  /* Gentle stagger of the cards within the view — decorative, runs once per entrance. */
+  .view.active > *{animation:cardin .3s var(--ease) both}
+  .view.active > *:nth-child(1){animation-delay:20ms}
+  .view.active > *:nth-child(2){animation-delay:60ms}
+  .view.active > *:nth-child(3){animation-delay:100ms}
+  .view.active > *:nth-child(4){animation-delay:140ms}
+  @keyframes cardin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  .viewhead{display:flex;align-items:baseline;gap:12px;margin:2px 0 14px}
+  .viewhead h2{font-size:18px;margin:0;letter-spacing:-.01em}
+  .viewhead p{margin:0;font-size:12.5px;color:var(--faint)}
+  .viewnav{display:flex;align-items:center;gap:10px;margin-top:22px;padding-top:16px;border-top:1px solid var(--line)}
+  .viewnav .sp{flex:1}
+  .viewnav .hint{font-size:12px;color:var(--faint)}
+
+  @media (prefers-reduced-motion:reduce){
+    .view.active,.view.active > *{animation:none}
+    .step.live .sx::after{animation:none}
+    .pill.live .d,.badge.working .bd,.follow .fd{animation:none}
+    *{transition-duration:.01ms!important}
+  }
 </style>
 </head>
 <body>
   <div class="topbar">
     <div class="brand"><span class="mark">P</span><span>PowerCodex Lifecycle <small>live monitor · .powercodex/live</small></span></div>
     <span id="status" class="pill live"><span class="d"></span> connecting…</span>
+    <span class="pill mode" title="One engine, two surfaces — drive the same loop from the Cockpit (npx powercodex)">🪟 Studio · ⌨ Cockpit</span>
     <span id="mode" class="pill mode" hidden></span>
     <span id="ws" class="pill mode" hidden></span>
     <div class="sp"></div>
@@ -154,46 +204,85 @@
   </div>
 
   <div class="wrap">
-    <div class="banner" id="banner"></div>
-    <div class="controls">
-      <button type="button" class="btn primary" id="btnStart">▶ Start loop</button>
-      <button type="button" class="btn" id="btnPause">⏸ Pause</button>
-      <button type="button" class="btn" id="btnApprove">✓ Approve change</button>
-      <button type="button" class="btn" id="btnMvp">✦ Propose MVP</button>
-      <button type="button" class="btn" id="btnReflect">✷ Reflect</button>
-      <button type="button" class="btn ghost" id="btnReset">↺ Reset</button>
-      <span class="ctlnote" id="ctlnote"></span>
-    </div>
+    <!-- persistent context — keep track of the goal/MVP/rights from any step -->
+    <div class="context"><div class="intake" id="intake"></div></div>
 
-    <div class="ied">
-      <div><label for="inGoal"><span class="tag">goal</span>Goal / objective</label><textarea id="inGoal" placeholder="Paste your meeting summary / objective…"></textarea></div>
-      <div><label for="inMvp"><span class="tag b">MVP</span>MVP (url, file, or note)</label><textarea id="inMvp" placeholder="projects-grid-mvp.html — or paste a prototype…"></textarea></div>
-      <div class="save"><label for="inCompliance">Compliance</label><input class="cnum" id="inCompliance" type="number" min="0" max="100" value="86" title="Goal↔MVP compliance %" /><button type="button" class="btn" id="btnIntake">Save intake</button></div>
-    </div>
-
-    <div class="intake" id="intake"></div>
-    <div class="strip" id="strip"></div>
+    <!-- the sequence -->
+    <nav class="stepper" id="stepper">
+      <button type="button" class="step" data-view="setup"><span class="sx">1</span><span class="sl">Goal &amp; MVP<small>set the target</small></span></button>
+      <button type="button" class="step" data-view="plan"><span class="sx">2</span><span class="sl">Plan &amp; approve<small>review before build</small></span></button>
+      <button type="button" class="step" data-view="build"><span class="sx">3</span><span class="sl">Build &amp; run<small>watch it work</small></span></button>
+      <button type="button" class="step" data-view="verify"><span class="sx">4</span><span class="sl">Test &amp; observe<small>prove the MVP</small></span></button>
+      <button type="button" class="step" data-view="learn"><span class="sx">5</span><span class="sl">Insights &amp; lessons<small>is it improving?</small></span></button>
+      <button type="button" class="follow" id="follow"><span class="fd"></span>following live</button>
+    </nav>
     <div class="obar"><span id="obar" style="width:0%"></span></div>
 
-    <div class="cols">
-      <div>
-        <div class="sect">Agents at work <span class="c" id="agentcount"></span></div>
-        <div class="agents" id="agents"></div>
-        <div class="sect" style="margin-top:24px">Test &amp; MVP coverage</div>
-        <div id="test"></div>
-        <div class="sect" style="margin-top:24px">Insights <span class="c">is the loop improving?</span></div>
-        <div id="insights"></div>
+    <div class="banner" id="banner"></div>
+
+    <!-- STEP 1 · SETUP -->
+    <section class="view" data-view="setup">
+      <div class="viewhead"><h2>Goal &amp; MVP</h2><p>Tell PowerCodex what to build and the first slice to measure against.</p></div>
+      <div class="ied">
+        <div><label for="inGoal"><span class="tag">goal</span>Goal / objective</label><textarea id="inGoal" placeholder="Paste your meeting summary / objective…"></textarea></div>
+        <div><label for="inMvp"><span class="tag b">MVP</span>MVP (url, file, or note)</label><textarea id="inMvp" placeholder="A primary view with the core action and fields — or paste a prototype…"></textarea></div>
+        <div class="save"><label for="inCompliance">Compliance</label><input class="cnum" id="inCompliance" type="number" min="0" max="100" value="86" title="Goal↔MVP compliance %" /><button type="button" class="btn primary" id="btnIntake">Save intake</button></div>
       </div>
-      <div>
-        <div class="sect">Live activity <span class="c">newest first</span></div>
-        <div class="panel"><ul class="feed" id="feed"></ul></div>
-        <div class="sect" style="margin-top:24px">Specs authored from observation <span class="c" id="obscount"></span></div>
-        <div id="obs"></div>
-        <div class="sect" style="margin-top:24px">Learning_Experience <span class="c" id="lesscount"></span></div>
-        <div class="panel" id="lessons" style="padding:4px 14px"></div>
+      <div class="viewnav"><button type="button" class="btn" id="btnMvp">✦ Propose an MVP</button><span class="sp"></span><span class="hint">Set goal &amp; MVP, then →</span><button type="button" class="btn primary" data-goto="plan">Next: Plan &amp; approve →</button></div>
+    </section>
+
+    <!-- STEP 2 · PLAN -->
+    <section class="view" data-view="plan">
+      <div class="viewhead"><h2>Plan &amp; approve</h2><p>See what the agent intends before anything touches your tenant.</p></div>
+      <div class="sect">Generated plans <span class="c" id="plancount"></span></div>
+      <div class="panel" id="plans" style="padding:4px 14px"></div>
+      <div class="viewnav"><button type="button" class="btn" data-goto="setup">← Back</button><button type="button" class="btn primary" id="btnApprove">✓ Approve change</button><span class="sp"></span><button type="button" class="btn primary" data-goto="build">Next: Build &amp; run →</button></div>
+    </section>
+
+    <!-- STEP 3 · BUILD -->
+    <section class="view" data-view="build">
+      <div class="viewhead"><h2>Build &amp; run</h2><p>The loop builds, runs, and tests — streaming every step. Start it here.</p></div>
+      <div class="controls">
+        <button type="button" class="btn primary" id="btnStart">▶ Start loop</button>
+        <button type="button" class="btn" id="btnPause">⏸ Pause</button>
+        <button type="button" class="btn ghost" id="btnReset">↺ Reset</button>
+        <span class="ctlnote" id="ctlnote"></span>
       </div>
-    </div>
-    <p class="note">Polling <code>/api/state</code> every 1.2s · derived from the append-only status bus. Run the loop in another terminal (<code>npm run lifecycle -- loop</code>) and watch this page move — or start with <code>npm run lifecycle:serve -- --demo</code>.</p>
+      <div class="strip" id="strip"></div>
+      <div class="cols">
+        <div>
+          <div class="sect">Agents at work <span class="c" id="agentcount"></span></div>
+          <div class="agents" id="agents"></div>
+        </div>
+        <div>
+          <div class="sect">Live activity <span class="c">newest first</span></div>
+          <div class="panel"><ul class="feed" id="feed"></ul></div>
+        </div>
+      </div>
+      <div class="viewnav"><button type="button" class="btn" data-goto="plan">← Back</button><span class="sp"></span><button type="button" class="btn primary" data-goto="verify">Next: Test &amp; observe →</button></div>
+    </section>
+
+    <!-- STEP 4 · VERIFY -->
+    <section class="view" data-view="verify">
+      <div class="viewhead"><h2>Test &amp; observe</h2><p>Does it meet the approved MVP? Coverage plus the specs the observer authored.</p></div>
+      <div class="sect">Test &amp; MVP coverage</div>
+      <div id="test"></div>
+      <div class="sect" style="margin-top:22px">Specs authored from observation <span class="c" id="obscount"></span></div>
+      <div id="obs"></div>
+      <div class="viewnav"><button type="button" class="btn" data-goto="build">← Back</button><span class="sp"></span><button type="button" class="btn primary" data-goto="learn">Next: Insights &amp; lessons →</button></div>
+    </section>
+
+    <!-- STEP 5 · LEARN -->
+    <section class="view" data-view="learn">
+      <div class="viewhead"><h2>Insights &amp; lessons</h2><p>Is the loop getting better each rotation? What it has learned so far.</p></div>
+      <div class="sect">Insights <span class="c">is the loop improving?</span></div>
+      <div id="insights"></div>
+      <div class="sect" style="margin-top:22px">Learning_Experience <span class="c" id="lesscount"></span></div>
+      <div class="panel" id="lessons" style="padding:4px 14px"></div>
+      <div class="viewnav"><button type="button" class="btn" data-goto="verify">← Back</button><button type="button" class="btn" id="btnReflect">✷ Reflect — log a lesson</button><span class="sp"></span><button type="button" class="btn primary" data-goto="setup">↺ Next rotation: Setup →</button></div>
+    </section>
+
+    <p class="note">Polling <code>/api/state</code> every 1.2s · derived from the append-only status bus. The stepper follows the live stage — click any step to explore, or “following live” to snap back. Or drive it all from the terminal: <code>npm run cockpit</code>.</p>
   </div>
   <div class="off" id="off">Lost connection to the PowerCodex server…</div>
 
@@ -233,6 +322,61 @@
     const chip = e.target.closest('[data-flag]');
     if (chip) action({ type:'rights', flag: chip.dataset.flag, value: chip.dataset.on !== 'true' });
   });
+
+  // ───────── screen flow: one view at a time, stepper follows the live stage ─────────
+  const VIEWS = ['setup','plan','build','verify','learn'];
+  // Which lifecycle stages (0..6) belong to each user-facing step.
+  const STAGE_MAP = { setup:[0], plan:[1,2], build:[3,4], verify:[5], learn:[6] };
+  let activeView = 'setup';
+  let followLive = true;
+
+  function showView(v, manual){
+    if (!VIEWS.includes(v) || (v === activeView && !manual)) {
+      if (v !== activeView) return; // nothing to do
+    }
+    activeView = v;
+    document.querySelectorAll('.view').forEach((el) => el.classList.toggle('active', el.dataset.view === v));
+    document.querySelectorAll('.stepper .step').forEach((el) => el.classList.toggle('current', el.dataset.view === v));
+    if (manual && followLive) { followLive = false; updateFollow(); }
+    // Bring the focused step into view on narrow screens.
+    const cur = document.querySelector('.stepper .step.current');
+    if (cur && cur.scrollIntoView) cur.scrollIntoView({ block:'nearest', inline:'nearest' });
+  }
+
+  function updateFollow(){
+    const f = $('follow');
+    f.classList.toggle('off', !followLive);
+    f.innerHTML = '<span class="fd"></span>' + (followLive ? 'following live' : 'follow live');
+  }
+
+  // Drive the stepper's done/live markers from the lifecycle stages, and (when
+  // following) advance the visible view to wherever the loop currently is.
+  function updateStepper(s){
+    const stages = s.stages || [];
+    const stat = (k) => (stages[k] ? stages[k].status : 'pending');
+    let livePhase = null;
+    document.querySelectorAll('.stepper .step').forEach((step) => {
+      const ss = (STAGE_MAP[step.dataset.view] || []).map(stat);
+      const done = ss.length && ss.every((x) => x === 'done');
+      const live = ss.includes('active');
+      if (live && !livePhase) livePhase = step.dataset.view;
+      step.classList.toggle('done', done);
+      step.classList.toggle('live', live);
+      step.classList.toggle('current', step.dataset.view === activeView);
+    });
+    if (followLive && livePhase && livePhase !== activeView) showView(livePhase, false);
+  }
+
+  document.querySelectorAll('.stepper .step').forEach((b) => { b.onclick = () => showView(b.dataset.view, true); });
+  document.querySelectorAll('[data-goto]').forEach((b) => { b.onclick = () => showView(b.dataset.goto, true); });
+  $('follow').onclick = () => {
+    followLive = true; updateFollow();
+    const stages = lastState.stages || [];
+    const live = VIEWS.find((v) => (STAGE_MAP[v] || []).some((k) => stages[k] && stages[k].status === 'active'));
+    if (live) showView(live, false);
+  };
+  showView('setup', true);
+  followLive = true; updateFollow();
 
   function render(s){
     lastState = s;
@@ -275,6 +419,7 @@
       `<div class="stage ${g.status}"><div class="n">${g.i} · ${esc(g.label)}${g.status==='done'?' ✓':''}</div><div class="t">${g.status==='active'?'in progress…':g.status}</div></div>`
     ).join('');
     $('obar').style.width = (s.overallProgress||0)+'%';
+    updateStepper(s);
 
     // agents
     const working = (s.agents||[]).filter((a)=>a.state==='working').length;
@@ -339,10 +484,24 @@
       `</div>`;
   }
 
+  async function renderPlans(){
+    try{
+      const res = await fetch('/api/plans', { cache:'no-store' });
+      const plans = (await res.json()).plans || [];
+      $('plancount').textContent = plans.length ? '· '+plans.length+' ready' : '';
+      $('plans').innerHTML = plans.length ? plans.slice().reverse().map((p)=>
+        `<div class="lesson"><span class="id">${esc(p.id)}</span>`+
+        `<span style="flex:1">${esc(p.title)} <span class="rot">· ${esc(p.provider)}</span></span>`+
+        `<a href="/${esc(p.file)}" target="_blank" rel="noopener">open ↗</a></div>`
+      ).join('') : '<div class="empty">No plans yet — they appear here the moment the agent finishes one.</div>';
+    }catch(e){ /* plans endpoint optional; ignore */ }
+  }
+
   async function poll(){
     try{
       const res = await fetch('/api/state', { cache:'no-store' });
       render(await res.json());
+      renderPlans();
     }catch(e){
       $('off').style.display = 'grid';
     }
