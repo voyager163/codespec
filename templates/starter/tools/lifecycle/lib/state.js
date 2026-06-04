@@ -3,9 +3,12 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { readEvents } = require('./bus');
 const { load: loadRights } = require('./rights');
-const { scoreCompliance } = require('./compliance');
+const { scoreCompliance, scoreStoriesGrounding, scoreMvpAgainstStories } = require('./compliance');
 const { computeInsights } = require('./insights');
 const { summary: workspaceSummary, brainDir } = require('./workspace');
+const { readStories } = require('./stories');
+const { readDigest } = require('./digest');
+const freeze = require('./freeze');
 
 const STAGES = ['Intake', 'Plan', 'Approve', 'Build', 'Run', 'Test', 'Observe'];
 
@@ -89,6 +92,22 @@ function deriveState(root) {
   // Real goal↔MVP compliance, recomputed from the latest intake.
   const compliance = scoreCompliance(intakeData.goal, intakeData.mvp);
 
+  // Code-grounded intake: stories from the digest + the extra compliance
+  // dimensions (stories↔code, MVP↔stories). All optional — null when not ingested.
+  const digest = readDigest(root);
+  const storiesDoc = readStories(root);
+  const storyList = (storiesDoc && storiesDoc.stories) || [];
+  const ingestion = {
+    analyzed: !!digest,
+    digest: digest
+      ? { name: digest.name, mode: digest.mode, routes: (digest.routes || []).length, components: (digest.components || []).length, partial: !!(digest.coverage && digest.coverage.partial) }
+      : null,
+    stories: storyList,
+    freeze: freeze.readFreeze(root),
+    grounding: storiesDoc ? scoreStoriesGrounding(storyList, digest) : null,
+    mvpAgainstStories: storyList.length && intakeData.mvp ? scoreMvpAgainstStories(intakeData.mvp, storyList) : null,
+  };
+
   // Notifications: approvals waiting + goal drift. Surfaced as a banner.
   const notifications = [];
   for (const o of observations) {
@@ -119,6 +138,7 @@ function deriveState(root) {
       rights: loadRights(root),
     },
     insights: computeInsights(root, events),
+    ingestion,
     workspace: workspaceSummary(root),
     notifications,
     test: {

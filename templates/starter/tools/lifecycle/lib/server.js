@@ -9,6 +9,7 @@ const { Controller } = require('./control');
 const { listPlans, plansDir } = require('./plans');
 
 const CLIENT = path.join(__dirname, '..', 'assets', 'dashboard.html');
+const GUIDE = path.join(__dirname, '..', 'assets', 'user-guide.html');
 
 // A tiny zero-dependency live dashboard server. The client polls /api/state and
 // re-renders, and POSTs to /api/action and /api/emit to control the loop. Works
@@ -40,6 +41,29 @@ function serve(root, opts = {}) {
       }
       if (req.url.startsWith('/api/plans')) {
         return json(res, 200, { plans: listPlans(root) });
+      }
+      if (req.url.startsWith('/api/stories')) {
+        const { readStories } = require('./stories');
+        return json(res, 200, readStories(root) || { stories: [], grounded: false, status: 'draft' });
+      }
+      // The readable user-stories view, opened from the dashboard.
+      if (req.url.startsWith('/stories')) {
+        const { storiesHtmlPath } = require('./stories');
+        const p = storiesHtmlPath(root);
+        if (fs.existsSync(p)) {
+          res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+          res.end(fs.readFileSync(p, 'utf8'));
+          return;
+        }
+        res.writeHead(404, { 'content-type': 'text/plain' });
+        res.end('No stories yet — run: powercodex import --analyze');
+        return;
+      }
+      // The user guide — a self-contained help page, opened from the dashboard.
+      if (req.url.startsWith('/guide') || req.url.startsWith('/user-guide')) {
+        res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+        res.end(fs.readFileSync(GUIDE, 'utf8'));
+        return;
       }
       // Serve generated HTML plans (the plan viewer). Path-traversal guarded:
       // only files inside .powercodex/plans/ are served.

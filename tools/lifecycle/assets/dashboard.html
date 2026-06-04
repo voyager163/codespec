@@ -16,7 +16,8 @@
   .wrap{max-width:1200px;margin:0 auto;padding:0 22px 60px}
   a{color:var(--accent)}
 
-  .topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:15px 22px;margin:0 -22px 22px;background:rgba(11,13,18,.8);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+  .topbar{position:sticky;top:0;z-index:20;padding:12px 22px;margin:0 0 18px;background:rgba(11,13,18,.8);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+  .bar-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:13px;flex-wrap:wrap}
   .brand{display:flex;align-items:center;gap:11px;font-weight:700}
   .mark{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#06203f;font-weight:900}
   .brand small{display:block;font-weight:500;font-size:11.5px;color:var(--faint)}
@@ -26,6 +27,8 @@
   .pill.live{color:var(--accent);border-color:rgba(110,168,254,.35);background:rgba(110,168,254,.08)}
   .pill.live .d{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 1.5s var(--ease) infinite}
   .pill.mode{color:var(--accent2);border-color:rgba(167,139,250,.35);background:rgba(167,139,250,.08)}
+  .pill.help{color:var(--accent);border-color:rgba(110,168,254,.35);background:rgba(110,168,254,.08);text-decoration:none;cursor:pointer;transition:border-color .14s var(--ease)}
+  .pill.help:hover{border-color:var(--accent)}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
   .sp{flex:1}
   .stat{text-align:right}.stat .v{font-weight:700;font-size:15px}.stat .l{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em}
@@ -138,6 +141,16 @@
   .lesson{display:flex;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:12.8px}
   .lesson:last-child{border-bottom:0}.lesson .id{color:var(--accent);font-weight:700}
   .empty{color:var(--faint);text-align:center;padding:22px;font-size:12.5px}
+  .ingbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0 12px}
+  .ingmeta{display:flex;flex-wrap:wrap;gap:8px;padding:10px 0 6px}
+  .story{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line);font-size:12.8px}
+  .story:last-child{border-bottom:0}
+  .story .id{color:var(--accent2);font-weight:700;font-size:11px;letter-spacing:.05em}
+  .story .stxt{display:flex;flex-direction:column;gap:2px;flex:1}
+  .story .src{color:var(--faint);font-size:11.5px}
+  .story code{background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:0 5px;font-size:11px}
+  .mini{appearance:none;border:1px solid var(--line);background:transparent;color:var(--muted);font:inherit;font-size:11px;cursor:pointer;padding:3px 9px;border-radius:7px}
+  .mini:hover{color:var(--text);border-color:var(--accent)}
   .note{color:var(--faint);font-size:12px;text-align:center;margin-top:26px}
   .off{position:fixed;inset:0;display:none;place-items:center;background:rgba(11,13,18,.85);z-index:50;color:var(--warn);font-weight:600}
 
@@ -146,20 +159,28 @@
   .context{margin:0 0 14px}
   .context .intake{margin-bottom:0}
 
-  /* The stepper IS the sequence — sticky under the topbar so the phase you're in is always in view. */
-  .stepper{position:sticky;top:56px;z-index:14;display:flex;gap:6px;padding:10px;margin:0 0 8px;background:rgba(18,21,29,.82);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:14px;overflow-x:auto}
-  .step{flex:1 1 0;min-width:128px;display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid transparent;border-radius:11px;background:transparent;color:var(--muted);font:inherit;text-align:left;cursor:pointer;transition:background .16s var(--ease),border-color .16s var(--ease),color .16s var(--ease)}
+  /* A slim toolbar holds the follow control so it never overlaps the steps. */
+  .flowbar{display:flex;align-items:center;gap:10px;margin:0 0 8px}
+  .flowbar .ft{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+  .flowbar .sp{flex:1}
+
+  /* The stepper IS the sequence — an even 5-up grid, sticky under the topbar. */
+  .stepper{position:sticky;top:54px;z-index:14;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;padding:8px;margin:0 0 8px;background:rgba(18,21,29,.82);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:14px}
+  @media(max-width:760px){.stepper{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(150px,1fr);overflow-x:auto}}
+  .step{display:flex;align-items:center;gap:9px;min-width:0;padding:9px 11px;border:1px solid transparent;border-radius:11px;background:transparent;color:var(--muted);font:inherit;text-align:left;cursor:pointer;transition:background .16s var(--ease),border-color .16s var(--ease),color .16s var(--ease)}
   .step:hover{border-color:var(--line2);color:var(--text)}
   .step .sx{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;color:var(--faint);background:var(--panel);border:1px solid var(--line);transition:background .16s var(--ease),color .16s var(--ease),border-color .16s var(--ease)}
-  .step .sl{display:flex;flex-direction:column;line-height:1.25;font-size:12.5px;font-weight:700}
-  .step .sl small{font-weight:500;font-size:10.5px;color:var(--faint);letter-spacing:.01em}
+  .step .sl{display:flex;flex-direction:column;line-height:1.2;font-size:12.5px;font-weight:700;min-width:0}
+  .step .sl b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .step .sl small{font-weight:500;font-size:10.5px;color:var(--faint);letter-spacing:.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .step.current{background:linear-gradient(180deg,rgba(110,168,254,.12),rgba(110,168,254,.04));border-color:rgba(110,168,254,.4);color:var(--text)}
   .step.current .sx{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#06203f;border-color:transparent}
   .step.done .sx{background:rgba(90,209,154,.16);color:var(--good);border-color:rgba(90,209,154,.35)}
   .step.live .sx{position:relative}
   .step.live .sx::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:1.5px solid var(--accent);opacity:.6;animation:ring 1.6s var(--ease) infinite}
   @keyframes ring{0%{transform:scale(.85);opacity:.7}100%{transform:scale(1.25);opacity:0}}
-  .follow{flex:none;align-self:center;margin-left:4px;font-size:11px;font-weight:700;color:var(--accent);background:rgba(110,168,254,.1);border:1px solid rgba(110,168,254,.3);border-radius:999px;padding:5px 11px;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;transition:opacity .16s var(--ease)}
+  .follow{flex:none;font-size:11px;font-weight:700;color:var(--accent);background:rgba(110,168,254,.1);border:1px solid rgba(110,168,254,.3);border-radius:999px;padding:5px 11px;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;transition:opacity .16s var(--ease)}
+  .follow:hover{border-color:var(--accent)}
   .follow .fd{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pulse 1.5s var(--ease) infinite}
   .follow.off{color:var(--faint);background:transparent;border-color:var(--line)}
   .follow.off .fd{background:var(--faint);animation:none}
@@ -193,14 +214,17 @@
 </head>
 <body>
   <div class="topbar">
-    <div class="brand"><span class="mark">P</span><span>PowerCodex Lifecycle <small>live monitor · .powercodex/live</small></span></div>
-    <span id="status" class="pill live"><span class="d"></span> connecting…</span>
-    <span class="pill mode" title="One engine, two surfaces — drive the same loop from the Cockpit (npx powercodex)">🪟 Studio · ⌨ Cockpit</span>
-    <span id="mode" class="pill mode" hidden></span>
-    <span id="ws" class="pill mode" hidden></span>
-    <div class="sp"></div>
-    <div class="stat"><div class="v" id="rotation">—</div><div class="l">rotation</div></div>
-    <div class="stat"><div class="v mono" id="last">—</div><div class="l">last event</div></div>
+    <div class="bar-inner">
+      <div class="brand"><span class="mark">P</span><span>PowerCodex Lifecycle <small>live monitor · .powercodex/live</small></span></div>
+      <span id="status" class="pill live"><span class="d"></span> connecting…</span>
+      <span class="pill mode" title="One engine, two surfaces — drive the same loop from the Cockpit (npx powercodex)">🪟 Studio · ⌨ Cockpit</span>
+      <a class="pill help" href="/guide" target="_blank" rel="noopener" title="Open the user guide in a new tab — if you get lost">❔ Guide</a>
+      <span id="mode" class="pill mode" hidden></span>
+      <span id="ws" class="pill mode" hidden></span>
+      <div class="sp"></div>
+      <div class="stat"><div class="v" id="rotation">—</div><div class="l">rotation</div></div>
+      <div class="stat"><div class="v mono" id="last">—</div><div class="l">last event</div></div>
+    </div>
   </div>
 
   <div class="wrap">
@@ -208,13 +232,13 @@
     <div class="context"><div class="intake" id="intake"></div></div>
 
     <!-- the sequence -->
+    <div class="flowbar"><span class="ft">Lifecycle flow</span><span class="sp"></span><button type="button" class="follow" id="follow"><span class="fd"></span>following live</button></div>
     <nav class="stepper" id="stepper">
-      <button type="button" class="step" data-view="setup"><span class="sx">1</span><span class="sl">Goal &amp; MVP<small>set the target</small></span></button>
-      <button type="button" class="step" data-view="plan"><span class="sx">2</span><span class="sl">Plan &amp; approve<small>review before build</small></span></button>
-      <button type="button" class="step" data-view="build"><span class="sx">3</span><span class="sl">Build &amp; run<small>watch it work</small></span></button>
-      <button type="button" class="step" data-view="verify"><span class="sx">4</span><span class="sl">Test &amp; observe<small>prove the MVP</small></span></button>
-      <button type="button" class="step" data-view="learn"><span class="sx">5</span><span class="sl">Insights &amp; lessons<small>is it improving?</small></span></button>
-      <button type="button" class="follow" id="follow"><span class="fd"></span>following live</button>
+      <button type="button" class="step" data-view="setup"><span class="sx">1</span><span class="sl"><b>Goal &amp; MVP</b><small>set the target</small></span></button>
+      <button type="button" class="step" data-view="plan"><span class="sx">2</span><span class="sl"><b>Plan &amp; approve</b><small>review before build</small></span></button>
+      <button type="button" class="step" data-view="build"><span class="sx">3</span><span class="sl"><b>Build &amp; run</b><small>watch it work</small></span></button>
+      <button type="button" class="step" data-view="verify"><span class="sx">4</span><span class="sl"><b>Test &amp; observe</b><small>prove the MVP</small></span></button>
+      <button type="button" class="step" data-view="learn"><span class="sx">5</span><span class="sl"><b>Insights &amp; lessons</b><small>is it improving?</small></span></button>
     </nav>
     <div class="obar"><span id="obar" style="width:0%"></span></div>
 
@@ -234,7 +258,16 @@
     <!-- STEP 2 · PLAN -->
     <section class="view" data-view="plan">
       <div class="viewhead"><h2>Plan &amp; approve</h2><p>See what the agent intends before anything touches your tenant.</p></div>
-      <div class="sect">Generated plans <span class="c" id="plancount"></span></div>
+      <div class="sect">User stories from your code <span class="c" id="storycount"></span></div>
+      <div class="ingbar">
+        <button type="button" class="btn" id="btnStories">⟲ Generate from code</button>
+        <button type="button" class="btn" id="btnRefine">✦ Refine from my edits</button>
+        <button type="button" class="btn primary" id="btnFreeze">🔒 Approve &amp; freeze</button>
+        <button type="button" class="btn ghost" id="btnUnlock" hidden>🔓 Unlock for major change</button>
+        <a class="btn" id="storiesLink" href="/stories" target="_blank" rel="noopener" hidden>Open readable view ↗</a>
+      </div>
+      <div class="panel" id="ingest" style="padding:4px 14px"></div>
+      <div class="sect" style="margin-top:22px">Generated plans <span class="c" id="plancount"></span></div>
       <div class="panel" id="plans" style="padding:4px 14px"></div>
       <div class="viewnav"><button type="button" class="btn" data-goto="setup">← Back</button><button type="button" class="btn primary" id="btnApprove">✓ Approve change</button><span class="sp"></span><button type="button" class="btn primary" data-goto="build">Next: Build &amp; run →</button></div>
     </section>
@@ -282,7 +315,7 @@
       <div class="viewnav"><button type="button" class="btn" data-goto="verify">← Back</button><button type="button" class="btn" id="btnReflect">✷ Reflect — log a lesson</button><span class="sp"></span><button type="button" class="btn primary" data-goto="setup">↺ Next rotation: Setup →</button></div>
     </section>
 
-    <p class="note">Polling <code>/api/state</code> every 1.2s · derived from the append-only status bus. The stepper follows the live stage — click any step to explore, or “following live” to snap back. Or drive it all from the terminal: <code>npm run cockpit</code>.</p>
+    <p class="note">Lost? <a href="/guide" target="_blank" rel="noopener">Open the user guide ↗</a> · Polling <code>/api/state</code> every 1.2s · the stepper follows the live stage — click any step to explore, or “following live” to snap back. Or drive it all from the terminal: <code>npm run cockpit</code>.</p>
   </div>
   <div class="off" id="off">Lost connection to the PowerCodex server…</div>
 
@@ -311,6 +344,26 @@
     if (title) action({ type:'reflect', title });
   };
   $('btnReset').onclick = () => action({ type:'reset' });
+  // Code-grounded intake: generate stories, edit, refine, freeze, unlock.
+  $('btnStories').onclick = () => action({ type:'generate-stories', goal: $('inGoal').value.trim() || undefined });
+  $('btnRefine').onclick = () => action({ type:'refine', artifact:'stories', edited: lastState.ingestion ? { stories: lastState.ingestion.stories } : undefined });
+  $('btnFreeze').onclick = () => {
+    const frozen = lastState.ingestion && lastState.ingestion.freeze && lastState.ingestion.freeze.stories === 'frozen';
+    action({ type: frozen ? 'unlock' : 'freeze', artifact:'stories' });
+  };
+  $('btnUnlock').onclick = () => action({ type:'unlock', artifact:'stories' });
+  // Inline edit of a story's title (event delegation) → save back to disk.
+  $('ingest').addEventListener('click', (e) => {
+    const ed = e.target.closest('[data-edit]');
+    if (!ed) return;
+    const idx = Number(ed.dataset.edit);
+    const list = (lastState.ingestion && lastState.ingestion.stories) || [];
+    if (!list[idx]) return;
+    const next = window.prompt('Edit story (As a user, I want…):', list[idx].title);
+    if (next == null) return;
+    const stories = list.map((s, i) => i === idx ? Object.assign({}, s, { title: next }) : s);
+    action({ type:'save-stories', stories });
+  });
   $('btnIntake').onclick = () => action({
     type:'intake',
     goal: $('inGoal').value.trim(),
@@ -482,6 +535,42 @@
       `</div>`+
       (per.length?`<div class="chart">${per.map((v,idx)=>`<div class="cb"><div class="bar ${v===0?'zero':''}" style="height:${Math.round(v/maxM*100)||4}%"></div><span class="x">r${idx+1}</span></div>`).join('')}</div><div class="l" style="font-size:10.5px;color:var(--faint);margin-top:6px">mistakes per rotation</div>`:'<div class="empty">No rotations yet.</div>')+
       `</div>`;
+
+    renderIngest(s);
+  }
+
+  // Code-grounded intake panel: digest status, the user stories (each citing its
+  // source files), the freeze state, and the two new compliance dimensions.
+  function renderIngest(s){
+    const ing = s.ingestion || {};
+    const stories = ing.stories || [];
+    const frozen = ing.freeze && ing.freeze.stories === 'frozen';
+    $('storycount').textContent = stories.length ? '· '+stories.length+(frozen?' · frozen 🔒':'') : '';
+    $('btnFreeze').textContent = frozen ? '🔓 Unlock for major change' : '🔒 Approve & freeze';
+    $('btnUnlock').hidden = !frozen;
+    $('btnRefine').disabled = frozen || !stories.length;
+    $('btnStories').disabled = frozen;
+    $('storiesLink').hidden = !stories.length;
+
+    if (!ing.analyzed){
+      $('ingest').innerHTML = '<div class="empty">No code read yet. Run <code>powercodex import --analyze</code> in your project so PowerCodex can derive stories &amp; MVP from your real code.</div>';
+      return;
+    }
+    const d = ing.digest || {};
+    const g = ing.grounding, m = ing.mvpAgainstStories;
+    const meter = (label, sc) => sc ? `<span class="chip ${sc.score>=60?'on':'off'}" title="${esc(sc.reason)}">${label} ${sc.score}%</span>` : '';
+    const head = `<div class="ingmeta">`+
+      `<span class="chip">${esc(d.name||'app')} · ${esc(d.mode||'')}</span>`+
+      `<span class="chip">${d.routes||0} routes · ${d.components||0} components${d.partial?' · partial':''}</span>`+
+      meter('stories↔code', g)+meter('MVP↔stories', m)+
+      `</div>`;
+    const rows = stories.length ? stories.map((st,idx)=>
+      `<div class="story"><span class="id">${esc(st.id)}</span>`+
+      `<span class="stxt"><b>${esc(st.title)}</b><span class="src">${(st.sources||[]).map((f)=>`<code>${esc(f)}</code>`).join(' · ')}</span></span>`+
+      (frozen?'':`<button type="button" class="mini" data-edit="${idx}" title="edit this story">edit</button>`)+
+      `</div>`
+    ).join('') : '<div class="empty">Digest ready. Click “Generate from code” to derive user stories.</div>';
+    $('ingest').innerHTML = head + rows;
   }
 
   async function renderPlans(){

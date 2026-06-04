@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PowerCodex · User Guide</title>
+<style>
+  :root{
+    --ease:cubic-bezier(0.23,1,0.32,1);
+    --bg:#0b0d12;--bg-soft:#12151d;--panel:#161a24;--panel2:#1c2130;--line:#262c3a;--line2:#313a4d;
+    --text:#e8ecf4;--muted:#99a2b8;--faint:#6b7488;--accent:#6ea8fe;--accent2:#a78bfa;--good:#5ad19a;--bad:#f08a8a;--warn:#f5c97b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1100px 560px at 85% -12%,rgba(167,139,250,.13),transparent 60%),radial-gradient(900px 500px at -10% 8%,rgba(110,168,254,.11),transparent 55%),var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;line-height:1.6}
+  .mono{font-family:"SF Mono","JetBrains Mono",Consolas,Menlo,monospace}
+  a{color:var(--accent)}
+  .wrap{max-width:880px;margin:0 auto;padding:0 24px 100px}
+
+  .top{position:sticky;top:0;z-index:10;background:rgba(11,13,18,.82);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+  .top .in{max-width:880px;margin:0 auto;padding:13px 24px;display:flex;align-items:center;gap:12px}
+  .mark{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#06203f;font-weight:900;font-size:13px}
+  .top b{font-weight:700}.top small{color:var(--faint);font-weight:500}
+  .back{margin-left:auto;font-size:13px;font-weight:600;color:var(--accent);text-decoration:none;border:1px solid rgba(110,168,254,.35);background:rgba(110,168,254,.08);border-radius:999px;padding:6px 13px}
+  .back:hover{border-color:var(--accent)}
+
+  header.hero{padding:54px 24px 8px;max-width:880px;margin:0 auto}
+  .eyebrow{display:inline-block;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);background:rgba(110,168,254,.1);border:1px solid rgba(110,168,254,.25);padding:5px 12px;border-radius:999px;margin-bottom:16px}
+  h1{font-size:clamp(28px,5vw,40px);line-height:1.1;margin:0 0 12px;letter-spacing:-.02em;background:linear-gradient(180deg,#fff,#b9c2d8);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--muted);font-size:17px;max-width:660px}
+
+  section{margin-top:40px}
+  h2{font-size:21px;margin:0 0 6px;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+  h2 .n{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font-size:13px;font-weight:800;color:#06203f;background:linear-gradient(135deg,var(--accent),var(--accent2));flex:none}
+  p.lead{color:var(--muted);font-size:15px;margin:6px 0 0}
+
+  .panel{border:1px solid var(--line);border-radius:14px;background:linear-gradient(180deg,var(--panel),var(--bg-soft));padding:18px 20px;margin-top:14px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+  @media(max-width:680px){.grid{grid-template-columns:1fr}}
+  .card{border:1px solid var(--line);border-radius:12px;background:var(--panel2);padding:15px 16px}
+  .card h3{margin:0 0 4px;font-size:14.5px;display:flex;align-items:center;gap:9px}
+  .card .ic{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;font-size:14px;background:rgba(110,168,254,.12);border:1px solid rgba(110,168,254,.25)}
+  .card p{margin:4px 0 0;color:var(--muted);font-size:13.5px}
+  .card .step{font-size:11px;font-weight:800;color:var(--faint);letter-spacing:.06em}
+
+  ol.steps{list-style:none;counter-reset:s;padding:0;margin:14px 0 0}
+  ol.steps li{counter-increment:s;position:relative;padding:0 0 16px 46px}
+  ol.steps li::before{content:counter(s);position:absolute;left:0;top:-2px;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:13px;color:#06203f;background:linear-gradient(135deg,var(--accent),var(--accent2))}
+  ol.steps li::after{content:"";position:absolute;left:14px;top:30px;bottom:0;width:2px;background:linear-gradient(180deg,rgba(110,168,254,.4),transparent)}
+  ol.steps li:last-child{padding-bottom:0}ol.steps li:last-child::after{display:none}
+  ol.steps b{color:var(--text)}ol.steps p{margin:3px 0 0;color:var(--muted);font-size:14px}
+
+  table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13.5px}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--faint);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.05em}
+  td{color:var(--muted)}td b{color:var(--text)}
+  code{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:1px 7px;font-size:12.5px;color:#cdd6ea}
+
+  .callout{display:flex;gap:12px;border:1px solid var(--line);border-left-width:3px;border-left-color:var(--accent);background:rgba(110,168,254,.06);border-radius:0 11px 11px 0;padding:13px 16px;margin-top:16px;font-size:14px;color:var(--muted)}
+  .callout.warn{border-left-color:var(--warn);background:rgba(245,201,123,.06)}
+  .callout .ic{font-size:18px;line-height:1.2}
+  .callout b{color:var(--text)}
+
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;border:1px solid var(--line)}
+  .chip.good{color:var(--good);border-color:rgba(90,209,154,.35);background:rgba(90,209,154,.08)}
+  .chip.acc{color:var(--accent);border-color:rgba(110,168,254,.35);background:rgba(110,168,254,.08)}
+  .chip.live .d{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+
+  ul.clean{list-style:none;padding:0;margin:10px 0 0}
+  ul.clean li{position:relative;padding-left:24px;margin:8px 0;color:var(--muted);font-size:14px}
+  ul.clean li::before{content:"→";position:absolute;left:0;color:var(--accent)}
+  ul.clean li b{color:var(--text)}
+
+  footer{margin-top:54px;padding-top:22px;border-top:1px solid var(--line);color:var(--faint);font-size:13px;text-align:center}
+</style>
+</head>
+<body>
+  <div class="top">
+    <div class="in">
+      <span class="mark">P</span><b>PowerCodex</b> <small>User Guide</small>
+      <a class="back" href="/" title="Return to the Studio dashboard">← Back to Studio</a>
+    </div>
+  </div>
+
+  <header class="hero">
+    <div class="eyebrow">If you get lost, start here</div>
+    <h1>How to use PowerCodex</h1>
+    <p class="sub">PowerCodex turns a plain-language <b>goal</b> and a first-slice <b>MVP</b> into a running, continuously-verified app — and it never touches your tenant without permission. This guide explains the screen you're looking at and how to drive it.</p>
+  </header>
+
+  <div class="wrap">
+
+    <!-- TWO SURFACES -->
+    <section>
+      <h2>Two ways to drive it — same engine</h2>
+      <p class="lead">Pick whichever feels comfortable. They control the exact same lifecycle underneath, so you can switch anytime.</p>
+      <div class="grid">
+        <div class="card">
+          <h3><span class="ic">🪟</span> Studio — this dashboard</h3>
+          <p>A guided, click-through screen. Everything is a button, and the stepper at the top keeps you oriented. Best if you'd rather not use a terminal.</p>
+        </div>
+        <div class="card">
+          <h3><span class="ic">⌨️</span> Cockpit — the terminal</h3>
+          <p>A real terminal you talk to directly. Run <code>npm run cockpit</code>. Type a request, or <code>/</code> for commands. Faster once you know it.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- THE FLOW -->
+    <section>
+      <h2>The screen flow — five steps</h2>
+      <p class="lead">The Studio walks the lifecycle left-to-right. The <b>stepper</b> shows where you are; it lights up the live stage as the loop runs. Click any step to look around, or press <span class="chip acc">following live</span> to snap back to whatever the loop is doing now.</p>
+      <div class="grid">
+        <div class="card"><div class="step">STEP 1</div><h3>Goal &amp; MVP</h3><p>Type what the app should do and the first slice to build. Set the goal↔MVP compliance, then <b>Save intake</b>.</p></div>
+        <div class="card"><div class="step">STEP 2</div><h3>Plan &amp; approve</h3><p>Review the HTML plan the agent generated <b>before</b> anything builds. When it looks right, press <b>Approve</b>.</p></div>
+        <div class="card"><div class="step">STEP 3</div><h3>Build &amp; run</h3><p>Press <b>▶ Start loop</b> and watch it work: the 7-stage strip, the agents, and the live activity feed all stream here.</p></div>
+        <div class="card"><div class="step">STEP 4</div><h3>Test &amp; observe</h3><p>See MVP coverage and any specs the observer wrote from what it noticed during the run.</p></div>
+        <div class="card"><div class="step">STEP 5</div><h3>Insights &amp; lessons</h3><p>Is the loop improving each rotation? Review insights and the lessons it has learned. <b>Reflect</b> to add your own.</p></div>
+      </div>
+    </section>
+
+    <!-- QUICKSTART -->
+    <section>
+      <h2><span class="n">▶</span> Your first run, start to finish</h2>
+      <ol class="steps">
+        <li><b>Step 1 · Describe it.</b><p>On <b>Goal &amp; MVP</b>, fill the goal and MVP boxes and press <b>Save intake</b>. The context bar at the top now shows them, with a compliance meter.</p></li>
+        <li><b>Grant the rights you're comfortable with.</b><p>In that top context bar, the chips <code>build</code> / <code>push</code> / <code>auto-respec</code> / <code>auto-fix</code> are the consent gate. Click one to toggle it. Everything is off until you say so.</p></li>
+        <li><b>Step 3 · Start the loop.</b><p>Go to <b>Build &amp; run</b> and press <b>▶ Start loop</b>. The stepper follows along as it builds, runs, and tests — newest events stream into the activity feed.</p></li>
+        <li><b>Steps 4–5 · Check the result.</b><p>When it settles, <b>Test &amp; observe</b> shows coverage and any new specs; <b>Insights &amp; lessons</b> shows whether it's getting better. The status pill (top-left) reads <span class="chip good">complete ✓</span> when it's green.</p></li>
+      </ol>
+    </section>
+
+    <!-- READING THE SCREEN -->
+    <section>
+      <h2>Reading the screen</h2>
+      <table>
+        <thead><tr><th style="width:38%">What you see</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td><b>Top-left status pill</b> <span class="chip live"><span class="d"></span></span></td><td><b>running</b> = the loop is moving · <b>complete ✓</b> = green and matches the MVP · <b>stopped</b> = it hit a guardrail or a closed consent gate and is waiting for you.</td></tr>
+          <tr><td><b>Context bar</b> (goal · MVP · compliance · rights)</td><td>Always visible so you never lose the target. The compliance meter flags drift when the MVP and goal don't line up.</td></tr>
+          <tr><td><b>Stepper</b> (the 5 numbered steps)</td><td>A <b>green check</b> = that phase is done · a <b>pulsing ring</b> = the loop is there right now · the highlighted one = the view you're looking at.</td></tr>
+          <tr><td><b>following live</b> pill</td><td>On = the view auto-advances with the loop. It turns off the moment you click a step to explore; click it again to re-follow.</td></tr>
+          <tr><td><b>Generated plans</b> (Step 2)</td><td>Every HTML plan the agent writes appears here — click <b>open ↗</b> to read it in a new tab before approving.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- CONSENT -->
+    <section>
+      <h2>The consent gate — why it sometimes stops</h2>
+      <p class="lead">PowerCodex will <b>never</b> build on or push to your tenant without permission. If the loop stops with a warning, it's almost always a right that's switched off.</p>
+      <div class="callout warn"><span class="ic">⚠️</span><div><b>"Loop stopped"?</b> Check the rights chips in the context bar. If you meant to allow it, toggle <code>build</code> (to create on the tenant) or <code>push</code> (to ship the app) on, then press <b>▶ Start loop</b> again.</div></div>
+    </section>
+
+    <!-- COCKPIT -->
+    <section>
+      <h2>Prefer the terminal? Cockpit commands</h2>
+      <p class="lead">Run <code>npm run cockpit</code>. Type a request to talk to your AI, or press <code>/</code> and <b>Tab</b> to autocomplete a command. <code>↑/↓</code> recalls history; <b>Ctrl-C</b> interrupts a reply.</p>
+      <table>
+        <thead><tr><th style="width:34%">Command</th><th>Does</th></tr></thead>
+        <tbody>
+          <tr><td><code>/provider</code></td><td>Switch the AI — Claude Code, GitHub Copilot, or the built-in fallback.</td></tr>
+          <tr><td><code>/start</code> · <code>/status</code></td><td>Run the lifecycle loop · show the goal / MVP / rights / rotation snapshot.</td></tr>
+          <tr><td><code>/rights build on</code></td><td>Toggle a consent flag (same gate as the Studio chips).</td></tr>
+          <tr><td><code>/plan open</code> · <code>/plan list</code></td><td>Open the latest generated plan in your browser · list them all.</td></tr>
+          <tr><td><code>/studio</code></td><td>Open this graphical dashboard in a browser.</td></tr>
+          <tr><td><code>/help</code> · <code>/quit</code></td><td>List every command · leave the cockpit.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- LOST -->
+    <section>
+      <h2>Still stuck?</h2>
+      <ul class="clean">
+        <li><b>Nothing is moving?</b> The loop only runs when you press <b>▶ Start loop</b> (Step 3) — or it finished. Press <b>↺ Reset</b> and start again.</li>
+        <li><b>Lost your place?</b> Press <span class="chip acc">following live</span> in the Lifecycle-flow bar to jump to whatever the loop is doing now.</li>
+        <li><b>"Lost connection"?</b> The dashboard server stopped. Restart it with <code>npm run lifecycle:serve -- --open</code>.</li>
+        <li><b>Want to see it move first?</b> Run <code>npm run lifecycle:serve -- --demo</code> for a paced simulated loop.</li>
+      </ul>
+      <div class="callout"><span class="ic">💡</span><div>You can keep this guide open in a tab. Return to the live dashboard anytime with <b>← Back to Studio</b> at the top.</div></div>
+    </section>
+
+    <footer>PowerCodex · the autonomous app lifecycle, as files, with a live monitor. — <a href="/">Back to Studio</a></footer>
+  </div>
+</body>
+</html>

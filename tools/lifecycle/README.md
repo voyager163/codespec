@@ -35,10 +35,23 @@ When the agent finishes an HTML plan it's recorded in `.powercodex/plans/index.j
 ### Drop it into any project
 
 ```bash
-npm run lifecycle -- import          # scaffold consent gate, plan registry, providers, a cockpit script
+npm run lifecycle -- import            # scaffold consent gate, plan registry, providers, a cockpit script
+npm run lifecycle -- import --analyze  # …and read the existing code into .powercodex/digest.json
 ```
 
 `import` detects the stack (Power Platform → tenant engines; otherwise local-run), creates per-project `.powercodex/` state, and wires a `cockpit` npm script — so the same loop runs the rest of that project.
+
+### Brownfield: derive stories & MVP from a pre-existing app
+
+For an app that already exists, `import --analyze` makes PowerCodex **read your code** instead of guessing from a goal sentence. A deterministic, read-only walk (zero-dependency, no AST) records your routes, components, data calls, and npm scripts — each citing the source file it came from — into `.powercodex/digest.json`. It never writes into your source tree.
+
+```bash
+npm run lifecycle -- import --analyze   # 1. read the code → digest
+npm run lifecycle -- stories            # 2. derive user stories (each cites its source file)
+npm run lifecycle -- mvp                # 3. MVP grounded in your real surfaces (goal-only fallback when no digest)
+```
+
+Then review → refine → **freeze**: in the Studio **Plan** step you edit any story, click **Refine from my edits** (the AI improves from your changes rather than regenerating), then **Approve & freeze**. A frozen artifact (`status: "frozen"` in `.powercodex/freeze.json`) is the benchmark the loop builds against — it is read but **never rewritten** until you **Unlock for major change**. Two extra compliance meters show **stories↔code** (are the stories grounded in the digest) and **MVP↔stories** (does the MVP serve the reviewed stories).
 
 ## Live monitoring (the dashboard)
 
@@ -73,6 +86,9 @@ Run the loop in another terminal (`npm run lifecycle -- loop --rotations 3`) and
 | Provider bridge (`provider list`, `/provider`) — claude-code · github-copilot | **real** — uses each vendor's CLI; falls back to a simulated brain when absent |
 | Plan registry + viewer (`/plan open`, `/api/plans`) | **real** |
 | Portable `import` into any project | **real** |
+| Brownfield ingestion (`import --analyze` → `.powercodex/digest.json`) | **real** — read-only structural walk of your code |
+| Code-grounded user stories (`stories`) + grounded MVP, with provenance | **real** |
+| Review → refine → **freeze / unlock** (`.powercodex/freeze.json`) | **real** — the loop honors the frozen benchmark |
 
 The two engines drive a managed Edge browser against a Power Platform tenant in production. That can't run without a tenant + MFA, so they ship as adapters with a simulation fallback. Swap the two functions in [`lib/engines.js`](lib/engines.js) for real Playwright-for-MDM adapters and nothing else changes.
 
@@ -109,4 +125,4 @@ npm run lifecycle -- workspace list        # projects + shared lesson count
 
 ## Self-test
 
-`npm run lifecycle:selftest` runs the full loop in a throwaway workspace and asserts the product produced what the plan promises — all 7 stages, build assets, the push-vs-dev rule, a self-heal, an observation, the rendered dashboard, well-formed derived state, the **live server + control endpoints** (`/api/state`, `/api/action` intake/rights/propose-mvp/reflect, `/api/emit`), **real compliance scoring**, the **MVP proposer**, the **reflection** lesson writer, **computed insights**, **notifications**, **cross-project shared learning**, the rights gate blocking an un-approved build, and the **v2 cockpit** pillars — the provider bridge (streaming + interrupt), the plan registry + viewer (served over HTTP), cockpit command routing + chat streaming, and the portable `import`. **53/53 checks.**
+`npm run lifecycle:selftest` runs the full loop in a throwaway workspace and asserts the product produced what the plan promises — all 7 stages, build assets, the push-vs-dev rule, a self-heal, an observation, the rendered dashboard, well-formed derived state, the **live server + control endpoints** (`/api/state`, `/api/action` intake/rights/propose-mvp/reflect, `/api/emit`), **real compliance scoring**, the **MVP proposer**, the **reflection** lesson writer, **computed insights**, **notifications**, **cross-project shared learning**, the rights gate blocking an un-approved build, and the **v2 cockpit** pillars — the provider bridge (streaming + interrupt), the plan registry + viewer (served over HTTP), cockpit command routing + chat streaming, and the portable `import` — and the **brownfield** pillars: reading a pre-existing app into a digest (with provenance), generating code-grounded stories + a grounded MVP, the goal-only fallback, refine-preserves-edits, and the freeze/unlock contract (a frozen benchmark the loop never rewrites). **77/77 checks.**

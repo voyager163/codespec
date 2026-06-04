@@ -4,6 +4,8 @@ const { ensureRights, allowed, profileVerified, setProfile, setAppUrl } = requir
 const { buildExecutor, e2eTester, verifyProfile } = require('./engines');
 const { render } = require('./dashboard');
 const { scoreCompliance } = require('./compliance');
+const freeze = require('./freeze');
+const { readStories } = require('./stories');
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -38,6 +40,24 @@ async function runLoop(root, opts = {}) {
   const goal = opts.goal || 'Describe what the app should do for its users';
   const mvp =
     opts.mvp || 'The first slice to build — a primary view with the core action and fields';
+
+  // Frozen review artifacts are the benchmark: read them, never regenerate. The
+  // loop has no path to flip frozen → draft; only the explicit unlock action does.
+  const storiesFrozen = freeze.isFrozen(root, 'stories');
+  const mvpFrozen = freeze.isFrozen(root, 'mvp');
+  if (storiesFrozen || mvpFrozen) {
+    const frozenStories = storiesFrozen ? readStories(root) : null;
+    const count = frozenStories && Array.isArray(frozenStories.stories) ? frozenStories.stories.length : 0;
+    await emit({
+      rotation: 0,
+      stage: 0,
+      agent: 'intake',
+      level: 'good',
+      message: `Frozen benchmark in effect · ${[storiesFrozen ? `${count} user stories` : null, mvpFrozen ? 'MVP' : null].filter(Boolean).join(' + ')} · building against approved spec (not regenerating)`,
+      data: { frozen: { stories: storiesFrozen, mvp: mvpFrozen } },
+    });
+  }
+
   const compliance = scoreCompliance(goal, mvp);
   await emit({
     rotation: 0,

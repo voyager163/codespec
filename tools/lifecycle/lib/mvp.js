@@ -2,24 +2,51 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { keywords } = require('./compliance');
+const { readDigest } = require('./digest');
+const freeze = require('./freeze');
 
-// MVP proposer: when no prototype exists, generate an HTML MVP from the goal so
-// the user has something concrete to refine. Self-contained, design-eng styled.
+// MVP proposer: generate an HTML MVP the user can refine. When a repo digest is
+// available (brownfield), the key surfaces are drawn from the app's real routes
+// and components rather than goal keywords — grounded in what actually exists.
+// When no digest is present (greenfield), it falls back to the goal-keyword path
+// unchanged. Honors the freeze gate: a frozen MVP is read, never overwritten.
 function proposeMvp(root, opts = {}) {
   const goal = opts.goal || 'Your app';
-  const keys = keywords(goal).slice(0, 8);
   const dir = path.join(root, '.powercodex', 'mvp');
-  fs.mkdirSync(dir, { recursive: true });
   const out = path.join(dir, 'preview.html');
-  fs.writeFileSync(out, html(goal, keys));
+
+  if (opts.force !== true && freeze.isFrozen(root, 'mvp')) {
+    return out; // frozen — leave the approved benchmark untouched
+  }
+
+  const digest = opts.digest || readDigest(root);
+  const grounded = !!digest;
+  // Prefer real surfaces from the code; otherwise salient goal keywords.
+  const keys = grounded ? surfacesFromDigest(digest) : keywords(goal).slice(0, 8);
+
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(out, html(goal, keys, grounded));
+  // Record provenance + a freeze-aware status sidecar the dashboard/loop can read.
+  fs.writeFileSync(
+    path.join(dir, 'meta.json'),
+    `${JSON.stringify({ status: freeze.statusOf(root, 'mvp'), grounded, source: grounded ? '.powercodex/digest.json' : 'goal', generatedAt: new Date().toISOString() }, null, 2)}\n`,
+  );
   return out;
+}
+
+// The app's real surfaces, shaped like the keyword list the template expects:
+// route names + notable component names, de-duplicated and capped.
+function surfacesFromDigest(digest) {
+  const fromRoutes = (digest.routes || []).map((r) => (r.path === '/' ? 'Home' : r.path.replace(/[\/:]/g, ' ').trim())).filter(Boolean);
+  const fromComponents = (digest.components || []).map((c) => c.name);
+  return [...new Set([...fromRoutes, ...fromComponents])].slice(0, 8);
 }
 
 function esc(s) {
   return String(s == null ? '' : s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 }
 
-function html(goal, keys) {
+function html(goal, keys, grounded) {
   const features = (keys.length ? keys : ['records', 'status', 'actions']).map(
     (k) => `<li><span class="dot"></span> ${esc(k.charAt(0).toUpperCase() + k.slice(1))}</li>`,
   ).join('');
@@ -50,10 +77,10 @@ li{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-
 </style></head><body><div class="wrap">
 <span class="eyebrow">Proposed MVP · refine me</span>
 <h1>${esc(goal)}</h1>
-<p class="goal">A starting point generated from your goal. Keep prompting to refine it until it's right — then it becomes the benchmark the app is built and tested against.</p>
+<p class="goal">A starting point generated from ${grounded ? 'your existing code' : 'your goal'}. Keep prompting to refine it until it's right — then it becomes the benchmark the app is built and tested against.</p>
 <div class="app"><div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i></div>
 <div class="body"><div class="nav"><b><span class="mk">P</span> App</b><a class="on">Home</a><a>Records</a><a>Reports</a></div>
-<div class="main"><h2>Key surfaces (from your goal)</h2><ul>${features}</ul>
+<div class="main"><h2>Key surfaces (${grounded ? 'from your code' : 'from your goal'})</h2><ul>${features}</ul>
 <p class="note">This is a draft. Tell PowerCodex what to change and it will re-propose until you approve.</p></div></div></div>
 </div></body></html>`;
 }

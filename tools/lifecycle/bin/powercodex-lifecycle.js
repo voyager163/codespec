@@ -34,6 +34,8 @@ Usage: powercodex-lifecycle <command> [options]
 Commands:
   cockpit [--provider <id>] launch the real terminal cockpit (TUI) — talk to your AI, drive the loop
   import [--providers <x>]  add PowerCodex to the current project (consent gate, plan registry, script)
+                            --analyze  also read the existing code into .powercodex/digest.json
+  stories [--goal "<text>"] generate code-grounded user stories from the digest (.powercodex/stories/)
   provider <list>           list available AI providers (claude-code · github-copilot · simulated)
   plan <list|open|register> view or record generated HTML plans
   serve [options]           start the live dashboard server and monitor progress live
@@ -78,9 +80,14 @@ async function main() {
     case 'import': {
       const result = importInto(root, {
         providers: typeof flag('providers') === 'string' ? flag('providers') : 'both',
+        analyze: flag('analyze') === true,
       });
       console.log('PowerCodex · imported into', result.stack.name);
       for (const line of result.created) console.log('  ✓', line);
+      if (result.digest) {
+        console.log('\nNext: generate code-grounded user stories from the digest:');
+        console.log('  powercodex stories      (writes .powercodex/stories/stories.json + .html)');
+      }
       console.log('\nLaunch the cockpit:  npm run cockpit   (or: powercodex cockpit)');
       break;
     }
@@ -156,6 +163,18 @@ async function main() {
     case 'mvp': {
       const out = proposeMvp(root, { goal: typeof flag('goal') === 'string' ? flag('goal') : undefined });
       console.log('Proposed MVP →', out);
+      break;
+    }
+    case 'stories': {
+      const { buildStories } = require('../lib/stories');
+      const { readDigest } = require('../lib/digest');
+      if (!readDigest(root)) {
+        console.log('No digest found. Run first:  powercodex import --analyze');
+        break;
+      }
+      const result = buildStories(root, { goal: typeof flag('goal') === 'string' ? flag('goal') : undefined });
+      console.log(`Generated ${result.doc.stories.length} code-grounded stories →`, result.path);
+      console.log('Readable view →', result.htmlPath);
       break;
     }
     case 'reflect': {

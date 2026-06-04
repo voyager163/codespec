@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>PowerCodex · Brownfield Ingestion Plan (Current vs New)</title>
+<style>
+:root{
+  --ease:cubic-bezier(.23,1,.32,1);--bg:#0b0d12;--panel:#161a24;--panel2:#0f131c;
+  --line:#262c3a;--text:#e8ecf4;--muted:#99a2b8;--accent:#6ea8fe;--accent2:#a78bfa;
+  --good:#5ad19a;--warn:#f5c97b;--bad:#f0716f
+}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(1100px 560px at 82% -12%,rgba(167,139,250,.14),transparent 60%),var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;line-height:1.6}
+.wrap{max-width:1040px;margin:0 auto;padding:54px 24px 96px}
+.eyebrow{display:inline-block;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);border:1px solid rgba(110,168,254,.25);background:rgba(110,168,254,.1);padding:5px 12px;border-radius:999px}
+h1{font-size:34px;margin:18px 0 10px;letter-spacing:-.02em}
+h2{font-size:22px;margin:48px 0 6px;letter-spacing:-.01em}
+h2 .num{color:var(--accent2);font-variant-numeric:tabular-nums;margin-right:10px}
+.lede{color:var(--muted);max-width:740px}
+.card{margin-top:18px;border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:20px 22px;box-shadow:0 20px 60px -28px rgba(0,0,0,.6)}
+.pill{display:inline-flex;align-items:center;gap:7px;font-size:12px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.pill .d{width:8px;height:8px;border-radius:50%}
+.pill.done .d{background:var(--good)}.pill.sim .d{background:var(--warn)}.pill.missing .d{background:var(--bad)}
+.pill.done{color:#bdebd2;border-color:rgba(90,209,154,.3);background:rgba(90,209,154,.08)}
+.pill.sim{color:#f6dca6;border-color:rgba(245,201,123,.3);background:rgba(245,201,123,.08)}
+.pill.missing{color:#f6b6b4;border-color:rgba(240,113,111,.3);background:rgba(240,113,111,.08)}
+table{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px}
+th,td{text-align:left;padding:11px 13px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:12px;letter-spacing:.05em;text-transform:uppercase}
+td code{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:1px 6px;font-size:12.5px}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+.col{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.col .h{padding:10px 14px;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.col.cur .h{background:rgba(240,113,111,.08);color:#f6b6b4;border-bottom:1px solid var(--line)}
+.col.new .h{background:rgba(90,209,154,.08);color:#bdebd2;border-bottom:1px solid var(--line)}
+.col ul{list-style:none;margin:0;padding:14px 16px;display:grid;gap:9px}
+.col li{position:relative;padding-left:20px;color:var(--text);font-size:13.5px}
+.col li::before{content:"";position:absolute;left:0;top:8px;width:8px;height:8px;border-radius:50%}
+.col.cur li::before{background:var(--bad)}
+.col.new li::before{background:var(--good)}
+.col li small{color:var(--muted)}
+.flow{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.flow .step{border:1px solid var(--line);background:var(--panel2);border-radius:10px;padding:9px 13px;font-size:13px;color:var(--text)}
+.flow .step b{color:var(--accent)}
+.flow .arrow{align-self:center;color:var(--muted)}
+.callout{margin-top:16px;border-left:3px solid var(--accent);background:rgba(110,168,254,.06);padding:14px 18px;border-radius:0 10px 10px 0;color:#cfe0ff;font-size:14px}
+.callout.warn{border-left-color:var(--warn);background:rgba(245,201,123,.06);color:#f6e3bd}
+.muted{color:var(--muted)}
+.foot{margin-top:64px;border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font-size:13px}
+ol.steps{counter-reset:s;list-style:none;padding:0;margin:16px 0 0}
+ol.steps li{counter-increment:s;position:relative;padding:10px 0 10px 44px;border-bottom:1px solid var(--line)}
+ol.steps li::before{content:counter(s);position:absolute;left:0;top:9px;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#06203f;font-weight:800;font-size:13px}
+ol.steps b{color:var(--text)}
+@media(max-width:760px){.cmp{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <span class="eyebrow">PowerCodex · Plan · 2026-06-04</span>
+  <h1>Using PowerCodex on a pre-existing app</h1>
+  <p class="lede">You asked two things: (1) is the tool finished enough to run development on your existing app, and (2) can it <strong>read your existing repo</strong> and produce user stories + an MVP from what it sees — which you then correct, the AI refines, and it gets <strong>frozen</strong> until a future major change. This plan answers both honestly and shows exactly what would change to make #2 real: current behaviour vs the proposed behaviour, side by side.</p>
+
+  <div class="card">
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <span class="pill done"><span class="d"></span> Core loop: ready</span>
+      <span class="pill sim"><span class="d"></span> Build/test engines: simulated</span>
+      <span class="pill missing"><span class="d"></span> Code-aware ingestion: not built</span>
+      <span class="pill missing"><span class="d"></span> User-stories artifact: not built</span>
+      <span class="pill missing"><span class="d"></span> Freeze / lock: not built</span>
+    </div>
+  </div>
+
+  <!-- 1 -->
+  <h2><span class="num">1</span>Is it ready? What's done vs not done</h2>
+  <p class="lede">The scaffolding and the control surfaces are genuinely built and tested (the self-test asserts 53 checks). The parts that matter for <em>your</em> workflow — reading an existing app, generating user stories, and freezing them — are not built yet.</p>
+  <table>
+    <thead><tr><th>Capability</th><th>State</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>CLI scaffolder, OpenSpec workflow (11 OPSX commands)</td><td><span class="pill done"><span class="d"></span> Done</span></td><td>For <em>new</em> projects.</td></tr>
+      <tr><td>7-stage lifecycle loop + consent gate (<code>Approved_rights/</code>)</td><td><span class="pill done"><span class="d"></span> Done</span></td><td>Intake→Plan→Approve→Build→Run→Test→Observe.</td></tr>
+      <tr><td>Studio dashboard + Cockpit TUI + provider bridge</td><td><span class="pill done"><span class="d"></span> Done</span></td><td>Claude Code / Copilot / simulated.</td></tr>
+      <tr><td><code>import</code> into an existing repo</td><td><span class="pill sim"><span class="d"></span> Structural only</span></td><td>Detects stack from <code>package.json</code> + adds <code>.powercodex/</code> state. <strong>Does not read your source.</strong></td></tr>
+      <tr><td>Build executor &amp; e2e tester engines</td><td><span class="pill sim"><span class="d"></span> Simulated</span></td><td>Real Playwright-for-MDM adapters not wired yet.</td></tr>
+      <tr><td>MVP generation</td><td><span class="pill sim"><span class="d"></span> Goal-text only</span></td><td><code>mvp.js</code> builds a preview from <em>keywords of your goal sentence</em> — it never opens your code.</td></tr>
+      <tr><td>User stories artifact</td><td><span class="pill missing"><span class="d"></span> Missing</span></td><td>No concept of user stories anywhere in the tool today.</td></tr>
+      <tr><td>Freeze / lock a reviewed spec</td><td><span class="pill missing"><span class="d"></span> Missing</span></td><td>No "approved &amp; locked, don't touch again" state.</td></tr>
+    </tbody>
+  </table>
+  <div class="callout warn"><strong>The honest headline:</strong> you can <em>import</em> your existing app today and drive the loop, but right now it would invent an MVP from the words in your goal — not from your actual code. The exact behaviour you described (look at the repo → derive stories &amp; MVP → you fix → AI refines → freeze) is the gap this plan closes.</div>
+
+  <!-- 2 -->
+  <h2><span class="num">2</span>What "import" does today — proof</h2>
+  <p class="lede">From <code>tools/lifecycle/lib/import.js</code> the import only reads metadata: it looks at <code>package.json</code> dependencies to guess the runner (Vite/Next), checks for Power Platform marker files, writes <code>.powercodex/config.json</code>, and wires a cockpit script. From <code>tools/lifecycle/lib/mvp.js</code> + <code>compliance.js</code>, the MVP and the "compliance score" are built purely by tokenising your goal string. No file under <code>src/</code> is ever opened.</p>
+
+  <!-- 3 -->
+  <h2><span class="num">3</span>The workflow you want</h2>
+  <div class="flow">
+    <span class="step"><b>Point</b> at existing repo</span><span class="arrow">→</span>
+    <span class="step"><b>Read</b> the code</span><span class="arrow">→</span>
+    <span class="step"><b>Derive</b> user stories + MVP</span><span class="arrow">→</span>
+    <span class="step"><b>You</b> check &amp; fix</span><span class="arrow">→</span>
+    <span class="step"><b>AI</b> refines from your edits</span><span class="arrow">→</span>
+    <span class="step"><b>Freeze</b> (untouched until next major change)</span>
+  </div>
+
+  <!-- 4 -->
+  <h2><span class="num">4</span>Change A · Code-aware ingestion (<code>import --analyze</code>)</h2>
+  <div class="cmp">
+    <div class="col cur"><div class="h">Current</div><ul>
+      <li>Reads only <code>package.json</code> metadata <small>— deps, scripts, marker files.</small></li>
+      <li>Never opens <code>src/</code>, routes, or components.</li>
+      <li>Output is config + scaffolding, no understanding of features.</li>
+    </ul></div>
+    <div class="col new"><div class="h">Proposed</div><ul>
+      <li>New <code>--analyze</code> flag walks <code>src/</code>: routes/pages, components, connectors/data calls, npm scripts.</li>
+      <li>Produces a <b>repo digest</b> at <code>.powercodex/digest.json</code> <small>— a structured map of what the app already does.</small></li>
+      <li>Digest becomes the grounding input for stories + MVP (no hallucinated features).</li>
+    </ul></div>
+  </div>
+
+  <!-- 5 -->
+  <h2><span class="num">5</span>Change B · Generate user stories &amp; MVP from the code</h2>
+  <div class="cmp">
+    <div class="col cur"><div class="h">Current</div><ul>
+      <li>MVP = keywords from your one-line goal.</li>
+      <li>No user stories at all.</li>
+      <li>Compliance = does the MVP text echo the goal's words.</li>
+    </ul></div>
+    <div class="col new"><div class="h">Proposed</div><ul>
+      <li>Stories + MVP derived from the <b>repo digest</b> (real surfaces, real data).</li>
+      <li>New artifact <code>.powercodex/stories/stories.json</code> + readable <code>stories.html</code>.</li>
+      <li>Each story cites the file(s) it came from, so you can verify it.</li>
+      <li>Compliance also scores <b>stories ↔ code</b> and <b>MVP ↔ stories</b>.</li>
+    </ul></div>
+  </div>
+
+  <!-- 6 -->
+  <h2><span class="num">6</span>Change C · Review → refine → freeze</h2>
+  <div class="cmp">
+    <div class="col cur"><div class="h">Current</div><ul>
+      <li>Re-propose from a prompt; nothing is ever "final".</li>
+      <li>No record of your manual corrections.</li>
+      <li>No lock — any run can overwrite.</li>
+    </ul></div>
+    <div class="col new"><div class="h">Proposed</div><ul>
+      <li>You edit stories/MVP (in the dashboard or the files); edits are kept.</li>
+      <li>AI refines <b>against your edits</b> rather than regenerating from scratch.</li>
+      <li>An <b>Approve &amp; Freeze</b> action sets <code>status:"frozen"</code> — the loop reads but never rewrites it.</li>
+      <li>A future <b>Unlock for major change</b> action is the only way back in.</li>
+    </ul></div>
+  </div>
+  <div class="callout">This is exactly the "saved and never touched again until there is a need" behaviour you described — implemented as an explicit freeze flag the loop respects, not an honour system.</div>
+
+  <!-- 7 -->
+  <h2><span class="num">7</span>Build order</h2>
+  <ol class="steps">
+    <li><b>Repo digest</b> — add the code walker behind <code>import --analyze</code>; write <code>digest.json</code>. (Foundational; everything else reads it.)</li>
+    <li><b>Stories + MVP from digest</b> — new <code>stories.js</code>; make <code>mvp.js</code> accept the digest instead of just the goal string.</li>
+    <li><b>Freeze/lock state</b> — add <code>status</code> to the stories/MVP files; teach the loop and dashboard to honour it.</li>
+    <li><b>Refine-from-edits</b> — diff your edits into the provider prompt so the AI improves rather than replaces.</li>
+    <li><b>Self-test coverage</b> — extend <code>selftest.js</code> so the 53 checks grow to cover ingestion, freeze, and refine.</li>
+    <li><b>(Later) real engines</b> — wire Playwright-for-MDM so Build/Run/Test stop being simulated.</li>
+  </ol>
+
+  <h2><span class="num">8</span>Scope &amp; risk</h2>
+  <table>
+    <thead><tr><th>Item</th><th>Touches</th><th>Risk</th></tr></thead>
+    <tbody>
+      <tr><td>Repo digest</td><td><code>lib/import.js</code> + new <code>lib/digest.js</code></td><td class="muted">Low — read-only of your code; additive flag.</td></tr>
+      <tr><td>Stories/MVP from digest</td><td>new <code>lib/stories.js</code>, <code>lib/mvp.js</code></td><td class="muted">Low–med — backward compatible if digest absent.</td></tr>
+      <tr><td>Freeze + refine</td><td><code>lib/loop.js</code>, <code>lib/server.js</code>, <code>assets/dashboard.html</code></td><td class="muted">Med — new state the loop must respect everywhere.</td></tr>
+      <tr><td>Real Playwright engines</td><td><code>lib/engines.js</code></td><td class="muted">Higher — separate, larger effort (own plan exists).</td></tr>
+    </tbody>
+  </table>
+
+  <div class="foot">
+    Nothing in this plan has been built yet — it's a proposal for your review. Confirm the approach (or amend it) and I'll turn the build order in §7 into an OpenSpec change and start with the repo digest. Source of truth: <code>tools/lifecycle/lib/import.js</code>, <code>mvp.js</code>, <code>compliance.js</code>.
+  </div>
+
+</div>
+</body>
+</html>

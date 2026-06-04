@@ -197,16 +197,19 @@ async function selftest() {
         const port = srv.address().port;
         try {
           const apiPlans = await req(port, 'GET', '/api/plans');
-          const planPage = await new Promise((res2) => {
-            http.get({ host: '127.0.0.1', port, path: '/' + resolvedPlan.entry.file }, (r) => {
+          const getRaw = (p) => new Promise((res2) => {
+            http.get({ host: '127.0.0.1', port, path: p }, (r) => {
               let d = '';
               r.on('data', (c) => (d += c));
               r.on('end', () => res2({ code: r.statusCode, body: d }));
             }).on('error', () => res2({ code: 0, body: '' }));
           });
+          const planPage = await getRaw('/' + resolvedPlan.entry.file);
+          const guidePage = await getRaw('/guide');
           srv.close(() => resolve({
             apiOk: apiPlans.code === 200 && Array.isArray(apiPlans.json.plans) && apiPlans.json.plans.length >= 1,
             pageOk: planPage.code === 200 && /sample/.test(planPage.body),
+            guideOk: guidePage.code === 200 && /User Guide/.test(guidePage.body),
           }));
         } catch {
           srv.close(() => resolve({}));
@@ -215,6 +218,7 @@ async function selftest() {
     });
     check('live server answers /api/plans', planServerChecks.apiOk);
     check('live server serves the generated plan HTML', planServerChecks.pageOk);
+    check('live server serves the user guide at /guide', planServerChecks.guideOk);
 
     // Portable import into a throwaway "any project".
     const impRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-import-'));
@@ -227,6 +231,80 @@ async function selftest() {
     check('import wires a "cockpit" script into package.json', impPkg.scripts.cockpit === 'powercodex');
     check('import configures the chosen providers', Array.isArray(imp.config.providers) && imp.config.providers.length >= 1);
     fs.rmSync(impRoot, { recursive: true, force: true });
+
+    // ── brownfield ingestion · code-grounded intake · freeze ─────────────────
+    const { buildDigest, writeDigest, readDigest } = require('./digest');
+    const { buildStories, readStories, refineStories } = require('./stories');
+    const { scoreStoriesGrounding, scoreMvpAgainstStories } = require('./compliance');
+    const freeze = require('./freeze');
+
+    // A throwaway pre-existing app to read.
+    const bfRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-brownfield-'));
+    fs.mkdirSync(path.join(bfRoot, 'src'), { recursive: true });
+    fs.writeFileSync(path.join(bfRoot, 'package.json'), JSON.stringify({ name: 'acme-portal', scripts: { dev: 'vite' }, devDependencies: { vite: '^5' } }, null, 2));
+    fs.writeFileSync(path.join(bfRoot, 'src', 'App.tsx'), 'import {Routes,Route} from "react-router";\nexport default function App(){return <Routes><Route path="/" element={<Home/>}/><Route path="/projects" element={<ProjectsList/>}/></Routes>}');
+    fs.writeFileSync(path.join(bfRoot, 'src', 'ProjectsList.tsx'), 'import {useQuery} from "@tanstack/react-query";\nexport function ProjectsList(){const q=useQuery({queryKey:["p"],queryFn:()=>fetch("/api/p")});return <div/>}');
+
+    const digest = buildDigest(bfRoot);
+    writeDigest(bfRoot, digest);
+    check('digest reads routes from the existing code', digest.routes.some((r) => r.path === '/projects'));
+    check('digest reads components from the existing code', digest.components.some((c) => c.name === 'ProjectsList'));
+    check('digest records each surface with its source file (provenance)', digest.routes.every((r) => /\.tsx?$/.test(r.source)));
+    check('digest auto-detects stack mode', digest.mode === 'local-run');
+    check('digest records coverage and is persisted', !!digest.coverage && fs.existsSync(path.join(bfRoot, '.powercodex', 'digest.json')));
+
+    const built = buildStories(bfRoot, { goal: 'manage projects' });
+    check('stories are generated from the digest', built.doc.stories.length >= 1);
+    check('every story cites a source file', built.doc.stories.every((s) => Array.isArray(s.sources) && s.sources.length > 0));
+    check('stories.json + stories.html are written', fs.existsSync(built.path) && fs.existsSync(built.htmlPath));
+    check('stories are grounded in the code (compliance)', scoreStoriesGrounding(built.doc.stories, digest).score === 100);
+
+    const groundedMvp = proposeMvp(bfRoot, { goal: 'manage projects', digest });
+    check('MVP is grounded in the digest, not goal keywords', /from your code/.test(fs.readFileSync(groundedMvp, 'utf8')));
+    check('MVP serves the reviewed stories (compliance)', scoreMvpAgainstStories(fs.readFileSync(groundedMvp, 'utf8'), built.doc.stories).score >= 50);
+
+    // Goal-only fallback still works where there is no digest.
+    const greenRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-green-'));
+    const greenMvp = proposeMvp(greenRoot, { goal: 'track invoices and payments' });
+    check('MVP falls back to goal-only when no digest exists', fs.existsSync(greenMvp) && /from your goal/.test(fs.readFileSync(greenMvp, 'utf8')));
+    check('no code-grounded stories are fabricated without a digest', buildStories(greenRoot, {}).doc.stories.length === 0 && readDigest(greenRoot) === null);
+    fs.rmSync(greenRoot, { recursive: true, force: true });
+
+    // Refine preserves the user's edits.
+    const editedDoc = readStories(bfRoot);
+    editedDoc.stories[0].title = 'EDITED · custom story title';
+    const refined = await refineStories(bfRoot, { edited: editedDoc, provider: providers.resolve('simulated') });
+    check('refine preserves the user edit (not regenerated)', refined.ok && readStories(bfRoot).stories[0].title === 'EDITED · custom story title');
+    check('refine reports an explainable diff', refined.diff && refined.diff.changed.includes(editedDoc.stories[0].id));
+
+    // Freeze: the loop reads but never rewrites; only unlock reopens.
+    freeze.freeze(bfRoot, 'stories');
+    freeze.freeze(bfRoot, 'mvp');
+    check('freeze sets status to frozen', freeze.isFrozen(bfRoot, 'stories') && freeze.statusOf(bfRoot, 'mvp') === 'frozen');
+    const blockedRefine = await refineStories(bfRoot, { edited: editedDoc });
+    check('a frozen artifact rejects refine (not rewritten)', blockedRefine.ok === false);
+    const mvpBefore = fs.readFileSync(groundedMvp, 'utf8');
+    proposeMvp(bfRoot, { goal: 'a completely different app', digest });
+    check('a frozen MVP is not regenerated by proposeMvp', fs.readFileSync(groundedMvp, 'utf8') === mvpBefore);
+    const loopAfterFreeze = await runLoop(bfRoot, { fresh: true, simulate: true, rotations: 1, render: false });
+    const frozenStill = readStories(bfRoot).stories[0].title === 'EDITED · custom story title';
+    check('the loop runs against a frozen benchmark without rewriting it', loopAfterFreeze && frozenStill);
+    freeze.unlock(bfRoot, 'stories');
+    check('unlock reopens a frozen artifact to draft', freeze.statusOf(bfRoot, 'stories') === 'draft');
+    fs.rmSync(bfRoot, { recursive: true, force: true });
+
+    // import --analyze writes a digest without touching the user's source.
+    const anRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-analyze-'));
+    fs.mkdirSync(path.join(anRoot, 'src'), { recursive: true });
+    fs.writeFileSync(path.join(anRoot, 'package.json'), JSON.stringify({ name: 'an-app', scripts: { dev: 'vite' }, devDependencies: { vite: '^5' } }, null, 2));
+    const srcFile = path.join(anRoot, 'src', 'App.tsx');
+    fs.writeFileSync(srcFile, 'export default function App(){return null}');
+    const srcBefore = fs.readFileSync(srcFile, 'utf8');
+    const analyzed = importInto(anRoot, { providers: 'both', analyze: true });
+    check('import --analyze produces a digest', !!analyzed.digest && fs.existsSync(path.join(anRoot, '.powercodex', 'digest.json')));
+    check('import --analyze does not modify the user source tree', fs.readFileSync(srcFile, 'utf8') === srcBefore);
+    check('plain import (no --analyze) produces no digest', !importInto(fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-plain-')), {}).digest);
+    fs.rmSync(anRoot, { recursive: true, force: true });
 
     const passed = checks.filter(Boolean).length;
     const ok = checks.every(Boolean);

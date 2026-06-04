@@ -91,7 +91,18 @@ function importInto(targetRoot, opts = {}) {
     note('vendored core · .powercodex/core/ (zero-dependency)');
   }
 
-  return { stack, config, created };
+  // Optionally analyze the existing code into a read-only digest. Off by default
+  // so plain `import` stays purely structural; `--analyze` opts in. Required here
+  // (not at top of file) to avoid a require cycle with digest.js → import.js.
+  let digest = null;
+  if (opts.analyze) {
+    const { buildDigest, writeDigest } = require('./digest');
+    digest = buildDigest(targetRoot);
+    const out = writeDigest(targetRoot, digest);
+    note(`analyzed code · ${path.relative(targetRoot, out).split(path.sep).join('/')} · ${digest.routes.length} routes · ${digest.components.length} components${digest.coverage.partial ? ' (partial coverage)' : ''}`);
+  }
+
+  return { stack, config, created, digest };
 }
 
 module.exports = { importInto, detectStack };

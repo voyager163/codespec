@@ -5,6 +5,10 @@ const { render } = require('./dashboard');
 const { load: loadRights, ensureRights, approvalFile } = require('./rights');
 const { proposeMvp } = require('./mvp');
 const { reflect } = require('./reflect');
+const freeze = require('./freeze');
+const { buildStories, saveStories, refineStories, readStories } = require('./stories');
+const { readDigest } = require('./digest');
+const providers = require('./providers');
 
 // Server-side controller: turns dashboard actions into real effects on the
 // status bus, the rights gate, and a running loop. Held in memory by `serve`.
@@ -46,10 +50,61 @@ class Controller {
       case 'rights':
         return this.setRight(body.flag, body.value);
       case 'propose-mvp': {
-        const out = proposeMvp(this.root, { goal: body.goal || this.intake.goal });
-        emit(this.root, { rotation: 0, stage: 0, agent: 'planner', level: 'good', message: `Proposed an MVP from the goal → ${out}` });
+        if (freeze.isFrozen(this.root, 'mvp')) return { ok: false, error: 'MVP is frozen — unlock for a major change first' };
+        const digest = readDigest(this.root);
+        const out = proposeMvp(this.root, { goal: body.goal || this.intake.goal, digest });
+        emit(this.root, { rotation: 0, stage: 0, agent: 'planner', level: 'good', message: `Proposed an MVP ${digest ? 'from your code' : 'from the goal'} → ${out}` });
         render(this.root);
-        return { ok: true, path: out };
+        return { ok: true, path: out, grounded: !!digest };
+      }
+      case 'generate-stories': {
+        if (freeze.isFrozen(this.root, 'stories')) return { ok: false, error: 'stories are frozen — unlock for a major change first' };
+        const digest = readDigest(this.root);
+        if (!digest) return { ok: false, error: 'no digest — run `import --analyze` first to read your code' };
+        const result = buildStories(this.root, { goal: body.goal || this.intake.goal });
+        emit(this.root, { rotation: 0, stage: 1, agent: 'planner', level: 'good', message: `Generated ${result.doc.stories.length} code-grounded user stories → ${result.path}` });
+        render(this.root);
+        return { ok: true, count: result.doc.stories.length, stories: result.doc.stories };
+      }
+      case 'save-stories': {
+        if (freeze.isFrozen(this.root, 'stories')) return { ok: false, error: 'stories are frozen — unlock for a major change first' };
+        const prior = readStories(this.root) || {};
+        const saved = saveStories(this.root, Object.assign({}, prior, { stories: body.stories || prior.stories || [] }));
+        emit(this.root, { rotation: 0, stage: 1, agent: 'intake', level: 'info', message: `User edited the stories (${saved.doc.stories.length}) via dashboard` });
+        render(this.root);
+        return { ok: true, count: saved.doc.stories.length };
+      }
+      case 'refine': {
+        const artifact = body.artifact === 'mvp' ? 'mvp' : 'stories';
+        if (freeze.isFrozen(this.root, artifact)) return { ok: false, error: `${artifact} is frozen — unlock for a major change first` };
+        const provider = providers.resolve(body.provider || 'simulated');
+        if (artifact === 'mvp') {
+          const out = proposeMvp(this.root, { goal: body.goal || this.intake.goal, digest: readDigest(this.root), force: true });
+          emit(this.root, { rotation: 0, stage: 1, agent: 'planner', level: 'good', message: `Refined the MVP from your edits → ${out}` });
+          render(this.root);
+          return { ok: true, artifact, path: out };
+        }
+        const res = await refineStories(this.root, { edited: body.edited, provider });
+        if (!res.ok) return res;
+        emit(this.root, { rotation: 0, stage: 1, agent: 'planner', level: 'good', message: `Refined the stories from your edits (changed: ${res.diff.changed.length}, added: ${res.diff.added.length}, removed: ${res.diff.removed.length})` });
+        render(this.root);
+        return { ok: true, artifact, diff: res.diff, count: res.doc.stories.length };
+      }
+      case 'freeze': {
+        const artifact = body.artifact === 'mvp' ? 'mvp' : 'stories';
+        freeze.freeze(this.root, artifact);
+        if (artifact === 'stories') { const d = readStories(this.root); if (d) saveStories(this.root, d); }
+        emit(this.root, { rotation: 0, stage: 1, agent: 'intake', level: 'good', message: `Approved & froze the ${artifact} · the loop will build against it and never rewrite it` });
+        render(this.root);
+        return { ok: true, artifact, status: 'frozen' };
+      }
+      case 'unlock': {
+        const artifact = body.artifact === 'mvp' ? 'mvp' : 'stories';
+        freeze.unlock(this.root, artifact);
+        if (artifact === 'stories') { const d = readStories(this.root); if (d) saveStories(this.root, d); }
+        emit(this.root, { rotation: 0, stage: 1, agent: 'intake', level: 'warn', message: `Unlocked the ${artifact} for a major change · it can be refined or regenerated again` });
+        render(this.root);
+        return { ok: true, artifact, status: 'draft' };
       }
       case 'reflect': {
         const lesson = reflect(this.root, { title: body.title || 'Lesson from this session', severity: body.severity, what: body.what, how: body.how });
