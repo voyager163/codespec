@@ -1,7 +1,5 @@
 {
   "name": "codespec",
-  "projects": [
-    "projects/matflow"
-  ],
+  "projects": [],
   "createdAt": "2026-06-03"
 }

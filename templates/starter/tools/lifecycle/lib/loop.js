@@ -35,9 +35,9 @@ async function runLoop(root, opts = {}) {
 
   // Step 0 — intake + rights gate
   await emit({ rotation: 0, stage: 0, agent: 'intake', level: 'info', message: 'Project start · dashboard opened, intake gate active' });
-  const goal = opts.goal || 'Track Projects and Tasks with status and due dates';
+  const goal = opts.goal || 'Describe what the app should do for its users';
   const mvp =
-    opts.mvp || 'Projects grid MVP showing Status chips and due dates with a New Project action to track projects and tasks';
+    opts.mvp || 'The first slice to build — a primary view with the core action and fields';
   const compliance = scoreCompliance(goal, mvp);
   await emit({
     rotation: 0,
@@ -98,7 +98,7 @@ async function runLoop(root, opts = {}) {
       }
       await emit({ rotation: r, stage: 4, agent: 'runner', level: 'good', message: `Dataverse connected → npx power-apps push · got app link${simulate ? ' (simulated)' : ''}` });
       // Real mode parses the push output for the play URL; simulate uses a stable placeholder.
-      baseUrl = opts.appUrl || rights.appUrl || (simulate ? 'https://apps.powerapps.com/play/e/demo-env/a/matflow-app' : '');
+      baseUrl = opts.appUrl || rights.appUrl || (simulate ? 'https://apps.powerapps.com/play/e/demo-env/a/demo-app' : '');
       if (baseUrl) {
         setAppUrl(root, baseUrl);
         rights.appUrl = baseUrl;

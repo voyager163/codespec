@@ -111,7 +111,7 @@
     specs/open-source-project-readiness
     specs/powercodex-initializer
     changes/add-lifecycle-loop
-    changes/<span class="bad">matflow-code-app-rebuild</span>  <span class="c"># a PROJECT</span>
+    changes/<span class="bad">example-code-app-rebuild</span>  <span class="c"># a PROJECT</span>
   <span class="bad">.powercodex/</span> live/ mvp/        <span class="c"># runtime at root</span>
   <span class="bad">Approved_rights/</span> approval.json  <span class="c"># consent at root</span>
   Learning_Experience/              <span class="c"># shared (ok)</span>
@@ -128,7 +128,7 @@
     changes/add-lifecycle-loop …
   <span class="keep">Learning_Experience/</span>              <span class="keep"># ONE shared brain</span>
   <span class="new">projects/</span>
-    <span class="dir">matflow/</span>
+    <span class="dir">example/</span>
       <span class="move">openspec/</span>        <span class="c"># moved here</span>
       <span class="new">.powercodex/</span>     <span class="c"># per-project runtime</span>
       <span class="new">Approved_rights/</span> <span class="c"># consent+profile+url</span>
@@ -141,7 +141,7 @@
     <div class="head">What moves where</div>
     <table>
       <tr><th>Item</th><th>Action</th><th>Destination</th></tr>
-      <tr><td class="mono">openspec/changes/matflow-code-app-rebuild</td><td><span class="tag move">MOVE</span></td><td class="mono">projects/matflow/openspec/changes/…</td></tr>
+      <tr><td class="mono">openspec/changes/example-code-app-rebuild</td><td><span class="tag move">MOVE</span></td><td class="mono">projects/example/openspec/changes/…</td></tr>
       <tr><td class="mono">openspec/specs/powercodex-initializer<br/>openspec/specs/open-source-project-readiness</td><td><span class="tag keep">KEEP</span></td><td>Root — these are the tool's own dev specs</td></tr>
       <tr><td class="mono">openspec/changes/add-lifecycle-loop<br/>add-template-dual-tool-skills</td><td><span class="tag keep">KEEP</span></td><td>Root — tool development changes</td></tr>
       <tr><td class="mono">Learning_Experience/</td><td><span class="tag keep">KEEP</span></td><td>Root — the single shared brain (already correct)</td></tr>
@@ -189,13 +189,13 @@
 
     <div class="head">Migration checklist (on your go-ahead)</div>
     <ul class="check">
-      <li><span class="n">1</span><div>Add <b><span class="mono">.powercodex-workspace.json</span></b> at the root with <span class="mono">{ name, projects:["projects/matflow"] }</span>.</div></li>
-      <li><span class="n">2</span><div>Create <b><span class="mono">projects/matflow/</span></b> and <span class="mono">git mv</span> <span class="mono">openspec/changes/matflow-code-app-rebuild</span> into <span class="mono">projects/matflow/openspec/changes/</span> (with its own <span class="mono">config.yaml</span> + <span class="mono">specs/</span>).</div></li>
-      <li><span class="n">3</span><div>Move root <b><span class="mono">.powercodex/</span></b> + <b><span class="mono">Approved_rights/</span></b> runtime into <span class="mono">projects/matflow/</span>; leave root <span class="mono">.powercodex/</span> as gitignored demo space.</div></li>
+      <li><span class="n">1</span><div>Add <b><span class="mono">.powercodex-workspace.json</span></b> at the root with <span class="mono">{ name, projects:["projects/example"] }</span>.</div></li>
+      <li><span class="n">2</span><div>Create <b><span class="mono">projects/example/</span></b> and <span class="mono">git mv</span> <span class="mono">openspec/changes/example-code-app-rebuild</span> into <span class="mono">projects/example/openspec/changes/</span> (with its own <span class="mono">config.yaml</span> + <span class="mono">specs/</span>).</div></li>
+      <li><span class="n">3</span><div>Move root <b><span class="mono">.powercodex/</span></b> + <b><span class="mono">Approved_rights/</span></b> runtime into <span class="mono">projects/example/</span>; leave root <span class="mono">.powercodex/</span> as gitignored demo space.</div></li>
       <li><span class="n">4</span><div>Extend <b><span class="mono">rights.js</span></b>: <span class="mono">profilePath</span> + <span class="mono">appUrl</span> fields; add a <b>verify-once</b> profile flow and an <b>app-URL capture</b> in <span class="mono">loop.js</span>/runner.</div></li>
       <li><span class="n">5</span><div>Point the <b>E2E tester</b> at the stored <span class="mono">appUrl</span> instead of a hard-coded localhost.</div></li>
       <li><span class="n">6</span><div>Update <b><span class="mono">.gitignore</span></b> (<span class="mono">**/.profiles/</span>, root <span class="mono">.powercodex/</span>) and the templates so generated projects start with this layout.</div></li>
-      <li><span class="n">7</span><div>Run <span class="mono">npm run lifecycle</span> from <span class="mono">projects/matflow/</span> to confirm the shared brain resolves and runtime writes per-project.</div></li>
+      <li><span class="n">7</span><div>Run <span class="mono">npm run lifecycle</span> from <span class="mono">projects/example/</span> to confirm the shared brain resolves and runtime writes per-project.</div></li>
     </ul>
 
     <div class="ready">"I am completely ready, I have no more questions to ask."</div>
