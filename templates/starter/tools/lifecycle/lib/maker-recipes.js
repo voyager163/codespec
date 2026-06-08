@@ -21,8 +21,18 @@ const RECIPES = {
     surface: 'Dataverse Tables',
     describe: 'open the Tables list to create a table',
     url: (env) => scoped(POWERAPPS, env, 'tables'),
-    automated: false,
-    todo: 'New table → set display/plural name → primary column → Save → verify it appears in the table list',
+    // Real DOM automation (vertical slice). Engine 1 calls this; it creates the table
+    // and only reports created:true after re-reading the tables list. Selectors are
+    // best-effort and need live-tenant validation.
+    automated: true,
+    build: (engineModule, context, { env, task } = {}) =>
+      engineModule.createDataverseTable(context, {
+        environmentId: env,
+        displayName: task && (task.displayName || task.name),
+        pluralName: task && task.pluralName,
+        primaryColumn: task && task.primaryColumn,
+      }),
+    todo: 'validate selectors against a live tenant; add column/relationship authoring',
   },
   'dataverse.column.add': {
     surface: 'Dataverse Tables',

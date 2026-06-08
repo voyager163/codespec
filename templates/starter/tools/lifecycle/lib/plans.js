@@ -46,18 +46,39 @@ function registerPlan(root, plan = {}) {
   const rel = plan.file
     ? path.relative(root, path.isAbsolute(plan.file) ? plan.file : path.join(root, plan.file)).split(path.sep).join('/')
     : `.powercodex/plans/plan-${reg.plans.length + 1}.html`;
+  const jsonRel = plan.jsonFile
+    ? path.relative(root, path.isAbsolute(plan.jsonFile) ? plan.jsonFile : path.join(root, plan.jsonFile)).split(path.sep).join('/')
+    : null;
   const entry = {
     id: nextId(reg),
     title: plan.title || 'Untitled plan',
     file: rel,
+    // The structured sibling record the agent reads to learn from past plans.
+    jsonFile: jsonRel,
     provider: plan.provider || 'unknown',
     sections: plan.sections != null ? Number(plan.sections) : null,
     mockups: plan.mockups != null ? Number(plan.mockups) : null,
     tasks: plan.tasks != null ? Number(plan.tasks) : null,
+    // How literal the Now/After picture is: 'mockup' (deterministic) or 'screenshot'.
+    visuals: plan.visuals || 'mockup',
     status: 'ready',
+    // Filled in after the build folds its real result back (see planhtml.foldOutcome).
+    outcome: plan.outcome != null ? plan.outcome : null,
     createdAt: new Date().toISOString(),
   };
   reg.plans.push(entry);
+  fs.writeFileSync(registryFile(root), `${JSON.stringify(reg, null, 2)}\n`);
+  return entry;
+}
+
+// Stamp a plan's real build outcome onto its registry entry. Idempotent; returns the
+// updated entry or null when the id isn't found.
+function updatePlanOutcome(root, id, outcome) {
+  const reg = readRegistry(root);
+  const entry = reg.plans.find((p) => p.id === id);
+  if (!entry) return null;
+  entry.outcome = outcome || null;
+  entry.status = outcome && outcome.verified ? 'built' : entry.status;
   fs.writeFileSync(registryFile(root), `${JSON.stringify(reg, null, 2)}\n`);
   return entry;
 }
@@ -94,6 +115,7 @@ module.exports = {
   ensurePlans,
   readRegistry,
   registerPlan,
+  updatePlanOutcome,
   listPlans,
   latestPlan,
   resolvePlan,

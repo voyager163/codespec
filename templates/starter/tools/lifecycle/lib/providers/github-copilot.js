@@ -15,13 +15,13 @@ function locate() {
 }
 
 async function send(opts = {}) {
-  const { prompt = '', onToken, signal } = opts;
+  const { prompt = '', onToken, onTool, signal, timeoutMs } = opts;
   const loc = locate();
   if (!loc) return simulated.send(opts);
   try {
     const [cmd, prefix] = loc;
     // Prompt on stdin (no shell-quoting hazard); flags only in argv.
-    const res = await streamCli(cmd, prefix, { input: prompt, onToken, signal });
+    const res = await streamCli(cmd, prefix, { input: prompt, onToken, onTool, signal, timeoutMs });
     if (res.aborted) return { text: res.text, aborted: true };
     if (!res.text || !res.text.trim()) return simulated.send(opts);
     return { text: res.text };

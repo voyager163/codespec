@@ -13,12 +13,12 @@ function available() {
 }
 
 async function send(opts = {}) {
-  const { prompt = '', onToken, signal } = opts;
+  const { prompt = '', onToken, onTool, signal, timeoutMs } = opts;
   if (!available()) return simulated.send(opts); // graceful: behave, just simulated
   try {
     // `-p/--print` runs one prompt and exits, streaming to stdout. The prompt is
     // delivered on stdin so multi-word input never breaks on shell quoting.
-    const res = await streamCli(BIN, ['-p'], { input: prompt, onToken, signal });
+    const res = await streamCli(BIN, ['-p'], { input: prompt, onToken, onTool, signal, timeoutMs });
     if (res.aborted) return { text: res.text, aborted: true };
     // Empty / failed / timed-out → fall back so the user always gets a reply.
     if (!res.text || !res.text.trim()) return simulated.send(opts);

@@ -324,19 +324,29 @@ async function selftest() {
     const webNotes = [];
     const webEng = await resolveEngines(webRoot, { simulate: false, emit: async (e) => webNotes.push(e.message) });
     if (!hasPlaywright(webRoot)) {
-      check('real on a browser app without Playwright recommends it + falls back', /playwright/i.test(webNotes.join(' ')) && /Playwright not installed/.test(webEng.mode) && webEng.real === false);
+      // No package.json here (digest only), so it is not a code app either → falls back
+      // to simulation, but still recommends Playwright for the live-app smoke test.
+      check('real on a browser app without Playwright (and no code app) recommends it + falls back', /playwright/i.test(webNotes.join(' ')) && webEng.real === false);
     } else {
       check('real on a browser app with Playwright resolves the real bundle', webEng.real === true);
     }
     fs.rmSync(webRoot, { recursive: true, force: true });
 
-    // A UI-less project (library/CLI) → simulate quietly, no Playwright nag.
+    // A code app (package.json with react) builds for REAL without Playwright — the code
+    // engine authors + compiles on-device, no browser needed. This is the autonomy spine.
+    const codeRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-code-'));
+    fs.writeFileSync(path.join(codeRoot, 'package.json'), JSON.stringify({ name: 'c', dependencies: { react: '^19.0.0' }, scripts: { build: 'tsc --noEmit' } }));
+    const codeEng = await resolveEngines(codeRoot, { simulate: false, emit: async () => {} });
+    check('a code app resolves the real code engine without Playwright', codeEng.real === true && /code-gen/.test(codeEng.mode) && typeof codeEng.heal === 'function');
+    fs.rmSync(codeRoot, { recursive: true, force: true });
+
+    // A UI-less project (library/CLI, no package.json) → nothing real to drive → simulate.
     const libRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-lib-'));
     writeDigestFn(libRoot, { name: 'lib', mode: 'local-run', routes: [], components: [], data: [], scripts: [{ name: 'build', cmd: 'tsc', source: 'package.json' }], coverage: {} });
     check('browserBased() is false for a UI-less project', browserBased(libRoot) === false);
     const libNotes = [];
     const libEng = await resolveEngines(libRoot, { simulate: false, emit: async (e) => libNotes.push(e.message) });
-    check('a non-browser project is not nagged to install Playwright', !/playwright/i.test(libNotes.join(' ')) && /non-browser/.test(libEng.mode));
+    check('a non-browser, non-code project is not nagged to install Playwright', !/playwright/i.test(libNotes.join(' ')) && /no real target/.test(libEng.mode));
     check('recommendation() explains real engines are not advised for a non-browser app', recommendation(libRoot).needed === false && recommendation(libRoot).browserBased === false);
     fs.rmSync(libRoot, { recursive: true, force: true });
 
@@ -350,7 +360,8 @@ async function selftest() {
     check('a maker recipe builds an env-scoped Power Platform URL', /make\.powerapps\.com\/environments\/ENV123\/tables/.test(tableRecipe.url('ENV123')));
     check('a maker recipe falls back to the portal home without an env', /^https:\/\/make\.powerapps\.com$/.test(tableRecipe.url(null)));
     check('the Power Automate recipe targets make.powerautomate.com', /make\.powerautomate\.com/.test(recipeFor('powerautomate.flow.create').url('ENV123')));
-    check('maker recipes are honest that DOM creation is not automated yet', tableRecipe.automated === false && typeof tableRecipe.todo === 'string');
+    check('table.create now has real DOM automation (build fn)', tableRecipe.automated === true && typeof tableRecipe.build === 'function');
+    check('recipes without DOM automation yet stay honest (column.add)', recipeFor('dataverse.column.add').automated === false && typeof recipeFor('dataverse.column.add').todo === 'string');
 
     // Edge profile picker — discover from a Local State file, resolve a selection, persist it.
     const edgeProfiles = require('./edge-profiles');

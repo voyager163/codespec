@@ -19,14 +19,26 @@ class Controller {
     this.running = false;
     this.paused = false;
     this.intake = { goal: null, mvp: null, compliance: 86 };
+    // Approval gate. The loop blocks at stage 2 (Approve) until the maker presses
+    // "Build this", which fires the `approve` action and flips this true. A run that
+    // is started without prior approval (the chat's Build button calls intake+start
+    // together) is treated as pre-approved so the existing flow is unbroken.
+    this.approved = false;
+    this.requireApproval = opts.requireApproval === true;
   }
 
   status() {
-    return { running: this.running, paused: this.paused, intake: this.intake };
+    return { running: this.running, paused: this.paused, approved: this.approved, intake: this.intake };
   }
 
   isPaused() {
     return this.paused;
+  }
+
+  // True once the change is approved for build. When approval is not required
+  // (the default chat path, where Build IS the approval), this is always true.
+  isApproved() {
+    return this.approved || !this.requireApproval;
   }
 
   async action(body = {}) {
@@ -35,6 +47,10 @@ class Controller {
         return this.setIntake(body);
       case 'start':
         if (this.running) return { ok: false, error: 'loop already running' };
+        // A start without a separate approval step pre-approves the run (the chat's
+        // "Build this" is the approval). If requireApproval was set, the loop will
+        // block at stage 2 until an `approve` action arrives.
+        if (!this.requireApproval) this.approved = true;
         this.start({ rotations: Number(body.rotations) || 3 }).catch((e) => console.error('loop error:', e.message));
         return { ok: true, started: true };
       case 'pause':
@@ -44,9 +60,17 @@ class Controller {
         this.paused = false;
         return { ok: true, paused: false };
       case 'approve':
-        emit(this.root, { rotation: 0, stage: 2, agent: 'planner', level: 'good', message: 'Change approved by user (via dashboard)' });
+        // Real gate: unblock a loop that is waiting at the Approve stage.
+        this.approved = true;
+        emit(this.root, { rotation: 0, stage: 2, agent: 'planner', level: 'good', message: 'Change approved by user — build gate opened' });
         render(this.root);
-        return { ok: true };
+        return { ok: true, approved: true };
+      case 'reject':
+        // Withdraw approval; a loop blocked at Approve will stop and escalate.
+        this.approved = false;
+        emit(this.root, { rotation: 0, stage: 2, agent: 'planner', level: 'warn', message: 'Change not approved — build gate held closed' });
+        render(this.root);
+        return { ok: true, approved: false };
       case 'rights':
         return this.setRight(body.flag, body.value);
       case 'propose-mvp': {
@@ -125,6 +149,14 @@ class Controller {
       goal: body.goal || null,
       mvp: body.mvp || null,
       compliance: body.compliance != null ? Number(body.compliance) : 86,
+      // The approved plan (title + plain-language items) drives the planner so the loop
+      // builds what the maker actually approved. Optional explicit tasks override it.
+      plan: body.plan && Array.isArray(body.plan.items) ? body.plan : null,
+      tasks: Array.isArray(body.tasks) ? body.tasks : null,
+      provider: body.provider || null,
+      // The id of the comprehensive plan authored at chat time, so the loop can fold its
+      // real build outcome back into that same plan document (planhtml.foldOutcome).
+      planId: body.planId || null,
     };
     emit(this.root, {
       rotation: 0,
@@ -164,7 +196,12 @@ class Controller {
         goal: this.intake.goal || undefined,
         mvp: this.intake.mvp || undefined,
         compliance: this.intake.compliance,
+        plan: this.intake.plan || undefined,
+        tasks: this.intake.tasks || undefined,
+        provider: this.intake.provider || undefined,
+        planId: this.intake.planId || undefined,
         isPaused: () => this.paused,
+        isApproved: () => this.isApproved(),
       });
     } finally {
       this.running = false;

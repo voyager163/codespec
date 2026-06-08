@@ -14,10 +14,13 @@ const DEFAULTS = {
   profilePath: '',
   // App URL captured after `npx power-apps push` — the E2E tester's base URL.
   appUrl: '',
-  allowBuild: false,
+  // On-device building & testing is safe (nothing goes live), so it is allowed by
+  // default — the maker-first product builds & self-heals without prompting. Publishing
+  // to a real environment stays OFF until the maker explicitly turns it on.
+  allowBuild: true,
   allowPush: false,
   allowAutoRespec: false,
-  allowAutoApplyDefects: false,
+  allowAutoApplyDefects: true,
   grantedBy: 'user',
   grantedAt: null,
 };

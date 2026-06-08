@@ -69,6 +69,30 @@ function create(root) {
         results.push({ task: task.type, name, status: 'skipped', created: false, automated: false });
         continue;
       }
+
+      // Recipes that carry a real DOM `build` are executed for real and verified.
+      if (recipe.automated && typeof recipe.build === 'function') {
+        await emit({ rotation, stage: 3, agent: 'build-executor', level: 'info', message: `Building in Power Platform · ${recipe.describe} → "${name}"` });
+        let out;
+        try {
+          out = await recipe.build(m, context, { env, task });
+        } catch (e) {
+          out = { created: false, reason: e.message };
+        }
+        results.push({ task: task.type, name, status: out.created ? 'created' : 'attempted', created: !!out.created, automated: true, verifiedInPortal: !!out.created, finalUrl: out.finalUrl, reason: out.reason });
+        await emit({
+          rotation,
+          stage: 3,
+          agent: 'build-executor',
+          level: out.created ? 'good' : 'warn',
+          message: out.created
+            ? `Created ${recipe.surface.replace(/s$/, '')} "${name}" in Power Platform · verified in the list`
+            : `Could not finish "${name}" in ${recipe.surface} · ${out.reason || 'unknown'} · nothing faked`,
+        });
+        continue;
+      }
+
+      // Recipes without DOM automation yet: enter the surface and report honestly.
       const url = maker ? `${maker.replace(/\/$/, '')}` : recipe.url(env);
       await emit({ rotation, stage: 3, agent: 'build-executor', level: 'info', message: `Entering Power Platform · ${recipe.describe} → ${url}` });
       const nav = await m.runAppSmokeTest(context, url);
@@ -113,6 +137,18 @@ function create(root) {
     return { failures, coverage, passed, real: true };
   }
 
+  // Capture a screenshot of a live URL into outPath. Best-effort — returns the engine's
+  // {ok,...} result; callers degrade to a deterministic mockup when ok is false.
+  async function screenshot({ url, outPath, rotation, emit }) {
+    try {
+      const m = await engine();
+      const context = await ensureContext(emit || (async () => {}), rotation || 0, null);
+      return await m.captureScreenshot(context, url, outPath);
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  }
+
   // Release the CDP connection at the end of a run (does not close the user's Edge).
   async function close() {
     try {
@@ -124,7 +160,7 @@ function create(root) {
     session.context = null;
   }
 
-  return { verifyProfile, buildExecutor, e2eTester, close };
+  return { verifyProfile, buildExecutor, e2eTester, screenshot, close };
 }
 
 module.exports = { create };

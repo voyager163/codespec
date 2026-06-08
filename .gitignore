@@ -61,3 +61,5 @@ Approved_rights/
 # MDM browser profiles — real session cookies/tokens, never commit.
 # Only the pointer (browserProfile name + profilePath) in approval.json is kept.
 **/.profiles/
+# PowerCodex local build/compile scratch dirs
+.tmp-*

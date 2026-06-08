@@ -143,6 +143,9 @@ async function main() {
         demo: flag('demo') === true,
         open: flag('open') === true,
         rotations: Number.parseInt(flag('rotations'), 10) || 3,
+        // --real makes the served chat actually build (code-gen + build verify), like the
+        // desktop app. Without it the dashboard/chat run the safe simulated loop.
+        simulate: flag('real') !== true,
       });
       break; // server keeps the process alive
     }

@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PowerCodex — Comprehensive Canvas &amp; saved plans · the plan</title>
+<style>
+  :root{
+    --ease-out:cubic-bezier(0.23,1,0.32,1);
+    --bg:#0b0d12;--bg-soft:#12151d;--panel:#161a24;--panel-2:#1c2130;--line:#262c3a;--line-2:#313a4d;
+    --text:#e8ecf4;--muted:#99a2b8;--faint:#6b7488;
+    --accent:#6ea8fe;--accent-2:#a78bfa;--good:#5ad19a;--bad:#f08a8a;--warn:#f5c97b;--cyan:#67e8f9;
+    --radius:16px;--shadow:0 20px 60px -20px rgba(0,0,0,0.6);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 600px at 80% -10%,rgba(167,139,250,0.14),transparent 60%),
+      radial-gradient(900px 500px at -10% 10%,rgba(110,168,254,0.12),transparent 55%),
+      var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.6;-webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px 120px}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .mono{font-family:"SF Mono",ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace}
+
+  .rise{opacity:0;transform:translateY(14px);animation:rise 600ms var(--ease-out) forwards}
+  @keyframes rise{to{opacity:1;transform:translateY(0)}}
+  .d1{animation-delay:40ms}.d2{animation-delay:90ms}.d3{animation-delay:140ms}
+  .d4{animation-delay:190ms}.d5{animation-delay:240ms}.d6{animation-delay:290ms}
+
+  nav.top{position:sticky;top:0;z-index:30;backdrop-filter:blur(10px);background:rgba(11,13,18,0.72);border-bottom:1px solid var(--line)}
+  nav.top .inner{max-width:1080px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;gap:18px}
+  nav.top .brand{font-weight:700;letter-spacing:-0.01em;display:flex;align-items:center;gap:9px}
+  nav.top .brand .mark{width:24px;height:24px;border-radius:7px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#06203f;font-weight:900;font-size:13px}
+  nav.top .brand small{display:block;font-weight:500;font-size:11px;color:var(--faint)}
+  nav.top .links{margin-left:auto;display:flex;gap:18px;font-size:14px}
+  nav.top .links a{color:var(--muted)}
+  nav.top .links a:hover{color:var(--text);text-decoration:none}
+  @media(max-width:760px){nav.top .links{display:none}}
+
+  header.hero{padding:84px 24px 30px;text-align:center;max-width:920px;margin:0 auto}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);background:rgba(110,168,254,0.1);border:1px solid rgba(110,168,254,0.25);padding:6px 14px;border-radius:999px;margin-bottom:22px}
+  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 0 rgba(110,168,254,0.6);animation:pulse 2.4s var(--ease-out) infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(110,168,254,0.5)}70%{box-shadow:0 0 0 9px rgba(110,168,254,0)}100%{box-shadow:0 0 0 0 rgba(110,168,254,0)}}
+  h1{font-size:clamp(34px,6.2vw,56px);line-height:1.06;margin:0 0 18px;letter-spacing:-0.02em;background:linear-gradient(180deg,#fff,#b9c2d8);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--muted);font-size:18px;max-width:760px;margin:0 auto}
+  .meta{margin-top:26px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;color:var(--faint);font-size:13px}
+  .meta span{border:1px solid var(--line);border-radius:999px;padding:5px 12px}
+
+  section{margin-top:74px}
+  .kicker{color:var(--accent-2);font-weight:600;font-size:13px;letter-spacing:0.14em;text-transform:uppercase;margin:0 0 10px}
+  h2{font-size:28px;margin:0 0 14px;letter-spacing:-0.01em}
+  h3{font-size:17px;margin:0 0 8px}
+  p.lead{color:var(--muted);font-size:16px;max-width:840px}
+
+  .panel{background:linear-gradient(180deg,var(--panel),var(--bg-soft));border:1px solid var(--line);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow)}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media (max-width:820px){.grid,.grid3{grid-template-columns:1fr}}
+
+  .card{background:var(--panel-2);border:1px solid var(--line);border-radius:13px;padding:20px;transition:transform .2s var(--ease-out),border-color .2s var(--ease-out)}
+  .card:hover{transform:translateY(-3px);border-color:rgba(110,168,254,0.4)}
+  .card .ic{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font-size:17px;margin-bottom:12px;background:rgba(110,168,254,0.12);border:1px solid rgba(110,168,254,0.25)}
+  .card .num{font-size:12px;font-weight:800;color:var(--faint);letter-spacing:0.08em}
+  .card h3{margin:2px 0 0}
+  .card p{color:var(--muted);font-size:14.5px;margin:6px 0 0}
+
+  .pill{display:inline-block;font-size:12px;padding:3px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+  .pill.good{color:var(--good);border-color:rgba(90,209,154,0.35);background:rgba(90,209,154,0.08)}
+  .pill.warn{color:var(--warn);border-color:rgba(245,201,123,0.35);background:rgba(245,201,123,0.08)}
+  .pill.bad{color:var(--bad);border-color:rgba(240,138,138,0.35);background:rgba(240,138,138,0.08)}
+  .pill.acc{color:var(--accent);border-color:rgba(110,168,254,0.35);background:rgba(110,168,254,0.08)}
+  .pill.pur{color:var(--accent-2);border-color:rgba(167,139,250,0.35);background:rgba(167,139,250,0.08)}
+
+  ul.clean{list-style:none;padding:0;margin:12px 0 0}
+  ul.clean li{position:relative;padding-left:26px;margin:9px 0;color:var(--muted);font-size:14.5px}
+  ul.clean li::before{content:"→";position:absolute;left:0;color:var(--accent)}
+  ul.clean li b{color:var(--text);font-weight:600}
+
+  ol.steps{counter-reset:s;list-style:none;padding:0;margin:14px 0 0}
+  ol.steps li{position:relative;padding:0 0 0 44px;margin:0 0 18px;color:var(--muted);font-size:14.5px}
+  ol.steps li::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:-2px;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-weight:800;font-size:13px;color:#06203f;background:linear-gradient(135deg,var(--accent),var(--accent-2))}
+  ol.steps li b{color:var(--text)}
+
+  table{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--faint);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:0.06em}
+  td{color:var(--muted)}td b{color:var(--text)}
+
+  .callout{border-left:3px solid var(--accent);background:rgba(110,168,254,0.06);padding:14px 16px;border-radius:0 10px 10px 0;color:var(--muted);font-size:14.5px}
+  .callout.pur{border-left-color:var(--accent-2);background:rgba(167,139,250,0.06)}
+  .callout.good{border-left-color:var(--good);background:rgba(90,209,154,0.06)}
+  .callout.warn{border-left-color:var(--warn);background:rgba(245,201,123,0.06)}
+  code.inl{background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:1px 7px;font-size:13px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;color:#cdd6ea}
+
+  pre.code{background:#0c0f16;border:1px solid var(--line);border-radius:12px;padding:16px 18px;overflow:auto;font-size:12.5px;line-height:1.7;margin-top:14px}
+  pre.code .c{color:var(--faint)}
+  pre.code .k{color:var(--accent-2)}
+  pre.code .s{color:var(--good)}
+  pre.code .f{color:var(--cyan)}
+
+  /* now / after columns */
+  .ba{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:18px}
+  @media (max-width:820px){.ba{grid-template-columns:1fr}}
+  .shot .cap{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--faint);margin-bottom:10px}
+  .shot .cap .badge{font-size:10.5px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#0b0d12;background:var(--faint);border-radius:5px;padding:2px 8px}
+  .shot .cap .badge.now{background:var(--warn)}
+  .shot .cap .badge.after{background:var(--good)}
+
+  /* friendly app window chrome (mockup) */
+  .app{border:1px solid var(--line-2);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);background:var(--panel)}
+  .app .abar{display:flex;align-items:center;gap:9px;padding:9px 13px;background:#11151e;border-bottom:1px solid var(--line)}
+  .app .lights{display:flex;gap:6px}
+  .app .lights i{width:10px;height:10px;border-radius:50%;display:block}
+  .app .lights .r{background:#f0635e}.app .lights .y{background:#f5bf4f}.app .lights .g{background:#5ad19a}
+  .app .fn{margin-left:6px;font-size:11px;color:var(--faint)}
+  .app .abody{padding:16px;background:linear-gradient(180deg,var(--bg-soft),var(--panel));min-height:230px}
+
+  /* mini preview primitives used inside the mockups */
+  .mini-eb{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);border:1px solid rgba(110,168,254,.3);border-radius:999px;padding:2px 9px;display:inline-block}
+  .mini-h{font-size:18px;font-weight:800;margin:9px 0 4px}
+  .mini-sub{color:var(--faint);font-size:11px;margin-bottom:12px}
+  .mini-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent-2);font-weight:700;margin:14px 0 7px}
+  .row{display:flex;gap:8px;align-items:center;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel-2);margin-bottom:6px;font-size:11.5px;color:var(--muted)}
+  .row b{width:15px;height:15px;flex:none;border-radius:4px;background:rgba(167,139,250,.18);border:1px solid rgba(167,139,250,.4);color:var(--accent-2);display:grid;place-items:center;font-size:9px}
+  .tbl{width:100%;border-collapse:collapse;font-size:10.5px;margin-top:4px}
+  .tbl th{font-size:8.5px;color:var(--faint);text-transform:uppercase;padding:4px 6px;border-bottom:1px solid var(--line)}
+  .tbl td{padding:5px 6px;border-bottom:1px solid var(--line);color:var(--muted)}
+  .tbl td.red{color:var(--bad)}
+  .tag{font-size:9px;padding:1px 6px;border-radius:4px;border:1px solid var(--line);color:var(--faint)}
+  .tag.note{color:var(--accent-2);border-color:rgba(167,139,250,.35);background:rgba(167,139,250,.08)}
+
+  .foot{margin-top:90px;text-align:center;color:var(--faint);font-size:13px;border-top:1px solid var(--line);padding-top:28px}
+</style>
+</head>
+<body>
+
+<nav class="top">
+  <div class="inner">
+    <div class="brand"><span class="mark">P</span><span>PowerCodex<small>Comprehensive Canvas plan</small></span></div>
+    <div class="links">
+      <a href="#problem">Problem</a>
+      <a href="#shape">What changes</a>
+      <a href="#anatomy">Anatomy</a>
+      <a href="#nowafter">Now vs After</a>
+      <a href="#repo">Saved to repo</a>
+      <a href="#build">Build steps</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <span class="eyebrow rise"><span class="dot"></span>Proposed change</span>
+  <h1 class="rise d1">Make the Canvas a real plan, not a checklist</h1>
+  <p class="sub rise d2">Today the Canvas shows five vague checkboxes. This plan turns it into the same rich, illustrated document you get in <code class="inl">docs/plans</code> — with remarks, a capability breakdown, and <b>Now&nbsp;vs&nbsp;After</b> screenshots — and saves every one into the repo so the agent can refer back and learn.</p>
+  <div class="meta rise d3">
+    <span>Author: build assistant</span>
+    <span>Scope: Canvas + planner + plan registry</span>
+    <span>Date: 2026-06-08</span>
+    <span>Status: proposed</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ===================== PROBLEM ===================== -->
+  <section id="problem">
+    <p class="kicker">The gap today</p>
+    <h2>What the Canvas shows vs. what you actually want</h2>
+    <p class="lead">The Canvas you see in Chat is rendered by one small function. It never opens the rich plan document — it just lists the plan's plain-language items as checkboxes. The comprehensive plans you like are authored by hand and live somewhere else entirely; the build flow never produces one.</p>
+
+    <div class="ba">
+      <div class="shot">
+        <div class="cap"><span class="badge now">Now</span> <code class="inl">buildPreviewHtml(plan)</code> · chat.html</div>
+        <div class="app">
+          <div class="abar"><span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span><span class="fn">plan-preview.html</span></div>
+          <div class="abody">
+            <div style="text-align:center;padding:6px 0 12px">
+              <span class="mini-eb">● Proposed change</span>
+              <div class="mini-h">Visual preview of your app</div>
+              <div class="mini-sub">Here's what I'll build, test, and self-heal.</div>
+            </div>
+            <div class="mini-lbl">What gets built</div>
+            <div class="row"><b>✓</b><span>A friendly home screen</span></div>
+            <div class="row"><b>✓</b><span>A simple list view of records</span></div>
+            <div class="row"><b>✓</b><span>An easy form to add an entry</span></div>
+            <div class="row"><b>✓</b><span>A clear detail page</span></div>
+          </div>
+        </div>
+        <p style="color:var(--faint);font-size:13px;margin-top:10px">Generic. No remarks, no rationale, no picture of the real screen, nothing saved to disk.</p>
+      </div>
+
+      <div class="shot">
+        <div class="cap"><span class="badge after">After</span> generated <code class="inl">.powercodex/plans/plan-007.html</code></div>
+        <div class="app">
+          <div class="abar"><span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span><span class="fn">plan-007.html</span></div>
+          <div class="abody">
+            <div style="padding:2px 0 8px">
+              <span class="mini-eb">● Proposed change · P007</span>
+              <div class="mini-h">My overdue jobs, soonest first</div>
+              <div class="mini-sub">Why this matters · capabilities · now vs after · steps</div>
+            </div>
+            <div class="mini-lbl">Now → After</div>
+            <table class="tbl">
+              <tr><th>Title</th><th>Due</th><th>Status</th></tr>
+              <tr><td>Replace pump</td><td class="red">May 20</td><td>Open</td></tr>
+              <tr><td>Site survey</td><td>Jun 10</td><td>Open</td></tr>
+            </table>
+            <div style="margin-top:8px"><span class="tag note">remark</span> <span style="font-size:10.5px;color:var(--faint)">overdue rows turn red; sorted by due date</span></div>
+          </div>
+        </div>
+        <p style="color:var(--faint);font-size:13px;margin-top:10px">Specific to the request, illustrated, saved, and re-openable by the agent.</p>
+      </div>
+    </div>
+
+    <div class="callout warn" style="margin-top:20px"><b>Root cause.</b> <code class="inl">renderCanvas()</code> calls <code class="inl">buildPreviewHtml(app.plan)</code>, which only knows <code class="inl">plan.title</code> and <code class="inl">plan.items</code> (the 3–6 strings from <code class="inl">chat.js</code>). The rich plan registry (<code class="inl">plans.js</code> → <code class="inl">.powercodex/plans/</code>) already exists and is already served, but <b>nothing in the chat/agent flow ever authors or registers a rich plan HTML.</b> Only the CLI stub and selftest write to it.</div>
+  </section>
+
+  <!-- ===================== SHAPE ===================== -->
+  <section id="shape">
+    <p class="kicker">The shape of the fix</p>
+    <h2>One generator, wired into the flow, saved to the repo</h2>
+    <p class="lead">Add a single deterministic-first plan-document generator. The moment Chat produces a plan, the server authors a full HTML plan to <code class="inl">.powercodex/plans/</code>, registers it, and the Canvas renders <em>that file</em> instead of the checklist. Everything is reused: the registry, the server's path-guarded plan route, and the design language of <code class="inl">docs/plans</code>.</p>
+
+    <div class="grid3" style="margin-top:6px">
+      <div class="card"><div class="num">01</div><h3>planhtml.js</h3><p>New module. Turns goal + capabilities + the existing-screen digest into a self-contained HTML plan with remarks, a capability table, Now-vs-After mockups, build steps, and an outcome log.</p></div>
+      <div class="card"><div class="num">02</div><h3>Wire on plan</h3><p>When <code class="inl">chat.respond</code> returns a plan, write &amp; <code class="inl">registerPlan</code> it. The Canvas then loads the saved file via <code class="inl">/api/plans</code> — same path it already uses post-build.</p></div>
+      <div class="card"><div class="num">03</div><h3>Now vs After</h3><p>Always-on deterministic mockups of the current screen vs the proposed one; upgraded to real Edge screenshots when the dev server + browser engine are live.</p></div>
+    </div>
+
+    <div class="callout" style="margin-top:18px"><b>Reuse first.</b> The generator emits the same CSS variables and component classes used by this document (<code class="inl">.app</code>, <code class="inl">.shot</code>, <code class="inl">.callout</code>, <code class="inl">.pill</code>). The mockup primitives mirror <code class="inl">codegen.js</code>'s sample data so the picture matches the code that actually gets generated.</div>
+  </section>
+
+  <!-- ===================== ANATOMY ===================== -->
+  <section id="anatomy">
+    <p class="kicker">Anatomy of a generated plan</p>
+    <h2>What every saved plan will contain</h2>
+    <p class="lead">Each plan is one self-contained <code class="inl">.html</code> (no external assets) plus a sibling <code class="inl">.json</code>. The HTML is for you; the JSON is for the agent. Sections, in order:</p>
+
+    <table>
+      <thead><tr><th>Section</th><th>What it holds</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr><td><b>Header &amp; summary</b></td><td>Title, plan id (P00x), one-paragraph plain-language summary of the goal.</td><td><code class="inl">plan.title</code>, <code class="inl">goal</code></td></tr>
+        <tr><td><b>Remarks</b></td><td>Short rationale notes — why each choice was made, assumptions, what's sample data vs. real.</td><td>capability flags + provider prose</td></tr>
+        <tr><td><b>Capability breakdown</b></td><td>One row per approved item: the plain capability, how it shows up on screen, and the concrete behaviour (e.g. "overdue → red").</td><td><code class="inl">plan.items</code> × <code class="inl">parseCapabilities</code></td></tr>
+        <tr><td><b>Now vs After</b></td><td>Side-by-side visuals of the current screen and the proposed one.</td><td>digest + mockup/screenshot</td></tr>
+        <tr><td><b>Build · test · self-heal</b></td><td>The ordered steps the loop will run, with the verify gate (tsc/build) called out.</td><td><code class="inl">planTasks</code> + <code class="inl">verifyBuild</code></td></tr>
+        <tr><td><b>Task list</b></td><td>The concrete files that will be written/edited (e.g. <code class="inl">src/pages/&lt;kebab&gt;.tsx</code>, router wiring).</td><td><code class="inl">planTasks</code></td></tr>
+        <tr><td><b>Outcome log</b></td><td>Filled in <em>after</em> the build: created? routed? build passed? errors. This is what makes plans learnable.</td><td>build results → re-render</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout pur" style="margin-top:18px"><b>Two artifacts, one plan.</b> The <code class="inl">.html</code> is the human view; the <code class="inl">.json</code> is the structured record (goal, capabilities, tasks, outcome). The agent reads the JSON to learn from past plans without parsing HTML.</div>
+  </section>
+
+  <!-- ===================== NOW VS AFTER ===================== -->
+  <section id="nowafter">
+    <p class="kicker">The visuals you asked for</p>
+    <h2>"Now vs After" — two tiers, always something</h2>
+    <p class="lead">The plan should never show a blank where a picture belongs. So there are two tiers: a deterministic mockup that always renders, and real screenshots when the environment can produce them.</p>
+
+    <div class="grid">
+      <div class="card">
+        <div class="ic">🎨</div>
+        <h3>Tier 1 — Deterministic mockup <span class="pill good">always</span></h3>
+        <p>Rendered from the same capability flags and sample data <code class="inl">codegen.js</code> uses. "Now" reflects the existing screen from the digest (or "no screen yet"); "After" shows the proposed list/form with the behaviours applied — sorted, filtered, overdue rows in red. Pure HTML, no browser needed.</p>
+      </div>
+      <div class="card">
+        <div class="ic">📸</div>
+        <h3>Tier 2 — Real screenshots <span class="pill acc">when live</span></h3>
+        <p>When the project's dev server is running and the Edge/MDM browser engine is available, capture an actual screenshot of the current route ("Now") and, after the build verifies, the new route ("After"). Saved as <code class="inl">.powercodex/plans/shots/&lt;id&gt;-{now,after}.png</code> and embedded. Falls back to Tier 1 silently if unavailable.</p>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:18px"><b>Why a fallback matters.</b> Screenshots need a running app and the browser engine — not guaranteed in every session. The deterministic mockup guarantees the plan always looks complete, and screenshots replace it opportunistically. The plan records which tier it used (<code class="inl">visuals: "mockup" | "screenshot"</code>) so the agent knows how literal the picture is.</div>
+  </section>
+
+  <!-- ===================== REPO ===================== -->
+  <section id="repo">
+    <p class="kicker">Saved so the agent can learn</p>
+    <h2>Every plan lands in the repo</h2>
+    <p class="lead">The registry already writes to <code class="inl">.powercodex/plans/</code> and the server already serves it (path-traversal guarded). We extend the layout so each plan is a durable, self-describing record the agent can re-open, diff, and learn from.</p>
+
+    <pre class="code"><span class="c"># project root</span>
+.powercodex/
+  plans/
+    index.json            <span class="c"># registry: id, title, file, provider, outcome, createdAt</span>
+    plan-007.html         <span class="c"># the comprehensive, human-readable plan (Canvas loads this)</span>
+    plan-007.json         <span class="c"># structured record for the agent: goal, caps, tasks, outcome</span>
+    shots/
+      P007-now.png        <span class="c"># Tier-2 screenshot (optional)</span>
+      P007-after.png</pre>
+
+    <h3 style="margin-top:26px">The learning loop</h3>
+    <ol class="steps">
+      <li><b>Plan is authored</b> the instant Chat returns a plan — written + registered before the build starts.</li>
+      <li><b>Build runs</b> against that plan; <code class="inl">buildCodeTasks</code> + <code class="inl">verifyBuild</code> produce honest results (created / routed / build passed / errors).</li>
+      <li><b>Outcome is folded back</b> into <code class="inl">plan-007.json</code> and the registry entry, and the plan HTML's "Outcome log" section is re-rendered.</li>
+      <li><b>Next time</b> the planner reads recent <code class="inl">plan-*.json</code> to bias choices — reuse a screen that already exists, avoid a capability that previously failed to verify.</li>
+    </ol>
+
+    <div class="callout good" style="margin-top:18px"><b>Definition of "learnable".</b> A past plan is useful to the agent only if it pairs intent with outcome. Storing the goal + capabilities + the real build result (not just the request) is what lets the next plan be better than the last.</div>
+
+    <div class="callout warn" style="margin-top:14px"><b>Decision needed:</b> should <code class="inl">.powercodex/plans/</code> be committed (so plans travel with the repo and teammates/the agent learn across machines) or git-ignored (local history only)? Recommended: commit the <code class="inl">.html</code> + <code class="inl">.json</code>, git-ignore <code class="inl">shots/*.png</code> to keep the repo light. Note <code class="inl">.gitignore</code> is already modified on this branch.</div>
+  </section>
+
+  <!-- ===================== BUILD ===================== -->
+  <section id="build">
+    <p class="kicker">Implementation</p>
+    <h2>Build steps, in order</h2>
+    <p class="lead">Smallest path to value first: a richer Canvas you can see, then screenshots, then the learning loop. Each step is independently shippable.</p>
+
+    <ol class="steps">
+      <li><b>Create <code class="inl">tools/lifecycle/lib/planhtml.js</code></b> — exports <code class="inl">renderPlanHtml({ goal, plan, capabilities, digest, outcome })</code> and <code class="inl">renderPlanJson(...)</code>. Deterministic-first; reuses <code class="inl">parseCapabilities</code>/<code class="inl">nameFrom</code> from <code class="inl">planner.js</code> and the sample data shape from <code class="inl">codegen.js</code>.</li>
+      <li><b>Author on plan</b> — in the chat/intake server path, after a plan is produced, call <code class="inl">renderPlanHtml</code>, write <code class="inl">.powercodex/plans/plan-N.html</code> + <code class="inl">.json</code>, then <code class="inl">registerPlan</code>. Return the plan's <code class="inl">file</code> in the API response.</li>
+      <li><b>Swap the Canvas source</b> — in <code class="inl">chat.html</code>, point <code class="inl">renderCanvas()</code> at the saved plan file (it already loads <code class="inl">/api/plans</code> in <code class="inl">refreshCanvas()</code>). Demote <code class="inl">buildPreviewHtml</code> to a loading skeleton shown only until the file exists.</li>
+      <li><b>Extend the registry</b> — add <code class="inl">outcome</code> + <code class="inl">visuals</code> + <code class="inl">jsonFile</code> fields to <code class="inl">registerPlan</code> in <code class="inl">plans.js</code>, plus an <code class="inl">updatePlanOutcome(root, id, outcome)</code> helper.</li>
+      <li><b>Fold outcomes back</b> — after <code class="inl">buildCodeTasks</code>/<code class="inl">verifyBuild</code> in the loop, call <code class="inl">updatePlanOutcome</code> and re-render the HTML's outcome section.</li>
+      <li><b>Tier-2 screenshots</b> — add an optional capture using the existing Edge/MDM browser engine (<code class="inl">engine/mdm-attach.mjs</code>); guard behind "dev server reachable", fall back to mockup.</li>
+      <li><b>Planner reads history</b> — have <code class="inl">planTasks</code> glob recent <code class="inl">plan-*.json</code> and pass prior outcomes into capability selection.</li>
+      <li><b>Mirror into the template</b> — copy every change to <code class="inl">templates/starter/tools/lifecycle/...</code> so freshly scaffolded projects get it too.</li>
+    </ol>
+
+    <div class="callout pur" style="margin-top:18px"><b>Mirror the tree.</b> This repo keeps a live copy under <code class="inl">tools/lifecycle</code> and a scaffolding copy under <code class="inl">templates/starter/tools/lifecycle</code>. Every file added or edited above must be applied in <em>both</em> places, or new projects ship the old checklist.</div>
+
+    <h3 style="margin-top:30px">Files touched</h3>
+    <table>
+      <thead><tr><th>File</th><th>Change</th><th>Type</th></tr></thead>
+      <tbody>
+        <tr><td><code class="inl">lib/planhtml.js</code></td><td>New plan-document generator (HTML + JSON)</td><td><span class="pill good">new</span></td></tr>
+        <tr><td><code class="inl">lib/plans.js</code></td><td>outcome/visuals/jsonFile fields + <code class="inl">updatePlanOutcome</code></td><td><span class="pill acc">edit</span></td></tr>
+        <tr><td><code class="inl">lib/server.js</code></td><td>Author + register a plan when chat returns one; return its file</td><td><span class="pill acc">edit</span></td></tr>
+        <tr><td><code class="inl">lib/loop.js</code></td><td>Fold build outcome back into the plan</td><td><span class="pill acc">edit</span></td></tr>
+        <tr><td><code class="inl">lib/codegen.js</code></td><td>Export sample-data shape for mockup reuse (small refactor)</td><td><span class="pill acc">edit</span></td></tr>
+        <tr><td><code class="inl">assets/chat.html</code></td><td>Canvas renders the saved plan; skeleton fallback</td><td><span class="pill acc">edit</span></td></tr>
+        <tr><td><code class="inl">templates/starter/tools/lifecycle/*</code></td><td>Mirror all of the above</td><td><span class="pill warn">mirror</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ===================== RISKS ===================== -->
+  <section id="risks">
+    <p class="kicker">Guardrails</p>
+    <h2>Risks &amp; how we keep it honest</h2>
+    <ul class="clean">
+      <li><b>No theater.</b> The mockup is labelled a preview; the outcome log shows the <em>real</em> build result. A plan never claims success the build didn't earn.</li>
+      <li><b>Self-contained HTML.</b> Plans inline all CSS — no external assets — so they open from disk forever, even outside the server.</li>
+      <li><b>Path safety.</b> Plans stay under <code class="inl">.powercodex/plans/</code>; the server route is already traversal-guarded. Screenshots write only into <code class="inl">plans/shots/</code>.</li>
+      <li><b>Graceful degradation.</b> No provider → deterministic plan. No dev server → mockup instead of screenshot. Nothing in the chain can block a plan from appearing.</li>
+      <li><b>Backward compatible.</b> The registry gains optional fields; existing entries and the post-build <code class="inl">refreshCanvas()</code> path keep working.</li>
+    </ul>
+
+    <h3 style="margin-top:28px">Definition of done</h3>
+    <ul class="clean">
+      <li>Sending a message in Chat produces a comprehensive plan in the Canvas — remarks, capability table, Now-vs-After — within one render.</li>
+      <li>A matching <code class="inl">plan-N.html</code> + <code class="inl">plan-N.json</code> exist on disk and appear in <code class="inl">index.json</code>.</li>
+      <li>After a build, the plan's outcome log reflects the true created/routed/verified result.</li>
+      <li>The same behaviour ships in a freshly scaffolded project from the starter template.</li>
+    </ul>
+  </section>
+
+  <div class="foot">
+    PowerCodex · comprehensive Canvas &amp; saved-plans plan · drafted 2026-06-08 · <code class="inl">docs/plans/comprehensive-canvas-plan.html</code>
+  </div>
+
+</div>
+</body>
+</html>

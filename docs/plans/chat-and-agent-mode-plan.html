@@ -290,6 +290,34 @@
   .stepn h3{font-size:14.5px;margin:0 0 5px}
   .stepn p{color:var(--muted);font-size:13px;margin:0}
 
+  /* canvas (inline HTML plan preview) */
+  .split{display:grid;grid-template-columns:.92fr 1.12fr}
+  @media(max-width:720px){.split{grid-template-columns:1fr}}
+  .split .left{padding:16px 16px 8px;border-right:1px solid var(--line);min-width:0}
+  @media(max-width:720px){.split .left{border-right:0;border-bottom:1px solid var(--line)}}
+  .split .right{background:#0a0c11;min-width:0;display:flex;flex-direction:column}
+  .canvas-h{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line);background:#11151e;font-size:11.5px}
+  .canvas-h .t{font-weight:700;color:var(--text)}
+  .canvas-h .fn{color:var(--faint);font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:10.5px}
+  .canvas-h .ctl{margin-left:auto;display:flex;gap:6px}
+  .canvas-h .ctl .b{font-size:10.5px;font-weight:700;border:1px solid var(--line);border-radius:7px;padding:4px 9px;color:var(--muted)}
+  .canvas-h .ctl .b.go{color:#06203f;border-color:transparent;background:linear-gradient(135deg,var(--accent),var(--accent-2))}
+  .canvas-b{padding:13px;overflow:hidden;flex:1}
+
+  .minidoc{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--bg)}
+  .md-hero{padding:16px 14px 13px;text-align:center;background:radial-gradient(360px 140px at 72% -25%,rgba(167,139,250,.20),transparent 70%),var(--panel)}
+  .md-eyebrow{font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);display:inline-flex;align-items:center;gap:5px;border:1px solid rgba(110,168,254,.3);border-radius:999px;padding:2px 9px}
+  .md-eyebrow .dot{width:5px;height:5px;border-radius:50%;background:var(--accent)}
+  .md-h{font-size:19px;font-weight:800;margin:9px 0 4px;letter-spacing:-.01em;background:linear-gradient(180deg,#fff,#b9c2d8);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .md-sub{font-size:10.5px;color:var(--muted);max-width:240px;margin:0 auto;line-height:1.45}
+  .md-na{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:12px}
+  .md-col{border:1px solid var(--line);border-radius:7px;padding:8px 9px;font-size:9.5px;color:var(--muted);background:var(--panel-2)}
+  .md-col strong{display:block;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);margin-bottom:3px}
+  .md-col.aft{border-color:rgba(90,209,154,.35)}.md-col.aft strong{color:var(--good)}
+  .md-ck{padding:0 12px 13px;display:grid;gap:6px}
+  .md-ck .i{display:flex;gap:7px;align-items:center;font-size:9.5px;color:var(--muted)}
+  .md-ck .i b{width:13px;height:13px;flex:none;border-radius:4px;background:rgba(167,139,250,.18);border:1px solid rgba(167,139,250,.4);color:var(--accent-2);display:grid;place-items:center;font-size:8px;font-weight:900}
+
   footer{margin-top:90px;padding-top:28px;border-top:1px solid var(--line);text-align:center;color:var(--faint);font-size:13px}
   footer a{color:var(--muted)}
 
@@ -308,6 +336,7 @@
         <a href="#idea">The idea</a>
         <a href="#nowafter">Now → After</a>
         <a href="#flow">How it feels</a>
+        <a href="#canvas">The canvas</a>
         <a href="#status">Status button</a>
         <a href="#loop">The forever loop</a>
         <a href="#start">Getting started</a>
@@ -525,6 +554,65 @@
       </div>
     </section>
 
+    <!-- THE CANVAS -->
+    <section id="canvas" class="rise d2">
+      <p class="kicker">New · the canvas</p>
+      <h2>See the plan, don't just read about it</h2>
+      <p class="lead">Every plan the agent writes is already a real, self-contained HTML page (that's the rule, below). So instead of saying “a file was created,” the chat opens a <b>canvas</b> beside the conversation and renders that HTML right there — the maker scrolls it, previews the Now → After, then approves. No files to find, no separate browser window.</p>
+
+      <div class="shot">
+        <div class="cap"><span class="badge b">CANVAS</span> Chat on the left · the rendered plan previews live on the right</div>
+        <div class="app">
+          <div class="abar">
+            <div class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></div>
+            <div class="who"><span class="m">P</span><span>Field Tasks <small>· plan preview</small></span></div>
+            <div class="stat"><button type="button" class="statusbtn"><span class="d"></span><span class="stg">Planning</span><span class="cv">▾</span></button><span class="micro" style="color:var(--cyan);border-color:rgba(103,232,249,.35);background:rgba(103,232,249,.08)">💬 Chat mode</span></div>
+          </div>
+          <div class="split">
+            <div class="left">
+              <div class="msg me"><div class="av me">🙂</div><div class="bub">Show me the plan before we build.</div></div>
+              <div class="msg ai"><div class="av ai">✦</div><div class="bub">Done — I've opened it on the canvas on the right. Scroll through it, and hit <b>Build this</b> when it looks right.<span class="small">📄 plan-preview.html · just now</span></div></div>
+            </div>
+            <div class="right">
+              <div class="canvas-h">
+                <span>📄</span><span class="t">Canvas</span><span class="fn">plan-preview.html</span>
+                <span class="ctl"><span class="b">⤢ Open</span><span class="b go">⚡ Build this</span></span>
+              </div>
+              <div class="canvas-b">
+                <div class="minidoc">
+                  <div class="md-hero">
+                    <div class="md-eyebrow"><span class="dot"></span> Proposed change</div>
+                    <div class="md-h">“My Jobs” list</div>
+                    <div class="md-sub">Filter to the signed-in technician, sort by deadline, flag overdue, and add a quick “mark done.”</div>
+                  </div>
+                  <div class="md-na">
+                    <div class="md-col"><strong>Now</strong>Every job, in no particular order. Techs scroll to find theirs.</div>
+                    <div class="md-col aft"><strong>After</strong>Only my jobs, soonest deadline first, overdue in red.</div>
+                  </div>
+                  <div class="md-ck">
+                    <div class="i"><b>✓</b> Filter to the signed-in technician</div>
+                    <div class="i"><b>✓</b> Sort by deadline, soonest first</div>
+                    <div class="i"><b>✓</b> Overdue jobs shown in red</div>
+                    <div class="i"><b>✓</b> “Mark done” on each job</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="composer">
+            <div class="modepick"><span class="o on chat">💬 Chat</span><span class="o">⚡ Agent</span></div>
+            <div class="cinput">Ask for a change, or hit Build this…<span class="cur"></span><span class="send">↑</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid3" style="margin-top:16px">
+        <div class="card"><div class="ic">🖼️</div><h3>Rendered, not described</h3><p>The agent's HTML plan shows as a real page in the chat — the maker reads the plan itself, not a summary of it.</p></div>
+        <div class="card"><div class="ic">↔️</div><h3>Side-by-side with chat</h3><p>Conversation on the left, canvas on the right. Ask for a tweak and the canvas re-renders — no context switch.</p></div>
+        <div class="card"><div class="ic">⤢</div><h3>Pop out when you want</h3><p>“Open” launches the same HTML full-screen in a browser for a closer look or to share — it's a normal web page underneath.</p></div>
+      </div>
+    </section>
+
     <!-- STATUS BUTTON -->
     <section id="status" class="rise d2">
       <p class="kicker">New · the status button</p>
@@ -619,7 +707,7 @@
           <div class="abody" style="padding-bottom:18px">
             <div class="welcome">
               <div class="wbtn"><div class="e">✨</div><h3>Create a new app</h3><p>Describe what you want in plain English. PowerCodex sets everything up behind the scenes and starts building with you.</p><span class="tag">Start fresh →</span></div>
-              <div class="wbtn"><div class="e">📂</div><h3>Add to an app I already have</h3><p>Point it at an existing Power Platform app or project folder. It reads what's there, then you just talk about what to change.</p><span class="tag">Connect existing →</span></div>
+              <div class="wbtn"><div class="e">📂</div><h3>Add to an app I already have</h3><p>Choose the project folder on your computer. PowerCodex reads what's there, then you just talk about what to change.</p><span class="tag">Pick a folder →</span></div>
             </div>
           </div>
         </div>
@@ -639,9 +727,9 @@
           <div class="ic">📂</div>
           <h3>Existing project — no scary import</h3>
           <ul class="clean">
-            <li>Pick an app from your Power Platform environment, or choose a local folder.</li>
+            <li>Choose a <b>project folder on your computer</b> — that's the only input.</li>
             <li>PowerCodex runs your existing <b>brownfield ingestion</b> to read the app into a goal, MVP, and frozen benchmark — automatically.</li>
-            <li>The <code class="inl">import</code> step happens <b>behind a button</b>, never in a terminal. Then you start chatting about changes.</li>
+            <li>The <code class="inl">import</code> step happens <b>behind the folder picker</b>, never in a terminal. Then you start chatting about changes.</li>
           </ul>
         </div>
       </div>
@@ -702,11 +790,12 @@
 
       <div class="callout pur" style="margin-top:16px"><b>Why A wins for this persona:</b> a low-code maker needs a visible, trustworthy boundary between “we're just talking” and “you're changing my app.” The toggle <i>is</i> that boundary. Auto-moving it keeps the simplicity of option C while keeping the safety of option B.</div>
 
-      <h3 style="margin-top:30px">The seven rules that keep it simple</h3>
+      <h3 style="margin-top:30px">The rules that keep it simple</h3>
       <div class="grid3" style="margin-top:8px">
         <div class="card"><div class="ic">1️⃣</div><h3>One screen, one thread</h3><p>Never make them navigate. Plans, progress, permissions all appear inline as chat cards.</p></div>
         <div class="card"><div class="ic">2️⃣</div><h3>Plain English only</h3><p>No file paths, YAML, or jargon on the surface. “Built the list,” not <code class="inl">edit TaskList.fx.yaml</code>.</p></div>
         <div class="card"><div class="ic">3️⃣</div><h3>Plans, not prompts</h3><p>Chat always lands on a visual checklist + one button, so approving is reading, not authoring.</p></div>
+        <div class="card"><div class="ic">🖼️</div><h3>Preview, don't describe</h3><p>Every plan renders live on a canvas beside the chat. The maker sees the actual HTML page, never “a file was created.”</p></div>
         <div class="card"><div class="ic">4️⃣</div><h3>Progress, not logs</h3><p>A friendly checklist with ticks. Technical detail is one disclosure tap away for the curious.</p></div>
         <div class="card"><div class="ic">5️⃣</div><h3>Heal silently</h3><p>Fix failed tests automatically; surface only a calm “found &amp; fixed” note. Interrupt only for real decisions.</p></div>
         <div class="card"><div class="ic">6️⃣</div><h3>Permission as switches</h3><p>The consent gate becomes three plain toggles. Publishing is off until the maker says so.</p></div>
@@ -720,7 +809,7 @@
     <section id="questions" class="rise d2">
       <p class="kicker">Before we build · answer once</p>
       <h2>Open questions, with a suggested answer each</h2>
-      <p class="lead">Each has a sensible default pre-filled — you're editing, not authoring. Only the last one truly needs your call.</p>
+      <p class="lead">Each has a clear position — all six are now decided, each with the reasoning shown so you can overrule any of them with full information.</p>
 
       <div class="q">
         <div class="qt"><span class="qn">1</span><span>Should the Chat/Agent toggle auto-switch, or always be manual?</span></div>
@@ -742,9 +831,9 @@
         <div class="qt"><span class="qn">5</span><span>Desktop app, web app, or both? <span class="pill good" style="margin-left:6px">decided</span></span></div>
         <div class="sug"><b>Decided: desktop app first, with optional remote web access.</b> The desktop app bundles the engine for a zero-terminal install; a “Remote access” toggle serves the same UI over the web when you want to connect from another device. See <a href="#start">Getting started</a>.</div>
       </div>
-      <div class="q need">
-        <div class="qt"><span class="qn">6</span><span>When connecting to an existing project, prefer the Power Platform environment or a local folder first? <span class="pill warn" style="margin-left:6px">needs your input</span></span></div>
-        <div class="sug"><b>Lightly leaning to the Power Platform environment</b> (makers think in “my apps,” not folders) — but if your testers mostly work from local repos, folder-first is the faster build. Your call shapes the “Add existing” flow.</div>
+      <div class="q">
+        <div class="qt"><span class="qn">6</span><span>When connecting to an existing project, environment or local folder first? <span class="pill good" style="margin-left:6px">decided</span></span></div>
+        <div class="sug"><b>Decided: pick a local project folder.</b> “Add existing” opens a folder picker, vendors the core into <code class="inl">.powercodex/</code> behind that picker, and runs brownfield ingestion on what's there. (Power Platform environment import can come later.)</div>
       </div>
     </section>
 
@@ -761,6 +850,10 @@
         <li>
           <h3>The plan card &amp; “Build this”</h3>
           <p>Render the planner's output as a visual checklist with a Build button. Approving runs the loop. This alone delivers the core promise.</p>
+        </li>
+        <li>
+          <h3>The canvas (HTML plan preview)</h3>
+          <p>Render the agent's generated <code class="inl">preview.html</code> inline on a canvas beside the chat, with “open in browser” and “Build this” actions — so the maker previews the real plan without leaving the conversation.</p>
         </li>
         <li>
           <h3>Friendly progress + silent self-heal</h3>

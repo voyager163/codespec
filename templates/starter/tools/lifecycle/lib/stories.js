@@ -125,13 +125,76 @@ async function refineStories(root, opts = {}) {
   const diff = diffStories(prior.stories || [], edited.stories || []);
 
   let refined = edited;
+  let aiApplied = false;
   if (opts.provider && typeof opts.provider.send === 'function') {
-    // A real provider enriches prose; the user's edits remain the spine. The diff
-    // is the prompt context so it refines rather than replaces.
-    await opts.provider.send({ prompt: `Refine these user stories, preserving the user's edits.\nChanges since last version:\n${JSON.stringify(diff)}` });
+    // A real provider enriches prose; the user's edits remain the spine. We feed the
+    // current stories + the diff and ask for an improved set in the SAME JSON shape,
+    // then actually merge the model's output back (the previous version discarded it).
+    refined = await aiRefine(opts.provider, edited, diff);
+    aiApplied = refined !== edited;
   }
   const saved = saveStories(root, Object.assign({}, prior, refined, { refinedAt: new Date().toISOString() }));
-  return { ok: true, diff, doc: saved.doc };
+  return { ok: true, diff, aiApplied, doc: saved.doc };
+}
+
+// Ask the provider to improve the edited stories, returning a doc in the same shape.
+// The user's edits are authoritative: we only let the model rewrite the prose fields
+// (title/asA/iWant/soThat) of stories the user kept — ids, sources, and the set of
+// stories themselves are preserved verbatim, so a chatty model can never invent,
+// drop, or re-source a story. Any parse/shape failure falls back to the edits as-is.
+async function aiRefine(provider, edited, diff) {
+  const stories = Array.isArray(edited.stories) ? edited.stories : [];
+  if (!stories.length) return edited;
+  const prompt = [
+    'You are refining user stories. Improve ONLY the wording (title, asA, iWant, soThat).',
+    'Rules: keep the exact same ids; do not add or remove stories; do not change sources.',
+    'Return ONLY a JSON array, each item {"id","title","asA","iWant","soThat"} — no prose, no fences.',
+    `Recent edits (for context): ${JSON.stringify(diff)}`,
+    `Stories:\n${JSON.stringify(stories.map((s) => ({ id: s.id, title: s.title, asA: s.asA, iWant: s.iWant, soThat: s.soThat })))}`,
+  ].join('\n');
+  let text = '';
+  try {
+    const res = await provider.send({ prompt, timeoutMs: 45000 });
+    text = (res && res.text) || '';
+  } catch {
+    return edited;
+  }
+  const arr = parseStoryArray(text);
+  if (!arr) return edited;
+  const byId = Object.fromEntries(arr.map((s) => [s.id, s]));
+  // Merge prose back onto the user's stories; anything the model dropped keeps its edit.
+  const merged = stories.map((s) => {
+    const r = byId[s.id];
+    if (!r) return s;
+    return Object.assign({}, s, {
+      title: clean(r.title) || s.title,
+      asA: clean(r.asA) || s.asA,
+      iWant: clean(r.iWant) || s.iWant,
+      soThat: clean(r.soThat) || s.soThat,
+    });
+  });
+  return Object.assign({}, edited, { stories: merged });
+}
+
+// Pull a JSON array of stories out of a model reply, tolerating fences or a leading
+// sentence. Returns null when nothing usable is found (caller keeps the user's edits).
+function parseStoryArray(text) {
+  const raw = String(text || '');
+  const fenced = raw.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/i);
+  const bare = raw.match(/\[[\s\S]*\]/);
+  const slice = fenced ? fenced[1] : bare ? bare[0] : null;
+  if (!slice) return null;
+  try {
+    const arr = JSON.parse(slice);
+    if (Array.isArray(arr) && arr.every((o) => o && typeof o === 'object' && o.id)) return arr;
+  } catch {
+    /* not valid JSON — fall through */
+  }
+  return null;
+}
+
+function clean(s) {
+  return s == null ? '' : String(s).replace(/\s+/g, ' ').trim();
 }
 
 // A small, explainable diff: which story ids were added, removed, or changed.

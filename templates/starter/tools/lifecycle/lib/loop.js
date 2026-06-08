@@ -1,4 +1,6 @@
 'use strict';
+const fs = require('node:fs');
+const path = require('node:path');
 const { emit: busEmit, reset } = require('./bus');
 const { ensureRights, allowed, profileVerified, setProfile, setAppUrl } = require('./rights');
 const { resolveEngines } = require('./engines');
@@ -33,9 +35,19 @@ async function runLoop(root, opts = {}) {
     return record;
   };
 
-  // Resolve the engine bundle up front: simulate, or real when requested + browser-based
-  // + Playwright present. `realMode` drives the rights gate and honest messaging below.
-  const eng = await resolveEngines(root, { simulate, emit });
+  // Resolve the engine bundle up front: simulate, or real (code-gen + optional browser).
+  // The provider (an AI CLI when present, else the deterministic brain) lets the code
+  // engine author richer screens; it is never required. `realMode` drives the rights
+  // gate and honest messaging below.
+  let provider = null;
+  if (!simulate) {
+    try {
+      provider = require('./providers').resolve(opts.provider);
+    } catch {
+      provider = null;
+    }
+  }
+  const eng = await resolveEngines(root, { simulate, emit, provider });
   const realMode = !!eng.real;
   const summary = { rotations: 0, specsRun: 0, selfHeals: 0, observations: 0, stopped: false, mode: eng.mode };
 
@@ -86,6 +98,11 @@ async function runLoop(root, opts = {}) {
   });
 
   let prevFailureSignature = null;
+  // The latest rotation's real results, folded back into the plan document at the end so
+  // the saved plan records what was actually created and whether it verified.
+  let lastBuild = [];
+  let lastTest = null;
+  let shots = {}; // { after: 'shots/Pxxx-after.png' } when a real screenshot is captured
 
   for (let r = 1; r <= maxRotations; r += 1) {
     summary.rotations = r;
@@ -94,33 +111,43 @@ async function runLoop(root, opts = {}) {
     await emit({ rotation: r, stage: 1, agent: 'planner', level: 'info', message: 'Authoring HTML spec artifact (Now→After, recommendation, questions)' });
     await emit({ rotation: r, stage: 1, agent: 'planner', level: 'good', message: 'Artifact ready · "I am completely ready, I have no more questions to ask."' });
 
-    // Step 2 — approve
-    await emit({ rotation: r, stage: 2, agent: 'planner', level: 'good', message: 'Change approved by user' });
+    // Step 2 — approve. Real gate: if the caller supplies isApproved, block here
+    // until the maker approves (e.g. presses "Build this"). A bounded wait keeps an
+    // unattended run from hanging forever — it escalates instead of building unasked.
+    if (opts.isApproved) {
+      const okToBuild = await waitForApproval(opts.isApproved, opts.isPaused, emit, r);
+      if (!okToBuild) {
+        await emit({ rotation: r, stage: 2, agent: 'planner', level: 'warn', message: 'No approval within the wait window → stopping before any build' });
+        summary.stopped = true;
+        break;
+      }
+    }
+    await emit({ rotation: r, stage: 2, agent: 'planner', level: 'good', message: 'Change approved · proceeding to build' });
 
-    // Step 3 — build (rights-gated)
-    const tasks = opts.tasks || [
-      { type: 'dataverse.table.create', displayName: 'Project', name: 'cr123_project' },
-      { type: 'dataverse.column.add', displayName: 'Status (choice)', name: 'status' },
-      { type: 'dataverse.column.add', displayName: 'DueDate (datetime)', name: 'duedate' },
-    ];
+    // Step 3 — build (rights-gated). Tasks come from the approved plan via the planner,
+    // so the loop builds what the maker actually asked for. Only when no plan and no
+    // explicit tasks are supplied do we fall back to a representative sample (keeps the
+    // simulated demo legible).
+    const tasks = resolveTasks(opts, root);
     if (!allowed(rights, 'allowBuild') && !simulate) {
       await emit({ rotation: r, stage: 3, agent: 'build-executor', level: 'warn', message: 'Approved_rights/ allowBuild=false → stopping to ask before touching the tenant' });
       summary.stopped = true;
       break;
     }
-    await eng.buildExecutor({ emit, rotation: r, tasks, env: opts.env || rights.environmentId, maker: opts.maker || rights.makerUrl });
+    lastBuild = (await eng.buildExecutor({ emit, rotation: r, tasks, env: opts.env || rights.environmentId, maker: opts.maker || rights.makerUrl })) || [];
 
-    // Step 4 — run (push vs dev). Capture the app URL so the tester can target it.
-    const dataverse = opts.dataverse !== false;
+    // Step 4 — run. On-device code builds verify by compiling (no publish needed);
+    // publishing live is a separate, gated step. `dataverse` defaults off in real mode
+    // (build on the maker's machine) and on in simulate (to show the push narrative).
+    const dataverse = opts.dataverse != null ? opts.dataverse : !realMode;
     let baseUrl;
     if (dataverse) {
       if (!allowed(rights, 'allowPush') && !simulate) {
-        await emit({ rotation: r, stage: 4, agent: 'runner', level: 'warn', message: 'Approved_rights/ allowPush=false → cannot push the app; stopping to ask' });
+        await emit({ rotation: r, stage: 4, agent: 'runner', level: 'warn', message: 'Publishing is off (Approved_rights allowPush=false) → built on-device only; flip Publish to go live' });
         summary.stopped = true;
         break;
       }
       await emit({ rotation: r, stage: 4, agent: 'runner', level: 'good', message: `Dataverse connected → npx power-apps push · got app link${realMode ? '' : ' (simulated)'}` });
-      // Real mode uses the captured/approved play URL; simulate uses a stable placeholder.
       baseUrl = opts.appUrl || rights.appUrl || (realMode ? '' : 'https://apps.powerapps.com/play/e/demo-env/a/demo-app');
       if (baseUrl) {
         setAppUrl(root, baseUrl);
@@ -128,8 +155,15 @@ async function runLoop(root, opts = {}) {
         await emit({ rotation: r, stage: 4, agent: 'runner', level: 'good', message: `Captured app URL → ${baseUrl} · stored in Approved_rights/approval.json` });
       }
     } else {
-      baseUrl = 'http://127.0.0.1:5173';
-      await emit({ rotation: r, stage: 4, agent: 'runner', level: 'good', message: `No Dataverse → npm run dev on ${baseUrl.replace('http://', '')}` });
+      // On-device: the build gate compiles the app (real), or a local dev URL (simulate).
+      baseUrl = opts.appUrl || rights.appUrl || (realMode ? '' : 'http://127.0.0.1:5173');
+      await emit({
+        rotation: r,
+        stage: 4,
+        agent: 'runner',
+        level: 'good',
+        message: realMode ? 'Built on your device · verifying by compiling your app' : `No Dataverse → npm run dev on ${(baseUrl || 'localhost').replace('http://', '')}`,
+      });
     }
 
     // Step 5 — test, with self-heal via opsx
@@ -145,14 +179,38 @@ async function runLoop(root, opts = {}) {
         break;
       }
       prevFailureSignature = signature;
-      await emit({ rotation: r, stage: 5, agent: 'e2e-tester', level: 'bad', message: `${result.failures.length} spec(s) red · coverage ${result.coverage}%` });
-      await emit({ rotation: r, stage: 5, agent: 'e2e-tester', level: 'info', message: `Self-heal: opsx:explore → propose → apply on ${result.failures[0]}` });
+      await emit({ rotation: r, stage: 5, agent: 'e2e-tester', level: 'bad', message: `${result.failures.length} check(s) red · coverage ${result.coverage}%` });
+      await emit({ rotation: r, stage: 5, agent: 'e2e-tester', level: 'info', message: `Self-heal: repairing ${result.failures[0]}` });
       summary.selfHeals += 1;
+      // Real self-heal: let the engine fix what failed (revert to a known-good screen,
+      // or re-author), then re-run the real check. Simulated mode has no heal hook and
+      // re-runs without the injected defect.
+      if (eng.heal) await eng.heal({ emit, rotation: r, failures: result.failures });
       result = await eng.e2eTester({ emit, rotation: r, specs, injectDefect: null, baseUrl });
     }
+    lastTest = result;
     // Only claim green when it actually is. A real app still red after self-heal escalates.
     if (result.passed) {
       await emit({ rotation: r, stage: 5, agent: 'e2e-tester', level: 'good', message: `Green · ${specs.length}/${specs.length} specs · ${result.coverage}% MVP coverage` });
+      // Tier-2 "After" screenshot for the plan's Now/After visuals — only when a live app
+      // URL and a real browser engine are available; otherwise the plan keeps its mockup.
+      if (opts.planId && eng.screenshot && baseUrl) {
+        try {
+          const codeTask = (tasks || []).find((t) => String(t.type || '').startsWith('code.'));
+          const route = codeTask && codeTask.route ? codeTask.route : '';
+          const url = baseUrl.replace(/\/$/, '') + route;
+          const shotsDir = path.join(require('./plans').plansDir(root), 'shots');
+          fs.mkdirSync(shotsDir, { recursive: true });
+          const rel = `shots/${opts.planId}-after.png`;
+          const shot = await eng.screenshot({ url, outPath: path.join(shotsDir, `${opts.planId}-after.png`), rotation: r, emit });
+          if (shot && shot.ok) {
+            shots.after = rel;
+            await emit({ rotation: r, stage: 5, agent: 'e2e-tester', level: 'good', message: `Captured an "after" screenshot for the plan → ${rel}` });
+          }
+        } catch {
+          /* screenshots are a nice-to-have; never let one fail the run */
+        }
+      }
     } else {
       await emit({ rotation: r, stage: 5, agent: 'e2e-tester', level: 'warn', message: `Still red after self-heal · ${result.failures.length} issue(s) · escalating to you` });
       summary.stopped = true;
@@ -183,8 +241,67 @@ async function runLoop(root, opts = {}) {
     message: summary.stopped ? 'Loop stopped (guardrail / escalation to you)' : 'Loop complete · green & matches approved MVP',
   });
   if (eng.close) await eng.close(); // release the CDP connection in real mode (no-op when simulated)
+
+  // Fold the real build outcome back into the comprehensive plan document so the saved
+  // plan records what was actually created and whether it verified — making it learnable.
+  if (opts.planId) {
+    try {
+      const codeBuilt = (lastBuild || []).filter((b) => String(b.task || '').startsWith('code.'));
+      const outcome = {
+        built: codeBuilt.map((b) => ({ name: b.name, file: b.file || null, created: !!b.created, wired: !!b.wired, source: b.source || null })),
+        verified: lastTest ? lastTest.passed : null,
+        ran: !!lastTest,
+        coverage: lastTest ? lastTest.coverage : null,
+        errors: lastTest && Array.isArray(lastTest.failures) ? lastTest.failures.slice(0, 12) : [],
+        shots: Object.keys(shots).length ? shots : undefined,
+        finishedAt: new Date().toISOString(),
+      };
+      require('./planhtml').foldOutcome(root, opts.planId, outcome);
+    } catch {
+      /* re-rendering the plan must never affect the loop's result */
+    }
+  }
+
   if (liveRender) render(root);
   return summary;
+}
+
+// Turn the run options into concrete build tasks. Priority: explicit opts.tasks →
+// planner output from the approved plan/goal → a representative sample (demo legibility).
+function resolveTasks(opts, root) {
+  if (Array.isArray(opts.tasks) && opts.tasks.length) return opts.tasks;
+  if (opts.plan || opts.goal) {
+    try {
+      const { planTasks } = require('./planner');
+      const { readDigest } = require('./digest');
+      const out = planTasks({ goal: opts.goal, plan: opts.plan, digest: readDigest(root) });
+      if (out.tasks && out.tasks.length) return out.tasks;
+    } catch {
+      /* fall through to the sample */
+    }
+  }
+  return [
+    { type: 'dataverse.table.create', displayName: 'Project', name: 'cr123_project' },
+    { type: 'dataverse.column.add', displayName: 'Status (choice)', name: 'status' },
+    { type: 'dataverse.column.add', displayName: 'DueDate (datetime)', name: 'duedate' },
+  ];
+}
+
+// Block at the Approve stage until isApproved() returns true, honoring pause and a
+// bounded timeout. Returns true when approved, false if the window elapses. The first
+// poll short-circuits the common case (chat's Build = pre-approved) with no waiting.
+async function waitForApproval(isApproved, isPaused, emit, rotation, { timeoutMs = 600000, pollMs = 200 } = {}) {
+  if (isApproved()) return true;
+  await emit({ rotation, stage: 2, agent: 'planner', level: 'info', message: 'Waiting for your approval to build (press “Build this”)' });
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (isPaused) {
+      while (isPaused()) await sleep(150);
+    }
+    if (isApproved()) return true;
+    await sleep(pollMs);
+  }
+  return false;
 }
 
 function pickObservation(rotation) {

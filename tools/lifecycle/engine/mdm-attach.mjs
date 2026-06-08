@@ -228,6 +228,131 @@ export async function runAppSmokeTest(context, targetUrl, { timeout = 30000 } = 
   }
 }
 
+// Capture a screenshot of a URL into outPath (PNG). Best-effort: returns { ok, outPath }
+// or { ok:false, error } so callers can degrade to a mockup. Used for the plan's
+// "Now vs After" visuals when a live app + managed-Edge session are available.
+export async function captureScreenshot(context, targetUrl, outPath, { timeout = 30000, fullPage = false } = {}) {
+  const page = await context.newPage();
+  try {
+    await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout });
+    if (page.waitForLoadState) {
+      await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
+    }
+    await page.screenshot({ path: outPath, fullPage });
+    return { ok: true, outPath, finalUrl: page.url() };
+  } catch (error) {
+    return { ok: false, error: error.message };
+  } finally {
+    await page.close().catch(() => {});
+  }
+}
+
+// ---- Power Platform portal automation -----------------------------------------
+
+// Create a Dataverse table in the make.powerapps.com maker portal via the DOM, then
+// verify it exists. This is the real vertical slice for `dataverse.table.create`.
+//
+// Portal DOM is brittle and Microsoft ships A/B variants, so every step is defensive:
+// we try a set of stable, role/text-based locators, wait for the table grid, and ONLY
+// report created:true after re-reading the tables list and finding the new row. Any
+// uncertainty returns created:false with a reason — never a faked success. This must be
+// validated against a live tenant; selectors are best-effort until then.
+export async function createDataverseTable(context, { environmentId, displayName, pluralName, primaryColumn } = {}) {
+  const name = (displayName || 'New Table').trim();
+  const plural = (pluralName || (name.endsWith('s') ? name : name + 's')).trim();
+  const base = 'https://make.powerapps.com';
+  const tablesUrl = environmentId ? `${base}/environments/${environmentId}/tables` : `${base}/tables`;
+  const page = await context.newPage();
+  const steps = [];
+  const note = (m) => steps.push(m);
+  try {
+    await page.goto(tablesUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
+    note(`opened ${page.url()}`);
+
+    // If we got bounced to a sign-in page, the caller must clear MFA first.
+    if (/login\.microsoftonline\.com|\/signin/i.test(page.url())) {
+      return finish(false, 'sign-in required — clear MFA in the Edge window, then retry', page, steps);
+    }
+
+    // "New table" → "New table" (the split-button/menu varies; try a few entry points).
+    const newTable = page.getByRole('button', { name: /new table/i }).first();
+    if (await visible(newTable)) {
+      await newTable.click().catch(() => {});
+      // A menu may offer "Start from blank"; click it when present.
+      const blank = page.getByRole('menuitem', { name: /blank|start from blank/i }).first();
+      if (await visible(blank, 2500)) await blank.click().catch(() => {});
+      note('clicked New table');
+    } else {
+      return finish(false, 'could not find the “New table” button (portal layout may have changed)', page, steps);
+    }
+
+    // The new-table panel: fill the display name. The field is usually labelled
+    // "Display name"; fall back to the first visible textbox in the panel.
+    const displayField = page.getByLabel(/display name/i).first();
+    if (await visible(displayField, 8000)) {
+      await displayField.fill(name).catch(() => {});
+      note(`filled display name “${name}”`);
+    } else {
+      const anyBox = page.getByRole('textbox').first();
+      if (await visible(anyBox, 3000)) await anyBox.fill(name).catch(() => {});
+      else return finish(false, 'the new-table panel did not open as expected', page, steps);
+    }
+
+    // Plural name is sometimes auto-filled; set it if the field is editable & empty.
+    const pluralField = page.getByLabel(/plural name/i).first();
+    if (await visible(pluralField, 1500)) {
+      const cur = await pluralField.inputValue().catch(() => '');
+      if (!cur) await pluralField.fill(plural).catch(() => {});
+    }
+
+    // Primary column display name, when the panel exposes it (optional).
+    if (primaryColumn) {
+      const primary = page.getByLabel(/primary column.*display name|primary column/i).first();
+      if (await visible(primary, 1500)) await primary.fill(String(primaryColumn)).catch(() => {});
+    }
+
+    // Save / Create.
+    const save = page.getByRole('button', { name: /^(save|create)$/i }).first();
+    if (await visible(save, 4000)) {
+      await save.click().catch(() => {});
+      note('clicked Save');
+    } else {
+      return finish(false, 'could not find the Save/Create button on the panel', page, steps);
+    }
+
+    // Saving a Dataverse table can take a while; wait for the editor or list to settle.
+    await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
+
+    // Verify: go back to the tables list and look for the new display name.
+    await page.goto(tablesUrl, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {});
+    await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
+    const found = await page.getByText(name, { exact: false }).first().isVisible().catch(() => false);
+    return finish(!!found, found ? '' : 'saved, but the new table was not visible in the list on re-read', page, steps);
+  } catch (error) {
+    return finish(false, error.message, page, steps);
+  }
+}
+
+async function visible(locator, timeout = 6000) {
+  try {
+    await locator.waitFor({ state: 'visible', timeout });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function finish(created, reason, page, steps) {
+  const finalUrl = page ? page.url() : '';
+  try {
+    if (page) await page.close();
+  } catch {
+    /* best-effort */
+  }
+  return { created, reason: reason || '', finalUrl, steps };
+}
+
 export function formatSmokeTestReport(result) {
   const lines = [
     'App smoke test report:',
