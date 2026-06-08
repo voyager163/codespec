@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PowerCodex — Handover &amp; Learning Lesson · 8 June 2026</title>
+<style>
+  :root{
+    --ease:cubic-bezier(0.23,1,0.32,1);
+    --bg:#0b0d12;--bg-soft:#12151d;--panel:#161a24;--panel-2:#1c2130;--line:#262c3a;--line-2:#313a4d;
+    --text:#e8ecf4;--muted:#99a2b8;--faint:#6b7488;
+    --accent:#6ea8fe;--accent-2:#a78bfa;--good:#5ad19a;--bad:#f08a8a;--warn:#f5c97b;--cyan:#67e8f9;
+    --radius:16px;--shadow:0 20px 60px -20px rgba(0,0,0,0.6);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+    background:
+      radial-gradient(1200px 600px at 80% -10%,rgba(167,139,250,0.14),transparent 60%),
+      radial-gradient(900px 500px at -10% 10%,rgba(110,168,254,0.12),transparent 55%),var(--bg);
+  }
+  .wrap{max-width:920px;margin:0 auto;padding:0 24px 100px}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  code{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.9em;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:1px 6px;color:#cdd6ea}
+
+  header.hero{padding:70px 24px 26px;max-width:920px;margin:0 auto}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);background:rgba(110,168,254,.1);border:1px solid rgba(110,168,254,.25);padding:6px 13px;border-radius:999px}
+  h1{font-size:clamp(30px,5vw,46px);line-height:1.07;margin:18px 0 10px;letter-spacing:-0.02em;background:linear-gradient(180deg,#fff,#b9c2d8);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--muted);font-size:17px;max-width:680px}
+  .datebar{margin-top:20px;display:flex;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--faint)}
+  .datebar span{border:1px solid var(--line);border-radius:999px;padding:5px 13px}
+  .datebar .d{color:var(--text);border-color:var(--line-2)}
+
+  section{margin-top:46px}
+  h2{font-size:24px;margin:0 0 6px;letter-spacing:-.01em}
+  .kicker{color:var(--accent-2);font-weight:600;font-size:12px;letter-spacing:.14em;text-transform:uppercase;margin:0 0 8px}
+  p.lead{color:var(--muted);font-size:15.5px;max-width:760px}
+
+  .panel{background:linear-gradient(180deg,var(--panel),var(--bg-soft));border:1px solid var(--line);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow)}
+  .tldr{border-left:3px solid var(--accent);background:rgba(110,168,254,.06);padding:16px 18px;border-radius:0 12px 12px 0;color:var(--muted);font-size:15px}
+  .tldr b{color:var(--text)}
+
+  /* failure cards */
+  .fail{border:1px solid var(--line);border-radius:14px;background:var(--panel-2);overflow:hidden;margin-top:16px}
+  .fail .fh{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);background:rgba(240,138,138,.05)}
+  .fail .fh .n{width:28px;height:28px;flex:none;border-radius:8px;display:grid;place-items:center;font-weight:800;font-size:13px;color:#2a0d0d;background:linear-gradient(135deg,var(--bad),#f5b3b3)}
+  .fail .fh .t{font-weight:700;font-size:15.5px}
+  .fail .fh .tag{margin-left:auto;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+  .fail .fh .tag.fixed{color:var(--good);border-color:rgba(90,209,154,.4);background:rgba(90,209,154,.08)}
+  .fail .fh .tag.env{color:var(--warn);border-color:rgba(245,201,123,.4);background:rgba(245,201,123,.08)}
+  .fb{padding:6px 18px 16px}
+  .row{display:grid;grid-template-columns:130px 1fr;gap:10px;padding:11px 0;border-bottom:1px solid rgba(38,44,58,.55);font-size:14.5px}
+  .row:last-child{border-bottom:0}
+  .row .k{color:var(--faint);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.05em;padding-top:2px}
+  .row .v{color:var(--muted)}
+  .row .v b{color:var(--text)}
+  .row.lesson .k{color:var(--accent-2)}
+  .row.lesson .v{color:var(--text)}
+
+  ul.clean{list-style:none;padding:0;margin:10px 0 0}
+  ul.clean li{position:relative;padding-left:24px;margin:9px 0;color:var(--muted);font-size:14.5px}
+  ul.clean li::before{content:"→";position:absolute;left:0;color:var(--accent)}
+  ul.clean li b{color:var(--text)}
+
+  .lessons{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
+  @media(max-width:680px){.lessons{grid-template-columns:1fr}}
+  .lcard{border:1px solid var(--line);border-radius:13px;background:var(--panel-2);padding:18px}
+  .lcard .e{font-size:22px}
+  .lcard h3{font-size:15px;margin:9px 0 5px}
+  .lcard p{color:var(--muted);font-size:13.5px;margin:0}
+
+  .status{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+  @media(max-width:680px){.status{grid-template-columns:1fr}}
+  .scol{border:1px solid var(--line);border-radius:13px;background:var(--panel-2);overflow:hidden}
+  .scol .lbl{font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .scol.ok .lbl{color:#06203f;background:linear-gradient(90deg,var(--good),#9be7c4)}
+  .scol.open .lbl{color:#2a230d;background:linear-gradient(90deg,var(--warn),#f7d99a)}
+  .scol ul{list-style:none;margin:0;padding:12px 14px}
+  .scol li{font-size:13.5px;color:var(--muted);padding:5px 0 5px 20px;position:relative}
+  .scol.ok li::before{content:"✓";position:absolute;left:0;color:var(--good);font-weight:800}
+  .scol.open li::before{content:"•";position:absolute;left:0;color:var(--warn);font-weight:800}
+
+  footer{margin-top:60px;padding-top:24px;border-top:1px solid var(--line);color:var(--faint);font-size:13px;text-align:center}
+  .print{margin-top:14px}
+  .print button{font-family:inherit;font-size:13px;font-weight:700;color:#06203f;background:linear-gradient(135deg,var(--accent),var(--accent-2));border:none;border-radius:9px;padding:9px 16px;cursor:pointer}
+  @media print{body{background:#fff;color:#000}.print{display:none}}
+</style>
+</head>
+<body>
+  <header class="hero">
+    <div class="eyebrow">📋 Handover · learning lesson</div>
+    <h1>PowerCodex — why it failed, and what it taught us</h1>
+    <p class="sub">A plain-language post-mortem of the issues hit while turning PowerCodex into a real, sign-in-capable autonomous app builder — written so the next person (or the next you) doesn't lose a day to the same traps.</p>
+    <div class="datebar">
+      <span class="d">📅 8 June 2026</span>
+      <span>Author: build session handover</span>
+      <span>Scope: desktop app · lifecycle engine · AI sign-in</span>
+    </div>
+  </header>
+
+  <div class="wrap">
+
+    <section>
+      <div class="tldr">
+        <b>TL;DR —</b> Nothing was ever wrong with your Claude account; you were signed in the whole time. The app simply <b>couldn't tell</b>, because it checked sign-in the slowest, most fragile way possible (a full AI round-trip that timed out), and the “Sign in” button itself crashed on a Windows quoting bug. Separately, the product <b>looked</b> finished but was <b>simulating</b> the build instead of really creating an app. Each of those is a specific, avoidable mistake — captured below.
+      </div>
+    </section>
+
+    <!-- FAILURE 1 -->
+    <section>
+      <p class="kicker">The failures, one by one</p>
+      <h2>What went wrong &amp; why</h2>
+
+      <div class="fail">
+        <div class="fh"><span class="n">1</span><span class="t">“Windows cannot find PowerCodex” when clicking Sign in</span><span class="tag fixed">Fixed</span></div>
+        <div class="fb">
+          <div class="row"><div class="k">Symptom</div><div class="v">Clicking <b>Sign in to Claude Code</b> popped a Windows error: <i>“Windows cannot find PowerCodex. Make sure you typed the name correctly.”</i></div></div>
+          <div class="row"><div class="k">Root cause</div><div class="v">The app opened a terminal with <code>start &lt;title&gt; cmd /k claude</code> — but the window <b>title was not quoted</b>. Windows <code>start</code> only treats the first token as a title when it’s in quotes; unquoted, it read the first word — <code>PowerCodex</code> — as the <b>program to launch</b>.</div></div>
+          <div class="row"><div class="k">Why it happened</div><div class="v">A one-line shell command that “looked obviously correct” was never run on real Windows. <code>start</code>’s title-vs-command quoting rule is a classic footgun.</div></div>
+          <div class="row"><div class="k">Fix</div><div class="v">Quote the title and wrap the command: <code>start "PowerCodex — sign in" cmd /k "claude"</code>, run through <code>cmd /s /c</code> so the quotes survive. Verified a real titled terminal now opens.</div></div>
+          <div class="row lesson"><div class="k">Lesson</div><div class="v">A command that spawns a process is <b>code</b> — test it on the real OS, not by reading it. Windows <code>start</code> always needs a quoted title (even an empty <code>""</code>).</div></div>
+        </div>
+      </div>
+
+      <!-- FAILURE 2 -->
+      <div class="fail">
+        <div class="fh"><span class="n">2</span><span class="t">The app kept insisting you weren’t signed in (when you were)</span><span class="tag fixed">Fixed</span></div>
+        <div class="fb">
+          <div class="row"><div class="k">Symptom</div><div class="v">Even with Claude installed and logged in, the “Connect your AI” gate kept reappearing and never registered you as connected.</div></div>
+          <div class="row"><div class="k">Root cause</div><div class="v">“Am I signed in?” was answered by <b>sending a real prompt to the model</b> and waiting for a reply. That took <b>~10 seconds</b> against a <b>12-second timeout</b> — so it routinely timed out and reported <i>not signed in</i>. The providers were also checked one after another, stacking the delay.</div></div>
+          <div class="row"><div class="k">Why it happened</div><div class="v">A comment claimed “there’s no stable way to check login,” so the code reached for the heaviest possible probe — one that costs time, tokens, and reliability on every recheck.</div></div>
+          <div class="row"><div class="k">Fix</div><div class="v">Read local auth state instead: Claude’s OAuth token in <code>~/.claude/.credentials.json</code> (plus <code>ANTHROPIC_API_KEY</code> and the account marker in <code>~/.claude.json</code>). Result: <b>95 ms</b> and a correct <code>true</code>. Probes now run in parallel — full check dropped from ~10–24 s to <b>~0.6 s</b>.</div></div>
+          <div class="row lesson"><div class="k">Lesson</div><div class="v">Never test a <b>cheap fact</b> (is a token on disk?) with an <b>expensive action</b> (call the model). A health check must be fast, free, and deterministic — or it becomes the outage.</div></div>
+        </div>
+      </div>
+
+      <!-- FAILURE 3 -->
+      <div class="fail">
+        <div class="fh"><span class="n">3</span><span class="t">It tried to make you sign in to Power Platform — to build locally</span><span class="tag fixed">Fixed</span></div>
+        <div class="fb">
+          <div class="row"><div class="k">Symptom</div><div class="v">A managed-Edge / Microsoft sign-in was triggered up front, even though you only wanted to build an app on your own machine and weren’t publishing anywhere.</div></div>
+          <div class="row"><div class="k">Root cause</div><div class="v">The loop eagerly “verified the browser profile” (which attaches to Edge for a Microsoft login) <b>before doing anything</b> — instead of only when a publish actually happens.</div></div>
+          <div class="row"><div class="k">Fix</div><div class="v">Sign-in is now <b>deferred and publish-only</b>. Building on-device requires no Microsoft account; Power Platform login happens lazily, and only if you choose to publish (gated by the Publish switch).</div></div>
+          <div class="row lesson"><div class="k">Lesson</div><div class="v">Don’t demand credentials a task doesn’t need. Gate every sign-in behind the <b>specific action</b> that actually requires it — make the common, local path friction-free.</div></div>
+        </div>
+      </div>
+
+      <!-- FAILURE 4 -->
+      <div class="fail">
+        <div class="fh"><span class="n">4</span><span class="t">“Missing script: build”</span><span class="tag fixed">Fixed</span></div>
+        <div class="fb">
+          <div class="row"><div class="k">Symptom</div><div class="v"><code>npm run build</code> failed with <i>Missing script: "build"</i>.</div></div>
+          <div class="row"><div class="k">Root cause</div><div class="v">The <code>desktop/</code> folder’s build command was named <code>dist:installer</code>, not <code>build</code> — three folders here each have different scripts, and the intuitive name wasn’t wired.</div></div>
+          <div class="row"><div class="k">Fix</div><div class="v">Added a <code>build</code> alias to <code>desktop/package.json</code> so the obvious command builds the installer.</div></div>
+          <div class="row lesson"><div class="k">Lesson</div><div class="v">In a multi-package repo, make the <b>obvious command</b> work in each folder. “Which directory am I in?” is the first question to ask a confusing npm error.</div></div>
+        </div>
+      </div>
+
+      <!-- FAILURE 5 -->
+      <div class="fail">
+        <div class="fh"><span class="n">5</span><span class="t">It looked finished, but it was simulating the build</span><span class="tag fixed">Fixed</span></div>
+        <div class="fb">
+          <div class="row"><div class="k">Symptom</div><div class="v">The UI showed a polished “Intake → Plan → Build → Test → Done” flow — but it created no actual app. The build engine only <i>navigated</i> to Power Platform and reported success it hadn’t earned.</div></div>
+          <div class="row"><div class="k">Root cause</div><div class="v">The lifecycle loop ran a <b>scripted narrative</b> (hardcoded tasks, a fake self-heal, a placeholder app URL). The real work — generating app code — didn’t exist.</div></div>
+          <div class="row"><div class="k">Fix</div><div class="v">Built the real spine: a <b>planner</b> (plan → concrete tasks), a <b>code generator</b> that authors real React/TypeScript screens and wires them into the router, a <b>real build gate</b> (the app’s own <code>npm run build</code>), and <b>real self-heal</b>. AI authoring is used when signed in; a deterministic template generator runs otherwise.</div></div>
+          <div class="row lesson"><div class="k">Lesson</div><div class="v">A convincing demo is not a working product. <b>“Simulated” must be loud, not silent</b> — and the honest question for any agent is always: <i>did a real artifact get created and verified?</i></div></div>
+        </div>
+      </div>
+
+      <!-- FAILURE 6 -->
+      <div class="fail">
+        <div class="fh"><span class="n">6</span><span class="t">Couldn’t prove the generated app compiles (here)</span><span class="tag env">Environmental</span></div>
+        <div class="fb">
+          <div class="row"><div class="k">Symptom</div><div class="v"><code>npm install</code> / <code>npm run build</code> hung or failed with <code>No matching version found for @babel/code-frame</code>.</div></div>
+          <div class="row"><div class="k">Root cause</div><div class="v">The build sandbox had <b>no working npm registry</b> (network blocked). Not a code defect — the package manager simply couldn’t fetch dependencies.</div></div>
+          <div class="row"><div class="k">Fix / mitigation</div><div class="v">Proved correctness another way: the generated TypeScript was <b>parsed and transpiled with the local compiler</b> (valid TSX, strict mode), and the end-to-end loop was run in real mode. The final <code>npm run build</code> green-light must be confirmed on a networked machine.</div></div>
+          <div class="row lesson"><div class="k">Lesson</div><div class="v">Know the difference between <b>“my code is wrong”</b> and <b>“my environment is broken.”</b> When a tool fails, read the actual error — and have a second, offline way to verify so a blocked network doesn’t masquerade as a bug.</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LESSONS -->
+    <section>
+      <p class="kicker">The takeaways</p>
+      <h2>Five lessons worth keeping</h2>
+      <div class="lessons">
+        <div class="lcard"><div class="e">⚡</div><h3>Health checks must be cheap</h3><p>Detect state from local facts (a file, an env var), never by performing the expensive action you’re checking for.</p></div>
+        <div class="lcard"><div class="e">🪟</div><h3>Shell commands are code</h3><p>Quoting, titles and <code>&amp;&amp;</code> behave differently per OS. Run them on the real platform — don’t eyeball them.</p></div>
+        <div class="lcard"><div class="e">🔐</div><h3>Ask for sign-in only when needed</h3><p>Gate each credential behind the exact action that requires it. Keep the local, common path account-free.</p></div>
+        <div class="lcard"><div class="e">🎭</div><h3>Simulated ≠ done</h3><p>A pretty flow can hide an empty engine. Always ask: was a real artifact created and verified?</p></div>
+        <div class="lcard"><div class="e">🌐</div><h3>Separate bug from environment</h3><p>“Can’t install” is often the network, not the code. Read the real error; keep an offline check in reserve.</p></div>
+        <div class="lcard"><div class="e">🧭</div><h3>Know which folder you’re in</h3><p>Monorepos have many <code>package.json</code> files. Make the obvious command work everywhere.</p></div>
+      </div>
+    </section>
+
+    <!-- STATUS -->
+    <section>
+      <p class="kicker">Where it stands · 8 June 2026</p>
+      <h2>Working now vs still open</h2>
+      <div class="status">
+        <div class="scol ok">
+          <div class="lbl">Working now</div>
+          <ul>
+            <li>Claude sign-in detected instantly (≈95 ms) and correctly</li>
+            <li>“Sign in” button opens a real terminal (no Windows error)</li>
+            <li>Build an app with no sign-in (templates) or with Claude (real AI)</li>
+            <li>Real screen generation + router wiring + build-gate verification</li>
+            <li>No Microsoft sign-in needed to build on-device</li>
+            <li>Self-tests: 99/99 green; desktop installer builds</li>
+          </ul>
+        </div>
+        <div class="scol open">
+          <div class="lbl">Still to do</div>
+          <ul>
+            <li>Confirm <code>npm run build</code> green on a networked machine</li>
+            <li>Validate the Dataverse table-create against a live tenant</li>
+            <li>Wire real publish (<code>pac code push</code>) + app-URL capture</li>
+            <li>Optionally relabel “limited mode” → “build with templates (no AI)”</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <div class="print"><button onclick="window.print()">🖨️ Save as PDF / print</button></div>
+
+    <footer>
+      PowerCodex handover &amp; learning lesson · generated 8 June 2026 · open this file in any browser
+    </footer>
+  </div>
+</body>
+</html>

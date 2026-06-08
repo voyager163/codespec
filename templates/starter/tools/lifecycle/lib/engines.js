@@ -117,12 +117,24 @@ function makeRealEngine({ root, codegen, codeApp, browser, provider, sim }) {
   let built = []; // [{ task, file }] from the last code build — used by heal()
 
   async function verifyProfile(a) {
-    // Sign-in is only needed for portal work. If a browser engine is active, verify the
-    // managed-Edge profile; otherwise a code-only build needs no profile.
-    if (browser) return browser.verifyProfile(a);
-    if (a.emit) await a.emit({ rotation: a.rotation || 0, stage: 3, agent: 'build-executor', level: 'good', message: 'No sign-in needed for an on-device code build' });
-    if (a.persist) a.persist({ name: a.profile, path: a.profilePath });
-    return { profile: a.profile, profilePath: a.profilePath, verified: true, reused: !!a.alreadyVerified, codeOnly: true };
+    // NEVER sign in up front. Building an app on your machine needs no Microsoft / Power
+    // Platform account. The browser engine (when present) attaches LAZILY and ONLY when a
+    // portal task or a live-app smoke test actually runs — neither happens in a pure
+    // on-device code build, so a maker who is not publishing is never asked to sign in.
+    // (Previously this eagerly launched managed Edge, which blocked makers who only want
+    // to build. Power Platform sign-in now happens at publish time, gated by allowPush.)
+    if (a.emit) {
+      await a.emit({
+        rotation: a.rotation || 0,
+        stage: 3,
+        agent: 'build-executor',
+        level: 'good',
+        message: browser
+          ? 'No sign-in needed to build · Power Platform sign-in happens only if you choose to publish'
+          : 'No sign-in needed for an on-device code build',
+      });
+    }
+    return { profile: a.profile, profilePath: a.profilePath, verified: true, reused: !!a.alreadyVerified, deferred: true };
   }
 
   async function buildExecutor(a) {

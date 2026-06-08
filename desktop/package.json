@@ -8,10 +8,11 @@
   "scripts": {
     "sync": "node scripts/sync-lifecycle.js",
     "start": "npm run sync && electron .",
-    "build": "npm run dist:installer",
-    "dist": "npm run sync && electron-builder --win portable",
-    "dist:installer": "npm run sync && electron-builder --win nsis",
-    "dist:dir": "npm run sync && electron-builder --win --dir"
+    "build": "node scripts/build-exe.js nsis",
+    "dist": "node scripts/build-exe.js portable",
+    "dist:installer": "node scripts/build-exe.js nsis",
+    "dist:dir": "node scripts/build-exe.js dir",
+    "dist:inplace": "npm run sync && electron-builder --win portable"
   },
   "devDependencies": {
     "electron": "^32.2.0",

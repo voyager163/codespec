@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PowerCodex — Spec-driven Power Apps Code Apps, from goal to self-healing app</title>
+<meta name="description" content="PowerCodex turns a plain-language goal and an approved MVP into a running, continuously-verified Power Apps Code App — scaffolded with OpenSpec, driven by an autonomous lifecycle loop, and watched on a live dashboard." />
+<style>
+  :root {
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --bg: #0b0d12;
+    --bg-soft: #12151d;
+    --panel: #161a24;
+    --panel-2: #1c2130;
+    --line: #262c3a;
+    --line-2: #313a4d;
+    --text: #e8ecf4;
+    --muted: #99a2b8;
+    --faint: #6b7488;
+    --accent: #6ea8fe;
+    --accent-2: #a78bfa;
+    --good: #5ad19a;
+    --bad: #f08a8a;
+    --warn: #f5c97b;
+    --radius: 16px;
+    --shadow: 0 20px 60px -20px rgba(0,0,0,0.6);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(167,139,250,0.14), transparent 60%),
+      radial-gradient(900px 500px at -10% 10%, rgba(110,168,254,0.12), transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px 120px; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .rise { opacity: 0; transform: translateY(14px); animation: rise 600ms var(--ease-out) forwards; }
+  @keyframes rise { to { opacity: 1; transform: translateY(0); } }
+  .d1 { animation-delay: 40ms; } .d2 { animation-delay: 90ms; } .d3 { animation-delay: 140ms; }
+  .d4 { animation-delay: 190ms; } .d5 { animation-delay: 240ms; } .d6 { animation-delay: 290ms; }
+
+  /* top nav */
+  nav.top {
+    position: sticky; top: 0; z-index: 20;
+    backdrop-filter: blur(10px);
+    background: rgba(11,13,18,0.72);
+    border-bottom: 1px solid var(--line);
+  }
+  nav.top .inner { max-width: 1080px; margin: 0 auto; padding: 12px 24px; display: flex; align-items: center; gap: 18px; }
+  nav.top .brand { font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; gap: 9px; font-size: 15px; }
+  nav.top .brand .mark { width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #06203f; font-weight: 900; font-size: 13px; box-shadow: 0 0 18px rgba(110,168,254,0.45); }
+  nav.top .links { margin-left: auto; display: flex; gap: 18px; font-size: 14px; align-items: center; }
+  nav.top .links a { color: var(--muted); }
+  nav.top .links a:hover { color: var(--text); text-decoration: none; }
+  nav.top .cta { color: var(--accent) !important; }
+  @media (max-width: 720px) { nav.top .links a:not(.cta) { display: none; } }
+
+  header.hero { padding: 84px 24px 30px; text-align: center; max-width: 920px; margin: 0 auto; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--accent); background: rgba(110,168,254,0.1);
+    border: 1px solid rgba(110,168,254,0.25);
+    padding: 6px 14px; border-radius: 999px; margin-bottom: 22px;
+  }
+  .eyebrow .dot {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+    box-shadow: 0 0 0 0 rgba(110,168,254,0.6); animation: pulse 2.4s var(--ease-out) infinite;
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(110,168,254,0.5); }
+    70% { box-shadow: 0 0 0 9px rgba(110,168,254,0); }
+    100% { box-shadow: 0 0 0 0 rgba(110,168,254,0); }
+  }
+  h1 {
+    font-size: clamp(34px, 6.4vw, 60px); line-height: 1.05; margin: 0 0 18px; letter-spacing: -0.02em;
+    background: linear-gradient(180deg, #fff, #b9c2d8);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .sub { color: var(--muted); font-size: 18px; max-width: 760px; margin: 0 auto; }
+  .herobtns { margin-top: 30px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 11px 20px; border-radius: 12px; font-size: 15px; font-weight: 600;
+    border: 1px solid var(--line); color: var(--text);
+    transition: transform 160ms var(--ease-out), border-color 160ms var(--ease-out), background 160ms var(--ease-out);
+  }
+  .btn:hover { text-decoration: none; transform: translateY(-2px); border-color: rgba(110,168,254,0.5); }
+  .btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #0b0d12; border-color: transparent; }
+  .btn.primary:hover { box-shadow: 0 14px 30px -10px rgba(110,168,254,0.6); }
+  .meta { margin-top: 26px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; color: var(--faint); font-size: 13px; }
+  .meta span { border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; }
+
+  /* browser frame for screenshots */
+  .shot {
+    border: 1px solid var(--line-2); border-radius: 14px; overflow: hidden;
+    background: #0c0f16; box-shadow: var(--shadow);
+  }
+  .shot .chrome {
+    display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+    background: #11151e; border-bottom: 1px solid var(--line);
+  }
+  .shot .chrome .dots { display: flex; gap: 6px; }
+  .shot .chrome .dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .shot .chrome .dots i:nth-child(1){ background: #f6685e; }
+  .shot .chrome .dots i:nth-child(2){ background: #f6c350; }
+  .shot .chrome .dots i:nth-child(3){ background: #58cc64; }
+  .shot .chrome .url {
+    margin-left: 10px; flex: 1; font-size: 12px; color: var(--faint);
+    background: var(--bg); border: 1px solid var(--line); border-radius: 7px; padding: 4px 12px;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; max-width: 460px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .shot img { display: block; width: 100%; height: auto; }
+
+  .hero-shot { max-width: 1000px; margin: 40px auto 0; }
+
+  section { margin-top: 84px; }
+  .kicker { color: var(--accent-2); font-weight: 600; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; margin: 0 0 10px; }
+  h2 { font-size: 30px; margin: 0 0 14px; letter-spacing: -0.01em; }
+  h3 { font-size: 17px; margin: 0 0 8px; }
+  p.lead { color: var(--muted); font-size: 16px; max-width: 820px; }
+
+  .panel {
+    background: linear-gradient(180deg, var(--panel), var(--bg-soft));
+    border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow);
+  }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 820px) { .grid, .grid3 { grid-template-columns: 1fr; } }
+
+  .card { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+  .card .ic { width: 36px; height: 36px; border-radius: 9px; display: grid; place-items: center; font-size: 18px; margin-bottom: 12px;
+    background: rgba(110,168,254,0.12); border: 1px solid rgba(110,168,254,0.25); }
+  .card p { color: var(--muted); font-size: 14px; margin: 0; }
+
+  /* feature row: text + screenshot */
+  .feat { display: grid; grid-template-columns: 1fr 1.25fr; gap: 30px; align-items: center; }
+  .feat.rev { grid-template-columns: 1.25fr 1fr; }
+  .feat.rev .copy { order: 2; }
+  @media (max-width: 860px) { .feat, .feat.rev { grid-template-columns: 1fr; } .feat.rev .copy { order: 0; } }
+  .feat .copy h3 { font-size: 22px; margin: 0 0 10px; letter-spacing: -0.01em; }
+  .feat .copy p { color: var(--muted); font-size: 15px; margin: 0 0 14px; }
+  .feat ul { margin: 0; padding-left: 0; list-style: none; }
+  .feat ul li { color: var(--muted); font-size: 14.5px; padding: 5px 0 5px 26px; position: relative; }
+  .feat ul li::before { content: "✓"; position: absolute; left: 0; top: 5px; color: var(--good); font-weight: 800; }
+  .pill { display: inline-block; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700;
+    color: var(--accent); background: rgba(110,168,254,0.1); border: 1px solid rgba(110,168,254,0.25);
+    border-radius: 999px; padding: 4px 11px; margin-bottom: 14px; }
+
+  /* the loop strip */
+  .loop { display: flex; flex-wrap: wrap; gap: 10px; align-items: stretch; }
+  .stage {
+    flex: 1 1 110px; min-width: 110px; position: relative;
+    background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 14px 12px; text-align: center;
+  }
+  .stage .n { font-size: 11px; color: var(--faint); }
+  .stage .t { font-weight: 700; margin-top: 2px; font-size: 15px; }
+  .stage .d { font-size: 11.5px; color: var(--muted); margin-top: 5px; }
+  .stage.gate { border-color: rgba(245,201,123,0.4); background: rgba(245,201,123,0.06); }
+  .stage.gate .t { color: var(--warn); }
+  .loopback { text-align: center; color: var(--faint); font-size: 13px; margin-top: 14px; }
+  .loopback b { color: var(--accent-2); }
+
+  pre {
+    background: #0c0f16; border: 1px solid var(--line); border-radius: 12px;
+    padding: 16px 18px; overflow-x: auto; font-size: 13.5px; line-height: 1.8;
+    font-family: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
+    color: #d7def0; margin: 12px 0 0;
+  }
+  pre .c { color: var(--faint); }
+  pre .p { color: var(--good); }
+  code.inl { background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 1px 7px; font-size: 13px;
+    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace; color: #cdd6ea; }
+
+  .taglist { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 8px; }
+  .tagchip { font-size: 13px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 6px 13px; background: var(--panel-2); }
+
+  .callout { border-left: 3px solid var(--accent); background: rgba(110,168,254,0.06); padding: 14px 16px; border-radius: 0 10px 10px 0; color: var(--muted); font-size: 14.5px; }
+
+  footer { margin-top: 96px; padding-top: 28px; border-top: 1px solid var(--line); text-align: center; color: var(--faint); font-size: 13px; }
+  footer a { color: var(--muted); }
+  footer .flinks { margin-top: 10px; display: flex; gap: 8px 14px; justify-content: center; flex-wrap: wrap; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rise { animation: none; opacity: 1; transform: none; }
+    .eyebrow .dot { animation: none; }
+    *, *::before, *::after { transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+  <nav class="top">
+    <div class="inner">
+      <div class="brand"><span class="mark">P</span> PowerCodex</div>
+      <div class="links">
+        <a href="#what">What it is</a>
+        <a href="#screens">Screens</a>
+        <a href="#loop">The loop</a>
+        <a href="#start">Quick start</a>
+        <a class="cta" href="https://github.com/voyager163/powercodex">GitHub →</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="eyebrow rise d1"><span class="dot"></span> Spec-driven development for Power Apps Code Apps</div>
+    <h1 class="rise d2">From a plain-language goal<br/>to a self-healing app.</h1>
+    <p class="sub rise d3">PowerCodex scaffolds a production-ready Power Apps Code App, captures your intent as reviewable OpenSpec artifacts, and then runs an autonomous lifecycle loop — plan, consent, build, run, test, learn — that you watch move on a live dashboard. Two inputs in: a <b>goal</b> and an approved <b>MVP</b>. A continuously-verified app out.</p>
+    <div class="herobtns rise d4">
+      <a class="btn primary" href="#start">Get started</a>
+      <a class="btn" href="#screens">See the screens</a>
+    </div>
+    <div class="meta rise d5">
+      <span>Vite · React 19 · TypeScript</span>
+      <span>OpenSpec + OPSX workflow</span>
+      <span>Zero-dependency live dashboard</span>
+      <span>Consent-gated by design</span>
+    </div>
+
+    <div class="hero-shot rise d6">
+      <div class="shot">
+        <div class="chrome"><div class="dots"><i></i><i></i><i></i></div><div class="url">localhost:4321 — PowerCodex live dashboard</div></div>
+        <img src="media/shots/dashboard.png" alt="The PowerCodex live lifecycle dashboard, showing the goal and MVP, the lifecycle flow stepper, per-agent progress cards, and a streaming live-activity feed." loading="lazy" />
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap">
+
+    <!-- WHAT -->
+    <section id="what" class="rise d2">
+      <p class="kicker">What it is</p>
+      <h2>Requirements that live in the repo, not in chat history</h2>
+      <p class="lead">Most AI tools help you write code, then forget why. PowerCodex keeps the project's intent next to the code — as files you can review, change, implement, verify, and archive — and wraps the whole build in one observable loop. Ideas become specs, specs become a running app, and the app keeps proving it still meets the goal.</p>
+
+      <div class="grid3" style="margin-top:20px">
+        <div class="card">
+          <div class="ic">📐</div>
+          <h3>Spec-driven, by default</h3>
+          <p>An OpenSpec config tuned for Code Apps and 11 OPSX prompt + skill files turn ideas into reviewable proposals, designs, and tasks.</p>
+        </div>
+        <div class="card">
+          <div class="ic">🔁</div>
+          <h3>Autonomous, not blind</h3>
+          <p>The loop runs on its own but stops at a real consent gate before anything touches your tenant. It only does what you turned on.</p>
+        </div>
+        <div class="card">
+          <div class="ic">🩹</div>
+          <h3>Self-healing</h3>
+          <p>When a test goes red, the e2e engine diagnoses it, authors a spec from the observation, and re-builds — and you watch it happen.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREENS -->
+    <section id="screens" class="rise d2">
+      <p class="kicker">The product, on screen</p>
+      <h2>Four surfaces, one engine underneath</h2>
+      <p class="lead">Whether you live in a terminal or a browser, you're driving the same lifecycle. Here's what it actually looks like.</p>
+
+      <!-- 1. dashboard -->
+      <div class="feat" style="margin-top:32px">
+        <div class="copy">
+          <span class="pill">Live dashboard</span>
+          <h3>Watch the whole build move</h3>
+          <p>A zero-dependency dashboard at <code class="inl">localhost:4321</code> streams every stage, agent, and event in real time — nothing happens off-screen.</p>
+          <ul>
+            <li>Goal + MVP intake with a live compliance meter</li>
+            <li>Seven-stage lifecycle flow with the active stage lit</li>
+            <li>Per-agent cards: Intake, Planner, Build, Runner, Tester, Observer</li>
+            <li>Streaming activity feed and test/MVP coverage</li>
+          </ul>
+        </div>
+        <div class="shot">
+          <div class="chrome"><div class="dots"><i></i><i></i><i></i></div><div class="url">localhost:4321</div></div>
+          <img src="media/shots/dashboard.png" alt="PowerCodex live dashboard with lifecycle stepper, agent cards, and activity feed." loading="lazy" />
+        </div>
+      </div>
+
+      <!-- 2. chat -->
+      <div class="feat rev" style="margin-top:40px">
+        <div class="copy">
+          <span class="pill">Chat &amp; Agent</span>
+          <h3>Describe it. Approve the plan. Build.</h3>
+          <p>The maker surface lets you talk to your AI of choice — sketch an architecture, draft a screen, or ask a question. Switch to <b>Agent</b> mode when you want it to go and do it. Nothing changes until you press Build.</p>
+          <ul>
+            <li>Bring your own AI: Claude Code, GitHub Copilot, or a built-in simulated brain</li>
+            <li>Generated plans preview in a Canvas before anything runs</li>
+            <li>The same consent gate wraps every provider equally</li>
+          </ul>
+        </div>
+        <div class="shot">
+          <div class="chrome"><div class="dots"><i></i><i></i><i></i></div><div class="url">localhost:4321/chat</div></div>
+          <img src="media/shots/chat.png" alt="PowerCodex Chat & Agent maker surface with provider picker, Files, Canvas, and a conversational entry point." loading="lazy" />
+        </div>
+      </div>
+
+      <!-- 3. plan doc -->
+      <div class="feat" style="margin-top:40px">
+        <div class="copy">
+          <span class="pill">Generated artifacts</span>
+          <h3>Plans you'd actually read</h3>
+          <p>When the agent shapes a change, it authors a comprehensive, reviewable HTML plan document — a real spec for the work, not a one-line echo. Review it <i>before</i> a single line is built.</p>
+          <ul>
+            <li>One ordered pipeline: plan → build &amp; test → observe &amp; loop</li>
+            <li>Grounded in your goal, MVP, and (for existing apps) your real code</li>
+            <li>Recorded in a plan registry and openable on demand</li>
+          </ul>
+        </div>
+        <div class="shot">
+          <div class="chrome"><div class="dots"><i></i><i></i><i></i></div><div class="url">PowerCodex · generated plan</div></div>
+          <img src="media/shots/plan-doc.png" alt="A comprehensive generated PowerCodex plan document describing the end-to-end pipeline from goal to self-healing app." loading="lazy" />
+        </div>
+      </div>
+
+      <!-- 4. user guide -->
+      <div class="feat rev" style="margin-top:40px">
+        <div class="copy">
+          <span class="pill">In-app guide</span>
+          <h3>If you get lost, start here</h3>
+          <p>A built-in guide explains the screen you're looking at and how to drive it — the two ways to run the loop, the five-step screen flow, and what each control does.</p>
+          <ul>
+            <li>Studio (clickable) or Cockpit (terminal) — same engine</li>
+            <li>Walks the lifecycle left-to-right with the live stepper</li>
+            <li>Always one click from the dashboard</li>
+          </ul>
+        </div>
+        <div class="shot">
+          <div class="chrome"><div class="dots"><i></i><i></i><i></i></div><div class="url">localhost:4321/guide</div></div>
+          <img src="media/shots/user-guide.png" alt="The PowerCodex in-app user guide explaining the two ways to drive it and the five-step screen flow." loading="lazy" />
+        </div>
+      </div>
+    </section>
+
+    <!-- THE LOOP -->
+    <section id="loop" class="rise d2">
+      <p class="kicker">The loop</p>
+      <h2>Seven stages, one rotation</h2>
+      <p class="lead">Each rotation moves through seven stages. The dashboard highlights the current stage live; when a rotation ends, observations feed the next one — defects, gaps, and improvements become the next plan.</p>
+
+      <div class="panel" style="margin-top:18px">
+        <div class="loop">
+          <div class="stage"><div class="n">01</div><div class="t">Intake</div><div class="d">Read goal + MVP</div></div>
+          <div class="stage"><div class="n">02</div><div class="t">Plan</div><div class="d">Break into tasks</div></div>
+          <div class="stage gate"><div class="n">03</div><div class="t">Approve</div><div class="d">Consent gate</div></div>
+          <div class="stage"><div class="n">04</div><div class="t">Build</div><div class="d">Engine 1 builds</div></div>
+          <div class="stage"><div class="n">05</div><div class="t">Run</div><div class="d">Launch the app</div></div>
+          <div class="stage"><div class="n">06</div><div class="t">Test</div><div class="d">Engine 2 e2e</div></div>
+          <div class="stage"><div class="n">07</div><div class="t">Observe</div><div class="d">Author specs</div></div>
+        </div>
+        <div class="loopback">Observe ⟶ <b>feeds the next Intake</b></div>
+      </div>
+
+      <div class="callout" style="margin-top:16px">
+        <b>The Approve stage is a real gate, not a formality.</b> PowerCodex reads <code class="inl">Approved_rights/</code> before it builds or pushes. If the relevant flag (build / push / auto-respec / auto-fix) is <code class="inl">false</code>, the loop blocks right there and waits for you.
+      </div>
+    </section>
+
+    <!-- WHAT YOU GET -->
+    <section class="rise d2">
+      <p class="kicker">What you get</p>
+      <h2>A complete Code Apps starter, wired for the workflow</h2>
+      <div class="grid" style="margin-top:18px">
+        <div class="card">
+          <h3>Modern frontend stack</h3>
+          <p style="margin-bottom:12px">A Microsoft-based Code Apps starter, customized and owned in-repo.</p>
+          <div class="taglist">
+            <span class="tagchip">Vite</span><span class="tagchip">React 19</span><span class="tagchip">TypeScript</span>
+            <span class="tagchip">Tailwind CSS</span><span class="tagchip">shadcn/ui</span><span class="tagchip">Lucide</span>
+            <span class="tagchip">React Router</span><span class="tagchip">TanStack Query</span><span class="tagchip">TanStack Table</span><span class="tagchip">Zustand</span>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Governance from the first commit</h3>
+          <p style="margin-bottom:12px">Security and quality automation ship with every project.</p>
+          <div class="taglist">
+            <span class="tagchip">CodeQL (GHAS)</span><span class="tagchip">Dependency Review</span><span class="tagchip">Semgrep OSS</span>
+            <span class="tagchip">npm audit</span><span class="tagchip">OpenSSF Scorecard</span><span class="tagchip">Coverage</span>
+          </div>
+        </div>
+        <div class="card">
+          <h3>The OPSX workflow</h3>
+          <p>All 11 OPSX prompt files and matching OpenSpec skill folders under <code class="inl">.github/</code> — explore, propose, verify, apply, sync, archive.</p>
+        </div>
+        <div class="card">
+          <h3>Power Platform native</h3>
+          <p>Connectors for runtime data, Power-Platform-managed auth, and <code class="inl">pac code init</code> for deploy. No custom backend, no custom auth.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- QUICK START -->
+    <section id="start" class="rise d2">
+      <p class="kicker">Quick start</p>
+      <h2>Three commands to a project, two to watch it run</h2>
+      <p class="lead">PowerCodex is an npm initializer plus a small zero-dependency lifecycle tool. Scaffold a project, then open the dashboard and drive the loop.</p>
+
+      <div class="grid" style="margin-top:18px">
+        <div>
+          <h3 style="margin-bottom:0">1 · Scaffold the project</h3>
+          <pre><span class="c"># global install</span>
+npm install <span class="p">-g</span> @voyager163/powercodex@latest
+powercodex my-app
+cd my-app && code .
+
+<span class="c"># or without installing</span>
+npx @voyager163/powercodex my-app</pre>
+        </div>
+        <div>
+          <h3 style="margin-bottom:0">2 · Initialize for your tenant</h3>
+          <pre><span class="c"># Power Platform CLI</span>
+pac code init <span class="p">--environment</span> &lt;id&gt; \
+  <span class="p">--displayName</span> &lt;appName&gt;
+
+<span class="c"># start local development</span>
+npm run dev</pre>
+        </div>
+      </div>
+
+      <div style="margin-top:18px">
+        <h3 style="margin-bottom:0">3 · Open the dashboard, then run the loop</h3>
+        <pre>npm run lifecycle:serve              <span class="c"># http://localhost:4321 — keep it open</span>
+npm run lifecycle <span class="p">--</span> loop             <span class="c"># run the loop; the dashboard follows live</span>
+npm run lifecycle:selftest           <span class="c"># run the product against itself (16/16 checks)</span></pre>
+      </div>
+
+      <div class="callout" style="margin-top:18px">
+        Already have an app? <code class="inl">npm run lifecycle -- import --analyze</code> reads your existing routes, components, and data calls into a digest, then derives user stories and an MVP grounded in your real code — so the same loop can run the rest of that project.
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="rise d2">
+      <div class="panel" style="text-align:center; padding:38px 24px">
+        <h2 style="margin-bottom:10px">Build Code Apps that keep proving themselves</h2>
+        <p class="lead" style="margin:0 auto 22px">Open source, MIT licensed. Start a new project or wire the lifecycle into one you already have.</p>
+        <div class="herobtns" style="margin-top:0">
+          <a class="btn primary" href="https://www.npmjs.com/package/@voyager163/powercodex">Install from npm</a>
+          <a class="btn" href="index.html">Lifecycle deep-dive</a>
+          <a class="btn" href="integration-guide.html">Integration guide</a>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      PowerCodex · spec-driven development for Power Apps Code Apps — from a goal to a self-healing app.
+      <div class="flinks">
+        <a href="https://github.com/voyager163/powercodex">GitHub</a> ·
+        <a href="https://www.npmjs.com/package/@voyager163/powercodex">npm</a> ·
+        <a href="index.html">Lifecycle</a> ·
+        <a href="integration-guide.html">Integrate</a> ·
+        <a href="plans/powercodex-master-plan.html">Master plan</a> ·
+        <a href="plans/autonomous-lifecycle-loop-plan.html">Lifecycle loop</a> ·
+        <a href="plans/live-dashboard-system.html">Live dashboard</a>
+      </div>
+    </footer>
+
+  </div>
+</body>
+</html>

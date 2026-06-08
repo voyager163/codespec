@@ -41,6 +41,43 @@ function get(id) {
   return ADAPTERS.find((a) => a.id === id) || null;
 }
 
+// Full readiness: installed AND signed in, per adapter. This is what the desktop setup
+// gate uses so PowerCodex never silently degrades — a CLI that's present but not logged
+// in reads as installed:true, authed:false, ready:false. May take a few seconds (it
+// probes the CLIs), so callers run it on boot and on an explicit "recheck", not per turn.
+async function readiness() {
+  // Probe adapters in PARALLEL so one slow CLI can't serialize the others (a sequential
+  // loop made the boot gate wait for the sum of every probe). Order is preserved.
+  return Promise.all(
+    ADAPTERS.map(async (a) => {
+      const installed = safeAvailable(a);
+      let isAuthed = a.simulated === true;
+      if (installed && !a.simulated && typeof a.authed === 'function') {
+        try {
+          isAuthed = await Promise.resolve(a.authed());
+        } catch {
+          isAuthed = false;
+        }
+      }
+      return {
+        id: a.id,
+        label: a.label,
+        model: a.model,
+        simulated: a.simulated === true,
+        installed,
+        authed: !!isAuthed,
+        ready: a.simulated === true ? true : installed && !!isAuthed,
+        setup: a.setup || null,
+      };
+    }),
+  );
+}
+
+// Is any real (non-simulated) provider installed AND signed in?
+function anyRealReady(list) {
+  return (list || []).some((p) => !p.simulated && p.ready);
+}
+
 // Resolve the active provider: the requested one if usable, else the first
 // available real adapter, else the simulated fallback (never null).
 function resolve(preferredId) {
@@ -53,4 +90,4 @@ function resolve(preferredId) {
   return simulated;
 }
 
-module.exports = { list, get, resolve, ADAPTERS };
+module.exports = { list, get, resolve, readiness, anyRealReady, ADAPTERS };

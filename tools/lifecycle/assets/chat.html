@@ -179,6 +179,44 @@
   .canvas .ch .b.go{color:#06203f;border-color:transparent;background:linear-gradient(135deg,var(--accent),var(--accent-2))}
   .canvas iframe{flex:1;border:none;width:100%;background:#fff}
   .canvas .empty{flex:1;display:grid;place-items:center;text-align:center;color:var(--faint);font-size:13px;padding:30px}
+  .canvas .pick{margin-left:auto;display:flex;align-items:center;gap:6px}
+  .canvas .pick select{background:var(--panel-2);color:var(--muted);border:1px solid var(--line);border-radius:7px;font-size:10.5px;padding:4px 6px;max-width:150px;font-family:inherit}
+  .canvas .pick select:hover{border-color:var(--line-2);color:var(--text)}
+
+  /* ---------- workspace file tree ---------- */
+  .tree{width:0;flex:none;border-right:1px solid var(--line);background:#0a0c11;display:flex;flex-direction:column;overflow:hidden;transition:width .3s var(--ease-out)}
+  .tree.open{width:230px}
+  @media(max-width:760px){.tree.open{position:fixed;inset:0;width:78%;max-width:300px;z-index:62}}
+  .tree .th{display:flex;align-items:center;gap:7px;padding:10px 12px;border-bottom:1px solid var(--line);background:#11151e;font-size:12px}
+  .tree .th .t{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tree .th .ctl{margin-left:auto;display:flex;gap:4px}
+  .tree .th .b{font-size:12px;color:var(--faint);width:24px;height:24px;border-radius:6px;display:grid;place-items:center}
+  .tree .th .b:hover{background:var(--panel-2);color:var(--text)}
+  .tree .list{flex:1;overflow-y:auto;padding:6px 4px;font-size:12.5px}
+  .tree .ti{display:flex;align-items:center;gap:5px;padding:4px 6px;border-radius:6px;color:var(--muted);white-space:nowrap;overflow:hidden;cursor:pointer}
+  .tree .ti:hover{background:var(--panel-2);color:var(--text)}
+  .tree .ti.sel{background:rgba(110,168,254,.12);color:var(--accent)}
+  .tree .ti .tw{width:11px;flex:none;color:var(--faint);font-size:9px}
+  .tree .ti .tic{flex:none}
+  .tree .ti .tn{overflow:hidden;text-overflow:ellipsis}
+  .tree .ti.dir .tn{color:var(--text);font-weight:600}
+  .tree .ti.dir:hover .tn,.tree .ti.sel .tn{color:inherit}
+  .tree .tkids{}
+  .tree .empty{padding:18px 12px;color:var(--faint);font-size:12px;text-align:center}
+
+  /* ---------- drag splitters ---------- */
+  .split{flex:none;width:6px;cursor:col-resize;background:transparent;position:relative;z-index:20}
+  .split::after{content:"";position:absolute;left:2px;top:0;bottom:0;width:2px;background:transparent;transition:background .15s}
+  .split:hover::after,.split.drag::after{background:rgba(110,168,254,.5)}
+  .split.hidden{display:none}
+  @media(max-width:760px){.split{display:none}}
+
+  /* project-type chip */
+  .typechip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:9px;padding:7px 11px;background:var(--panel-2);font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap}
+  .typechip .e{font-size:13px}
+  .typechip.code{border-color:rgba(110,168,254,.35);color:var(--accent)}
+  .typechip.bi{border-color:rgba(245,201,123,.4);color:var(--warn)}
+  .typechip .mcp{font-size:10px;color:var(--good);font-weight:800}
 
   /* ---------- folder picker modal ---------- */
   .overlay{position:fixed;inset:0;background:rgba(6,8,13,.6);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);z-index:80;display:none;align-items:center;justify-content:center;padding:20px}
@@ -207,6 +245,22 @@
   .modal .fpbar .gobtn{border:1px solid var(--line);border-radius:9px;padding:8px 14px;font-size:12.5px;font-weight:700;color:var(--text);background:var(--panel-2);white-space:nowrap}
   .modal .fpbar .gobtn:hover{border-color:var(--accent)}
 
+  /* ---------- AI sign-in gate ---------- */
+  .setupbody{padding:18px 20px;overflow-y:auto}
+  .setupintro{font-size:13.5px;color:var(--muted);margin:0 0 16px}
+  .setuprow{display:flex;align-items:center;gap:12px;padding:13px 14px;border:1px solid var(--line);border-radius:12px;background:var(--panel-2);margin-bottom:10px}
+  .setuprow .ic{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font-size:17px;flex:none;background:var(--panel);border:1px solid var(--line)}
+  .setuprow .meta{flex:1;min-width:0}
+  .setuprow .sname{font-size:14px;font-weight:700;color:var(--text)}
+  .setuprow .sstat{font-size:12px;color:var(--faint);margin-top:2px;display:flex;align-items:center;gap:6px}
+  .setuprow .sstat .dot{width:7px;height:7px;border-radius:50%;background:var(--faint);flex:none}
+  .setuprow.ready .sstat{color:var(--good)}.setuprow.ready .sstat .dot{background:var(--good)}
+  .setuprow.partial .sstat{color:var(--warn)}.setuprow.partial .sstat .dot{background:var(--warn)}
+  .setuprow .act{flex:none;font-size:12.5px;font-weight:700;border-radius:9px;padding:8px 13px;border:1px solid var(--line);color:var(--text);background:var(--panel)}
+  .setuprow .act:hover{border-color:var(--accent)}
+  .setuprow .act.go{color:#06203f;background:linear-gradient(135deg,var(--accent),var(--accent-2));border-color:transparent}
+  .setuprow .act.done{color:var(--good);border-color:rgba(90,209,154,.4);background:rgba(90,209,154,.08);cursor:default}
+
   @media (prefers-reduced-motion:reduce){
     *,*::before,*::after{animation:none!important;transition-duration:.01ms!important}
     .msg{opacity:1;transform:none}
@@ -217,9 +271,12 @@
   <header class="bar">
     <div class="brand"><span class="m">P</span><span>PowerCodex <small id="brandSub">· your app</small></span></div>
     <div class="right">
+      <span class="typechip" id="typeChip" title="Detected project type" style="display:none"><span class="e">📦</span><span id="typeLabel">—</span><span class="mcp" id="mcpBadge"></span></span>
+      <button class="iconbtn" id="treeToggle" title="Show the workspace files">🗂️ Files</button>
       <button class="iconbtn" id="openProjectBtn" title="Open an existing project folder">📂 Open project</button>
+      <button class="iconbtn" id="openVSCodeBtn" title="Open this project in VS Code">⧉ VS Code</button>
       <button class="provchip" id="provChip" title="Which AI is answering — click to switch"><span class="br">🧠</span><span class="nm" id="provName">…</span><span style="color:var(--faint)">▾</span></button>
-      <button class="iconbtn" id="canvasToggle" title="Show the plan canvas">🖼️ Canvas</button>
+      <button class="iconbtn" id="canvasToggle" title="Show the canvas">🖼️ Canvas</button>
       <button class="statusbtn" id="statusBtn"><span class="d"></span><span class="stg" id="stStage">Starting…</span><span class="cv" id="stHint">status ▾</span></button>
     </div>
   </header>
@@ -241,6 +298,18 @@
   </div>
 
   <main>
+    <aside class="tree" id="tree">
+      <div class="th">
+        <span class="t" id="treeName">workspace</span>
+        <span class="ctl">
+          <button class="b" id="treeRefresh" title="Refresh">⟳</button>
+          <button class="b" id="treeClose" title="Hide files">✕</button>
+        </span>
+      </div>
+      <div class="list" id="treeList"><div class="empty">Open or create a project to see its files.</div></div>
+    </aside>
+    <div class="split hidden" id="splitTree"></div>
+
     <div class="chatwrap">
       <div class="thread" id="thread"><div class="inner" id="threadInner"></div></div>
       <div class="composer">
@@ -257,10 +326,12 @@
       </div>
     </div>
 
+    <div class="split hidden" id="splitCanvas"></div>
     <aside class="canvas" id="canvas">
       <div class="ch">
         <span>📄</span><span class="t">Canvas</span><span class="fn" id="canvasFn">plan-preview.html</span>
-        <span class="ctl">
+        <span class="pick">
+          <select id="canvasPick" title="Switch artifact"></select>
           <button class="b" id="canvasOpen">⤢ Open</button>
           <button class="b go" id="canvasBuild">⚡ Build this</button>
         </span>
@@ -281,6 +352,22 @@
     </div>
   </div>
 
+  <!-- AI sign-in gate (no silent degrade) -->
+  <div class="overlay" id="setupOverlay">
+    <div class="modal">
+      <div class="mh"><span>🔌</span><span class="t">Connect your AI</span></div>
+      <div class="setupbody">
+        <p class="setupintro">PowerCodex builds with <b>your own</b> AI account — nothing is stored here. Sign in to one of these, right from this window, to unlock real building. You can connect them through their CLIs (independent of VS Code).</p>
+        <div id="setupRows"><div class="setuprow"><span class="sname">Checking what’s installed…</span></div></div>
+      </div>
+      <div class="mf">
+        <span class="hint" id="setupHint">This takes a moment while I check each tool.</span>
+        <button type="button" class="btn" id="setupRecheck">↻ Recheck</button>
+        <button type="button" class="btn ghost" id="setupSkip">Continue in limited mode</button>
+      </div>
+    </div>
+  </div>
+
 <script>
 (() => {
   'use strict';
@@ -291,6 +378,8 @@
     mode: 'chat', phase: 'welcome', goal: null, plan: null, planFile: null, planId: null,
     history: [], providerId: null, activeProvider: null, providers: [],
     poll: null, shownHeal: false, builtOnce: false, fpPath: null, canvasUrl: null, runNode: null,
+    treeRoot: null, projType: null,
+    anyReady: false, vscode: false, skippedSetup: false,
   };
 
   // ---------- helpers ----------
@@ -347,7 +436,52 @@
       // renders that file. If authoring failed, planFile is absent → inline skeleton.
       app.planFile = data.planFile || null; app.planId = data.planId || null;
       showPlanCard(app.plan);
+    } else if(data.artifactFile){
+      // A non-build deliverable (architecture overview, Power BI dashboard, document…)
+      // was authored — show it in the Canvas and offer a one-tap open.
+      showUrlInCanvas('/'+data.artifactFile, data.artifactFile.split('/').pop());
+      openCanvas(true); loadArtifacts();
+      const m = threadInner.lastElementChild;
+      if(m && m.querySelector){ const b=m.querySelector('.bub'); if(b){ const s=document.createElement('span'); s.className='small'; s.innerHTML='📄 Opened in the canvas →'; b.appendChild(s); } }
     }
+  }
+
+  // ---------- Agent mode (provider-backed execution) ----------
+  // Agent mode EXECUTES: it builds, authors artifacts, or acts on the workspace, and
+  // streams progress. The server routes by intent; the client renders the outcome.
+  async function handleAgent(text){
+    app.goal = text;
+    const typing = showTyping();
+    let data = null;
+    try {
+      data = await (await fetch('/api/agent',{method:'POST',headers:{'content-type':'application/json'},
+        body: JSON.stringify({ message:text, history: app.history, provider: app.providerId })})).json();
+    } catch { data = null; }
+    typing.remove();
+    app.history.push({ role:'me', text });
+    if(!data){ bubble('ai','I couldn’t reach the agent just now — try again in a moment.'); return; }
+    if(data.provider) markProvider(data.provider, data.simulated);
+
+    if(data.kind==='build'){
+      // The server already kicked off the real build loop; show the run card and poll.
+      bubble('ai', esc(data.reply || 'On it — building now.'));
+      app.history.push({ role:'ai', text: data.reply || '' });
+      if(data.plan && data.plan.items){ app.plan = { title: data.plan.title, items: data.plan.items.map(esc) }; app.planFile = data.planFile || null; app.planId = data.planId || null; renderCanvas(); }
+      setMode('agent'); app.shownHeal = false;
+      app.runNode = makeRunCard(); aiCard(app.runNode);
+      app.phase = 'building'; startPolling();
+      return;
+    }
+
+    const reply = data.reply || 'Done.';
+    bubble('ai', esc(reply).replace(/\n/g,'<br>'));
+    app.history.push({ role:'ai', text: reply });
+    if(data.artifact && data.artifact.file){
+      showUrlInCanvas('/'+data.artifact.file, data.artifact.file.split('/').pop());
+      openCanvas(true); loadArtifacts();
+    }
+    // The agent may have changed files — refresh the tree so new work shows up.
+    if(app.treeRoot) loadTree();
   }
 
   // Client-side fallback plan (only used when the server is unreachable).
@@ -428,7 +562,7 @@
   }
   async function onDone(state){
     app.phase='done'; app.builtOnce = true; setMode('chat');
-    await refreshCanvas();
+    await refreshCanvas(); loadTree(); loadArtifacts();
     if(state.stopped){
       bubble('ai','I paused and need you before going further — something needs your decision. Open the status for details, or tell me how you’d like to proceed.');
     } else {
@@ -461,6 +595,16 @@
     if(cls) btn.classList.add(cls);
     $('stStage').textContent = stage;
     if(state.project && state.project.name) $('brandSub').textContent = '· '+state.project.name;
+    if(state.project){
+      const p=state.project, chip=$('typeChip');
+      if(p.typeLabel && p.type && p.type!=='empty' && p.type!=='unknown'){
+        app.projType=p.type; chip.style.display='';
+        $('typeLabel').textContent=p.typeLabel;
+        chip.className='typechip'+(p.type==='powerapps-code'?' code':p.type==='powerbi'?' bi':'');
+        const e=chip.querySelector('.e'); if(e) e.textContent = p.type==='powerbi'?'📊':p.type==='powerapps-code'?'⚡':p.type==='web'?'🌐':p.type==='docs'?'📚':'📦';
+        $('mcpBadge').textContent = (p.mcp && p.mcp.length) ? ('· '+p.mcp.length+' MCP') : '';
+      } else { chip.style.display='none'; }
+    }
     $('spStage').textContent = FRIENDLY[state.currentStage] || (state.done?'Done':'—');
     $('spStageLabel').textContent = 'Lifecycle stage · '+Math.min(state.currentStage+1,7)+' of 7';
     $('spStrip').innerHTML = (state.stages||[]).map(s=>'<div class="sg '+(s.status==='active'?'active':s.status)+'"><div class="l">'+s.label+'</div></div>').join('');
@@ -471,7 +615,30 @@
   }
 
   // ---------- canvas ----------
-  function openCanvas(on){ $('canvas').classList.toggle('open', on); $('canvasToggle').classList.toggle('on', on); }
+  function openCanvas(on){
+    const c=$('canvas'); c.classList.toggle('open', on); $('canvasToggle').classList.toggle('on', on); $('splitCanvas').classList.toggle('hidden', !on);
+    if(on){ const cw=parseInt(localStorage.getItem('pcx.canvasW')||'',10); c.style.width = cw ? Math.max(300,cw)+'px' : ''; }
+    else { c.style.width=''; }
+  }
+  // Point the canvas iframe at any URL (an artifact, a saved plan, or a previewed file).
+  function showUrlInCanvas(url, fn){
+    const f=$('canvasFrame'); f.style.display='block'; $('canvasEmpty').style.display='none';
+    f.removeAttribute('srcdoc'); f.src=url;
+    $('canvasFn').textContent = fn || url.split('/').pop(); app.canvasUrl = url;
+  }
+  // Populate the canvas artifact switcher with recent plans + artifacts.
+  async function loadArtifacts(){
+    let arts=[], plans=[];
+    try { arts = (await (await fetch('/api/artifacts',{cache:'no-store'})).json()).artifacts || []; } catch {}
+    try { plans = await getPlans(); } catch {}
+    const items=[...plans.map(p=>({file:p.file,label:p.title||p.id,kind:'plan'})), ...arts.map(a=>({file:a.file,label:a.title||a.kind,kind:a.kind}))];
+    const sel=$('canvasPick');
+    if(!items.length){ sel.style.display='none'; return; }
+    sel.style.display='';
+    sel.innerHTML = items.map(i=>'<option value="/'+esc(i.file)+'">'+esc(i.kind)+' · '+esc(i.label)+'</option>').join('');
+    if(app.canvasUrl) sel.value=app.canvasUrl;
+    sel.onchange=()=>{ showUrlInCanvas(sel.value, sel.value.split('/').pop()); openCanvas(true); };
+  }
   // Inline skeleton — only shown for the brief moment before the server's authored plan
   // document loads, or as a fallback if authoring failed. The real, comprehensive plan
   // (remarks, capability table, Now vs After, outcome log) is the saved .html file.
@@ -511,23 +678,85 @@
     }
   }
 
-  // ---------- providers ----------
+  // ---------- providers + readiness (no silent degrade) ----------
+  // Fast first paint: install-only list so the chip shows something immediately.
   async function loadProviders(){
     try { app.providers = (await (await fetch('/api/providers')).json()).providers || []; } catch { app.providers = []; }
-    const real = app.providers.find(p=>!p.simulated && p.available);
-    markProvider((real && real.id) || 'simulated', !real);
+    const real = app.providers.find(p=>!p.simulated && (p.ready||p.available));
+    if(!app.providerId) markProvider((real && real.id) || 'simulated', !real);
     renderProvMenu();
   }
-  function markProvider(id, simulated){ app.activeProvider=id; $('provName').textContent = id + (simulated?' (sim)':''); }
+  // Deep check: installed AND signed in. Drives the gate and the chip's true state.
+  async function loadReadiness(){
+    $('provName').textContent = 'checking…';
+    let data=null;
+    try { data = await (await fetch('/api/providers/ready')).json(); } catch {}
+    if(data && data.providers){ app.providers = data.providers; app.anyReady = !!data.anyReady; app.vscode = !!data.vscode; }
+    const real = app.providers.find(p=>!p.simulated && p.ready);
+    markProvider((app.providerId) || (real&&real.id) || 'simulated', !(real || (app.providerId && app.providers.find(p=>p.id===app.providerId && !p.simulated && p.ready))));
+    renderProvMenu();
+    return data;
+  }
+  function markProvider(id, simulated){ app.activeProvider=id; $('provName').textContent = id + (simulated?' (limited)':''); }
+  function provReady(p){ return p.simulated ? true : !!(p.ready!==undefined ? p.ready : p.available); }
+  function provInstalled(p){ return p.simulated ? true : !!(p.installed!==undefined ? p.installed : p.available); }
   function renderProvMenu(){
     const menu=$('provMenu');
     menu.innerHTML = '<div class="ph">Which AI answers</div>' + app.providers.map(p=>{
       const sel = (app.providerId? app.providerId===p.id : app.activeProvider===p.id) ? ' sel':'';
-      const up = p.available ? ' up':'';
-      const sub = p.simulated ? 'always available' : (p.available ? 'ready' : 'CLI not found');
+      const ready=provReady(p), installed=provInstalled(p);
+      const up = ready ? ' up':'';
+      const sub = p.simulated ? 'built-in · limited' : ready ? 'signed in · ready' : installed ? 'sign in needed' : 'not installed';
       return '<button class="it'+sel+up+'" data-id="'+p.id+'"><span class="dot"></span><span>'+esc(p.label)+'<span class="sub"> · '+sub+'</span></span></button>';
-    }).join('');
-    menu.querySelectorAll('.it').forEach(it=>it.onclick=()=>{ app.providerId=it.dataset.id; markProvider(it.dataset.id, !!app.providers.find(p=>p.id===it.dataset.id && p.simulated)); renderProvMenu(); menu.classList.remove('open'); });
+    }).join('') + '<button class="it" data-setup="1"><span class="dot"></span><span>⚙ Connect / sign in…</span></button>';
+    menu.querySelectorAll('.it').forEach(it=>it.onclick=()=>{
+      menu.classList.remove('open');
+      if(it.dataset.setup){ openSetup(); return; }
+      const p=app.providers.find(x=>x.id===it.dataset.id);
+      if(p && !p.simulated && !provReady(p)){ openSetup(); return; } // not signed in → guide, don't degrade
+      app.providerId=it.dataset.id; markProvider(it.dataset.id, !!(p&&p.simulated)); renderProvMenu();
+    });
+  }
+
+  // ---------- setup gate ----------
+  function openSetup(){ renderSetup(); $('setupOverlay').classList.add('open'); }
+  function closeSetup(){ $('setupOverlay').classList.remove('open'); }
+  function renderSetup(){
+    const rows = app.providers.filter(p=>!p.simulated);
+    const el=$('setupRows');
+    el.innerHTML = rows.map(p=>{
+      const ready=provReady(p), installed=provInstalled(p);
+      const cls = ready?'ready':(installed?'partial':'');
+      const stat = ready?'Signed in · ready':(installed?'Installed · not signed in':'Not installed');
+      const icon = p.id==='claude-code'?'✦':p.id==='github-copilot'?'🐙':'🧠';
+      const action = ready ? '<span class="act done">✓ Connected</span>'
+        : '<button type="button" class="act go" data-signin="'+esc(p.id)+'">'+(installed?'Sign in':'Install & sign in')+'</button>';
+      return '<div class="setuprow '+cls+'"><span class="ic">'+icon+'</span><div class="meta"><div class="sname">'+esc(p.label)+'</div><div class="sstat"><span class="dot"></span>'+stat+'</div></div>'+action+'</div>';
+    }).join('') || '<div class="setuprow"><span class="sname">No AI providers detected.</span></div>';
+    el.querySelectorAll('[data-signin]').forEach(b=>b.onclick=()=>doSignIn(b.dataset.signin));
+    $('setupHint').textContent = app.anyReady ? 'You’re connected — close this anytime.' : 'Sign in to one of these to unlock real building.';
+  }
+  async function doSignIn(id){
+    const res = await api('provider-signin', { provider:id });
+    if(res && res.ok){
+      $('setupHint').textContent = 'A terminal opened — finish sign-in there, then click Recheck.';
+      bubble('ai','🔐 I opened a terminal to sign in to <b>'+esc(id)+'</b>. '+(res.note?esc(res.note):'Complete it, then press <b>Recheck</b>.'));
+    } else if(res && res.notInstalled){
+      $('setupHint').textContent = 'Install it first, then Recheck.';
+      bubble('ai','<b>'+esc(id)+'</b> isn’t installed yet.'+(res.installCmd?' Install with <code>'+esc(res.installCmd)+'</code>.':'')+(res.installUrl?' <a href="'+esc(res.installUrl)+'" target="_blank" rel="noopener">Open docs ↗</a>':''));
+    } else {
+      bubble('ai','Couldn’t start sign-in: '+esc((res&&res.error)||'unknown error'));
+    }
+  }
+  async function recheckSetup(){
+    $('setupHint').textContent = 'Re-checking…';
+    await loadReadiness(); renderSetup();
+    if(app.anyReady){ closeSetup(); bubble('ai','✅ Connected to your AI — you’re all set. Ask me anything, or switch to ⚡ Agent and I’ll build it for real.'); }
+  }
+  async function openInVSCode(){
+    const res = await api('open-in-vscode');
+    if(res && res.ok) bubble('ai','🧩 Opening this project in VS Code…');
+    else bubble('ai','Couldn’t open VS Code: '+esc((res&&res.error)||'unknown error'));
   }
 
   // ---------- folder picker ----------
@@ -553,8 +782,73 @@
   function showFolderModal(){ $('fpOverlay').classList.add('open'); openFolder(null); }
   function hideFolderModal(){ $('fpOverlay').classList.remove('open'); }
 
+  // ---------- workspace file tree ----------
+  async function fetchTree(p){
+    try { const u='/api/tree'+(p?('?path='+encodeURIComponent(p)):''); const r=await fetch(u,{cache:'no-store'}); return r.ok ? await r.json() : null; } catch { return null; }
+  }
+  function fileEmoji(name, dir){
+    if(dir) return '📁';
+    const e=(name.split('.').pop()||'').toLowerCase();
+    if(/^(tsx?|jsx?|mjs|cjs)$/.test(e)) return '📜';
+    if(e==='json') return '🔧';
+    if(/^(md|mdx|txt)$/.test(e)) return '📄';
+    if(/^(html?|)$/.test(e)) return '🌐';
+    if(/^(css|scss|less)$/.test(e)) return '🎨';
+    if(/^(png|jpe?g|gif|svg|webp|ico)$/.test(e)) return '🖼️';
+    if(/^(yml|yaml)$/.test(e)) return '⚙️';
+    return '📄';
+  }
+  function renderTreeInto(container, entries, depth){
+    container.innerHTML='';
+    if(!entries || !entries.length){ if(depth===0) container.innerHTML='<div class="empty">This folder is empty.</div>'; return; }
+    for(const e of entries){
+      const row=document.createElement('div'); row.className='ti'+(e.dir?' dir':''); row.style.paddingLeft=(8+depth*13)+'px';
+      row.innerHTML='<span class="tw">'+(e.dir?'▸':'')+'</span><span class="tic">'+fileEmoji(e.name,e.dir)+'</span><span class="tn">'+esc(e.name)+'</span>';
+      if(e.dir){
+        const kids=document.createElement('div'); kids.className='tkids'; kids.style.display='none'; let loaded=false;
+        row.onclick=async(ev)=>{ ev.stopPropagation();
+          const open=kids.style.display==='none'; kids.style.display=open?'block':'none'; row.querySelector('.tw').textContent=open?'▾':'▸';
+          if(open && !loaded){ loaded=true; const d=await fetchTree(e.path); if(d&&d.ok) renderTreeInto(kids,d.entries,depth+1); }
+        };
+        container.appendChild(row); container.appendChild(kids);
+      } else {
+        row.onclick=(ev)=>{ ev.stopPropagation();
+          document.querySelectorAll('.tree .ti.sel').forEach(x=>x.classList.remove('sel')); row.classList.add('sel');
+          showUrlInCanvas('/api/file?path='+encodeURIComponent(e.path), e.name); openCanvas(true);
+        };
+        container.appendChild(row);
+      }
+    }
+  }
+  async function loadTree(){
+    const d=await fetchTree(null);
+    if(!d || !d.ok){ $('treeList').innerHTML='<div class="empty">'+esc((d&&d.error)||'No project open yet.')+'</div>'; return; }
+    app.treeRoot=d.root; $('treeName').textContent=(String(d.root||'workspace').split(/[\\/]/).pop())||'workspace';
+    renderTreeInto($('treeList'), d.entries, 0);
+  }
+  function openTree(on){
+    const t=$('tree'); t.classList.toggle('open',on); $('treeToggle').classList.toggle('on',on); $('splitTree').classList.toggle('hidden',!on);
+    if(on){ const tw=parseInt(localStorage.getItem('pcx.treeW')||'',10); t.style.width = tw ? Math.max(160,Math.min(tw,460))+'px' : ''; if(!app.treeRoot) loadTree(); }
+    else { t.style.width=''; }
+    try { localStorage.setItem('pcx.treeOpen', on?'1':'0'); } catch {}
+  }
+
+  // ---------- drag-to-resize splitters ----------
+  function makeSplit(splitEl, side){
+    splitEl.addEventListener('pointerdown',(e)=>{
+      e.preventDefault(); splitEl.classList.add('drag');
+      const main=document.querySelector('main'); const rect=main.getBoundingClientRect();
+      const move=(ev)=>{
+        if(side==='left'){ const w=Math.max(160,Math.min(ev.clientX-rect.left,460)); $('tree').style.width=w+'px'; try{localStorage.setItem('pcx.treeW',String(w));}catch{} }
+        else { const w=Math.max(300,Math.min(rect.right-ev.clientX,rect.width-360)); $('canvas').style.width=w+'px'; try{localStorage.setItem('pcx.canvasW',String(w));}catch{} }
+      };
+      const up=()=>{ splitEl.classList.remove('drag'); window.removeEventListener('pointermove',move); window.removeEventListener('pointerup',up); };
+      window.addEventListener('pointermove',move); window.addEventListener('pointerup',up);
+    });
+  }
+
   // ---------- mode + input ----------
-  function setMode(mode){ app.mode=mode; $('modeChat').className='o chat'+(mode==='chat'?' on':''); $('modeAgent').className='o agent'+(mode==='agent'?' on':''); }
+  function setMode(mode){ app.mode=mode; $('modeChat').className='o chat'+(mode==='chat'?' on':''); $('modeAgent').className='o agent'+(mode==='agent'?' on':''); $('input').setAttribute('placeholder', mode==='agent' ? 'Tell the agent what to do — build, fix, or create…' : 'Tell me what you’d like to build, or ask a question…'); }
   const input = $('input');
   function autosize(){ input.style.height='auto'; input.style.height=Math.min(input.scrollHeight,140)+'px'; }
   input.addEventListener('input', autosize);
@@ -563,14 +857,13 @@
     const text=input.value.trim(); if(!text) return;
     input.value=''; autosize(); bubble('me', esc(text));
     if(app.phase==='building'){ bubble('ai','I’ll get to that as soon as this build finishes 👍'); return; }
-    if(app.mode==='agent') setMode('chat');
-    handleChat(text);
+    if(app.mode==='agent') handleAgent(text); else handleChat(text);
   }
 
   // ---------- wiring ----------
   $('sendBtn').onclick = onSend;
   $('modeChat').onclick = ()=> setMode('chat');
-  $('modeAgent').onclick = ()=>{ if(app.plan && app.phase==='planned'){ build(); } else { bubble('ai','Agent mode is where I build. Tell me what to make and I’ll plan it first, then build.'); } };
+  $('modeAgent').onclick = ()=> setMode('agent');
   $('statusBtn').onclick = ()=>{ $('provMenu').classList.remove('open'); $('statusPanel').classList.toggle('open'); };
   $('provChip').onclick = ()=>{ $('statusPanel').classList.remove('open'); $('provMenu').classList.toggle('open'); };
   document.addEventListener('click', (e)=>{
@@ -578,6 +871,14 @@
     if(!$('provMenu').contains(e.target) && !$('provChip').contains(e.target)) $('provMenu').classList.remove('open');
   });
   $('canvasToggle').onclick = ()=> openCanvas(!$('canvas').classList.contains('open'));
+  $('treeToggle').onclick = ()=> openTree(!$('tree').classList.contains('open'));
+  $('treeClose').onclick = ()=> openTree(false);
+  $('treeRefresh').onclick = ()=> loadTree();
+  makeSplit($('splitTree'),'left'); makeSplit($('splitCanvas'),'right');
+  $('openVSCodeBtn').onclick = openInVSCode;
+  $('setupRecheck').onclick = recheckSetup;
+  $('setupSkip').onclick = ()=>{ app.skippedSetup=true; closeSetup(); };
+  $('setupOverlay').onclick = (e)=>{ if(e.target===$('setupOverlay')){ app.skippedSetup=true; closeSetup(); } };
   $('canvasOpen').onclick = ()=>{ if(app.canvasUrl){ window.open(app.canvasUrl,'_blank'); } else if(app.plan){ const w=window.open('','_blank'); w.document.write(buildPreviewHtml(app.plan)); w.document.close(); } };
   $('canvasBuild').onclick = ()=>{ if(app.plan) build(); };
   $('openProjectBtn').onclick = chooseProject;
@@ -596,7 +897,7 @@
       $('brandSub').textContent='· '+res.name; app.builtOnce=true;
       const d = res.digest ? (' — I read <b>'+res.digest.routes+' screens</b> and <b>'+res.digest.components+' components</b>') : '';
       bubble('ai','📂 Connected to <b>'+esc(res.name)+'</b>'+d+'. What would you like to change or add?');
-      const s=await getState(); if(s) paintStatus(s); refreshCanvas();
+      const s=await getState(); if(s) paintStatus(s); refreshCanvas(); loadTree(); loadArtifacts();
     } else {
       const err = (res&&res.error)||'unknown error';
       const hint = (res&&res.stale) || /unknown action/i.test(err)
@@ -617,6 +918,7 @@
       app.builtOnce = false;
       if(res.name) $('brandSub').textContent = '· '+res.name;
       bubble('ai','✨ Your app is ready. Now tell me in plain words what the first screen should do — for example: <i>“Show field technicians only their jobs, with the closest deadline first, overdue in red.”</i>');
+      loadTree(); loadArtifacts();
     } else {
       const err = (res&&res.error)||'unknown error';
       bubble('ai','I couldn’t set up a new app here: '+esc(err)+' You can use <b>Open project</b> to point me at an existing folder instead.');
@@ -636,7 +938,7 @@
 
   // ---------- boot ----------
   function greet(){
-    const m = bubble('ai','👋 Hi! I’m your build assistant. Want to start something new, or work on an app you already have?');
+    const m = bubble('ai','👋 Hi! I can answer questions, sketch an architecture, build a Power Apps screen, or make something like a Power BI dashboard — just ask. Switch to <b>⚡ Agent</b> when you want me to go and do it. Start something new, or open a project you already have?');
     const q = document.createElement('div'); q.className='qbtns';
     q.innerHTML = '<button class="qb" id="qNew">✨ Create a new app</button><button class="qb" id="qOpen">📂 Open an existing folder</button>';
     m.querySelector('.bub').appendChild(q);
@@ -648,6 +950,11 @@
     const state = await getState();
     if(state){ paintStatus(state); if(state.intake && state.intake.goal){ app.goal=state.intake.goal; app.builtOnce=true; } }
     greet();
+    // Preload the workspace tree + artifact switcher, and restore the saved layout.
+    loadTree(); loadArtifacts();
+    if(localStorage.getItem('pcx.treeOpen')==='1') openTree(true);
+    // Deep readiness probe → if no real AI is signed in, open the setup gate (no degrade).
+    loadReadiness().then((d)=>{ if(d && !d.anyReady && !app.skippedSetup) openSetup(); });
     setInterval(async ()=>{ if(app.phase!=='building'){ const s=await getState(); if(s) paintStatus(s); } }, 5000);
   }
   boot();

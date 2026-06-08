@@ -385,6 +385,29 @@ async function selftest() {
     fs.rmSync(stateDir, { recursive: true, force: true });
     fs.rmSync(pRoot, { recursive: true, force: true });
 
+    // Security: a malicious screen name must never escape src/pages/ when the build
+    // executor authors code tasks (path-traversal → arbitrary file write).
+    const cgRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-codegen-'));
+    try {
+      fs.mkdirSync(path.join(cgRoot, 'src'), { recursive: true });
+      fs.writeFileSync(path.join(cgRoot, 'src', 'main.tsx'), '');
+      const { buildCodeTasks } = require('./codegen');
+      const evil = path.join(cgRoot, 'PWNED.tsx');
+      await buildCodeTasks({
+        root: cgRoot,
+        tasks: [{ type: 'code.screen', name: '../../PWNED', componentName: 'X', route: '/x', goal: 'x' }],
+      });
+      // The traversal must never escape: no file written outside src/pages/.
+      check('a traversing screen name cannot escape src/pages/', !fs.existsSync(evil) && !fs.existsSync(path.join(cgRoot, 'src', 'PWNED.tsx')));
+      const safe = await buildCodeTasks({
+        root: cgRoot,
+        tasks: [{ type: 'code.screen', name: 'My Screen!!', componentName: 'MyScreen', route: '/my', goal: 'x' }],
+      });
+      check('a normal screen name still writes inside src/pages/', safe[0] && safe[0].created === true && fs.existsSync(path.join(cgRoot, 'src', 'pages', 'my-screen.tsx')));
+    } finally {
+      fs.rmSync(cgRoot, { recursive: true, force: true });
+    }
+
     const passed = checks.filter(Boolean).length;
     const ok = checks.every(Boolean);
     console.log(`\n${ok ? 'PASS' : 'FAIL'} · ${passed}/${checks.length} checks · summary ${JSON.stringify(summary)}`);

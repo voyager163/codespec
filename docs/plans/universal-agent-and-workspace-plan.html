@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PowerCodex — Universal Agent, Smart Router &amp; Workspace UX · the plan</title>
+<style>
+  :root{
+    --ease-out:cubic-bezier(0.23,1,0.32,1);
+    --bg:#0b0d12;--bg-soft:#12151d;--panel:#161a24;--panel-2:#1c2130;--line:#262c3a;--line-2:#313a4d;
+    --text:#e8ecf4;--muted:#99a2b8;--faint:#6b7488;
+    --accent:#6ea8fe;--accent-2:#a78bfa;--good:#5ad19a;--bad:#f08a8a;--warn:#f5c97b;--cyan:#67e8f9;
+    --radius:16px;--shadow:0 20px 60px -20px rgba(0,0,0,0.6);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 600px at 80% -10%,rgba(167,139,250,0.14),transparent 60%),
+      radial-gradient(900px 500px at -10% 10%,rgba(110,168,254,0.12),transparent 55%),
+      var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.6;-webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px 120px}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .mono{font-family:"SF Mono",ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace}
+
+  .rise{opacity:0;transform:translateY(14px);animation:rise 600ms var(--ease-out) forwards}
+  @keyframes rise{to{opacity:1;transform:translateY(0)}}
+  .d1{animation-delay:40ms}.d2{animation-delay:90ms}.d3{animation-delay:140ms}
+  .d4{animation-delay:190ms}.d5{animation-delay:240ms}.d6{animation-delay:290ms}
+
+  nav.top{position:sticky;top:0;z-index:30;backdrop-filter:blur(10px);background:rgba(11,13,18,0.72);border-bottom:1px solid var(--line)}
+  nav.top .inner{max-width:1080px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;gap:18px}
+  nav.top .brand{font-weight:700;letter-spacing:-0.01em;display:flex;align-items:center;gap:9px}
+  nav.top .brand .mark{width:24px;height:24px;border-radius:7px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#06203f;font-weight:900;font-size:13px}
+  nav.top .brand small{display:block;font-weight:500;font-size:11px;color:var(--faint)}
+  nav.top .links{margin-left:auto;display:flex;gap:18px;font-size:14px}
+  nav.top .links a{color:var(--muted)}
+  nav.top .links a:hover{color:var(--text);text-decoration:none}
+  @media(max-width:880px){nav.top .links{display:none}}
+
+  header.hero{padding:84px 24px 30px;text-align:center;max-width:940px;margin:0 auto}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);background:rgba(110,168,254,0.1);border:1px solid rgba(110,168,254,0.25);padding:6px 14px;border-radius:999px;margin-bottom:22px}
+  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 0 rgba(110,168,254,0.6);animation:pulse 2.4s var(--ease-out) infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(110,168,254,0.5)}70%{box-shadow:0 0 0 9px rgba(110,168,254,0)}100%{box-shadow:0 0 0 0 rgba(110,168,254,0)}}
+  h1{font-size:clamp(34px,6.2vw,56px);line-height:1.06;margin:0 0 18px;letter-spacing:-0.02em;background:linear-gradient(180deg,#fff,#b9c2d8);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--muted);font-size:18px;max-width:780px;margin:0 auto}
+  .meta{margin-top:26px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;color:var(--faint);font-size:13px}
+  .meta span{border:1px solid var(--line);border-radius:999px;padding:5px 12px}
+
+  section{margin-top:74px}
+  .kicker{color:var(--accent-2);font-weight:600;font-size:13px;letter-spacing:0.14em;text-transform:uppercase;margin:0 0 10px}
+  h2{font-size:28px;margin:0 0 14px;letter-spacing:-0.01em}
+  h3{font-size:17px;margin:0 0 8px}
+  p.lead{color:var(--muted);font-size:16px;max-width:860px}
+
+  .panel{background:linear-gradient(180deg,var(--panel),var(--bg-soft));border:1px solid var(--line);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow)}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media (max-width:820px){.grid,.grid3{grid-template-columns:1fr}}
+
+  .card{background:var(--panel-2);border:1px solid var(--line);border-radius:13px;padding:20px;transition:transform .2s var(--ease-out),border-color .2s var(--ease-out)}
+  .card:hover{transform:translateY(-3px);border-color:rgba(110,168,254,0.4)}
+  .card .ic{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font-size:17px;margin-bottom:12px;background:rgba(110,168,254,0.12);border:1px solid rgba(110,168,254,0.25)}
+  .card .num{font-size:12px;font-weight:800;color:var(--faint);letter-spacing:0.08em}
+  .card h3{margin:4px 0 0}
+  .card p{color:var(--muted);font-size:14.5px;margin:6px 0 0}
+
+  .pill{display:inline-block;font-size:12px;padding:3px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+  .pill.good{color:var(--good);border-color:rgba(90,209,154,0.35);background:rgba(90,209,154,0.08)}
+  .pill.bad{color:var(--bad);border-color:rgba(240,138,138,0.35);background:rgba(240,138,138,0.08)}
+  .pill.warn{color:var(--warn);border-color:rgba(245,201,123,0.35);background:rgba(245,201,123,0.08)}
+  .pill.acc{color:var(--accent);border-color:rgba(110,168,254,0.35);background:rgba(110,168,254,0.08)}
+  .pill.pur{color:var(--accent-2);border-color:rgba(167,139,250,0.35);background:rgba(167,139,250,0.08)}
+
+  ul.clean{list-style:none;padding:0;margin:12px 0 0}
+  ul.clean li{position:relative;padding-left:26px;margin:9px 0;color:var(--muted);font-size:14.5px}
+  ul.clean li::before{content:"→";position:absolute;left:0;color:var(--accent)}
+  ul.clean li b{color:var(--text);font-weight:600}
+
+  table{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--faint);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:0.06em}
+  td{color:var(--muted)}td b{color:var(--text)}
+  code.inl{background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:1px 7px;font-size:13px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;color:#cdd6ea}
+
+  .callout{border-left:3px solid var(--accent);background:rgba(110,168,254,0.06);padding:14px 16px;border-radius:0 10px 10px 0;color:var(--muted);font-size:14.5px}
+  .callout.pur{border-left-color:var(--accent-2);background:rgba(167,139,250,0.06)}
+  .callout.bad{border-left-color:var(--bad);background:rgba(240,138,138,0.06)}
+  .callout.good{border-left-color:var(--good);background:rgba(90,209,154,0.06)}
+  .callout b{color:var(--text)}
+
+  .problem{display:flex;gap:14px;padding:16px 0;border-bottom:1px solid var(--line)}
+  .problem:last-child{border-bottom:0}
+  .problem .n{flex:none;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-weight:800;font-size:13px;color:var(--bad);background:rgba(240,138,138,0.1);border:1px solid rgba(240,138,138,0.3)}
+  .problem .bd{flex:1}
+  .problem .bd b{color:var(--text)}
+  .problem .bd .where{font-size:12.5px;color:var(--faint);margin-top:5px}
+
+  .ws{border:1px solid var(--line);border-radius:14px;background:var(--panel-2);overflow:hidden;margin-top:18px}
+  .ws .wsh{display:flex;align-items:center;gap:12px;padding:16px 18px;background:linear-gradient(180deg,rgba(110,168,254,.07),transparent);border-bottom:1px solid var(--line)}
+  .ws .wsh .tag{flex:none;font-size:11px;font-weight:800;letter-spacing:.08em;color:#06203f;background:linear-gradient(135deg,var(--accent),var(--accent-2));border-radius:7px;padding:5px 10px}
+  .ws .wsh .t{font-size:18px;font-weight:700}
+  .ws .wsh .pr{margin-left:auto}
+  .ws .wsb{padding:18px}
+  .ws .wsb .two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:820px){.ws .wsb .two{grid-template-columns:1fr}}
+  .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent-2);font-weight:700;margin:0 0 6px}
+
+  /* the smart router diagram */
+  .router{display:grid;grid-template-columns:1fr;gap:0;margin-top:14px}
+  .router .in{align-self:center;border:1px solid var(--line-2);border-radius:10px;background:var(--panel);padding:10px 16px;font-size:13.5px;color:var(--text);text-align:center;max-width:420px;margin:0 auto}
+  .router .arrow{height:24px;width:2px;background:linear-gradient(var(--accent),transparent);margin:6px auto}
+  .router .lanes{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  @media(max-width:820px){.router .lanes{grid-template-columns:1fr 1fr}}
+  .lane{border:1px solid var(--line);border-radius:11px;background:var(--panel);padding:13px;text-align:center}
+  .lane .h{font-size:13px;font-weight:700;color:var(--text)}
+  .lane .h .e{font-size:16px;display:block;margin-bottom:4px}
+  .lane p{font-size:12px;color:var(--faint);margin:6px 0 0}
+  .lane.chat{border-color:rgba(103,232,249,.35)}
+  .lane.answer{border-color:rgba(110,168,254,.35)}
+  .lane.plan{border-color:rgba(167,139,250,.35)}
+  .lane.agent{border-color:rgba(90,209,154,.35)}
+
+  /* mock window for the UX section */
+  .mock{border:1px solid var(--line-2);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);margin-top:14px;background:var(--panel)}
+  .mock .bar{display:flex;align-items:center;gap:8px;padding:9px 13px;background:#11151e;border-bottom:1px solid var(--line);font-size:12px;color:var(--faint)}
+  .mock .bar i{width:10px;height:10px;border-radius:50%;display:block}
+  .mock .bar .r{background:#f0635e}.mock .bar .y{background:#f5bf4f}.mock .bar .g{background:#5ad19a}
+  .mock .body{display:grid;grid-template-columns:170px 1fr 230px;min-height:230px}
+  @media(max-width:680px){.mock .body{grid-template-columns:1fr}}
+  .mock .tree{border-right:1px solid var(--line);background:#0d1016;padding:12px 10px;font-size:12px}
+  .mock .tree .ti{padding:3px 6px;border-radius:6px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mock .tree .ti.dir{color:var(--text);font-weight:600}
+  .mock .tree .ti.sel{background:rgba(110,168,254,.12);color:var(--accent)}
+  .mock .tree .ind{padding-left:16px}
+  .mock .chatcol{padding:14px;display:flex;flex-direction:column;gap:8px;background:linear-gradient(180deg,var(--bg-soft),var(--panel))}
+  .mock .chatcol .b{font-size:12px;border-radius:10px;padding:8px 11px;max-width:88%}
+  .mock .chatcol .b.ai{background:var(--panel-2);border:1px solid var(--line);align-self:flex-start;border-bottom-left-radius:4px}
+  .mock .chatcol .b.me{background:rgba(110,168,254,.16);border:1px solid rgba(110,168,254,.3);align-self:flex-end;border-bottom-right-radius:4px;color:var(--text)}
+  .mock .canvascol{border-left:1px solid var(--line);background:#0a0c11;padding:0;position:relative}
+  .mock .canvascol .grip{position:absolute;left:-3px;top:0;bottom:0;width:6px;cursor:col-resize;background:linear-gradient(90deg,transparent,rgba(110,168,254,.4),transparent)}
+  .mock .canvascol .ch{font-size:11px;color:var(--faint);padding:9px 12px;border-bottom:1px solid var(--line)}
+  .mock .canvascol .pv{padding:14px;font-size:11px;color:var(--muted)}
+  .mock .canvascol .pv .h{font-size:13px;color:var(--text);font-weight:700;margin-bottom:6px}
+
+  .timeline{position:relative;margin-top:20px;padding-left:30px}
+  .timeline::before{content:"";position:absolute;left:9px;top:6px;bottom:6px;width:2px;background:var(--line-2)}
+  .tl{position:relative;margin-bottom:22px}
+  .tl::before{content:"";position:absolute;left:-26px;top:3px;width:14px;height:14px;border-radius:50%;background:var(--panel);border:2px solid var(--accent)}
+  .tl.done::before{background:var(--good);border-color:var(--good)}
+  .tl h3{margin:0 0 3px;font-size:16px}
+  .tl .ph{font-size:12px;color:var(--faint);text-transform:uppercase;letter-spacing:.07em}
+  .tl p{color:var(--muted);font-size:14px;margin:6px 0 0}
+
+  .foot{margin-top:80px;border-top:1px solid var(--line);padding-top:22px;color:var(--faint);font-size:13px;text-align:center}
+  .seg{display:inline-flex;border:1px solid var(--line-2);border-radius:9px;overflow:hidden;font-size:12px;font-weight:700}
+  .seg span{padding:6px 12px;color:var(--muted)}
+  .seg span.on{color:#06203f;background:linear-gradient(135deg,var(--accent),var(--cyan))}
+  .seg span.on.ag{background:linear-gradient(135deg,var(--accent-2),#c4b5fd)}
+  .seg span+span{border-left:1px solid var(--line-2)}
+</style>
+</head>
+<body>
+<nav class="top">
+  <div class="inner">
+    <div class="brand"><span class="mark">P</span><span>PowerCodex<small>Universal Agent &amp; Workspace plan</small></span></div>
+    <div class="links">
+      <a href="#why">Diagnosis</a>
+      <a href="#vision">Vision</a>
+      <a href="#work">Workstreams</a>
+      <a href="#phasing">Phasing</a>
+      <a href="#risks">Risks</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <span class="eyebrow rise"><span class="dot"></span>Product plan · v1</span>
+  <h1 class="rise d1">From a plan-only chat to a real, universal build agent.</h1>
+  <p class="sub rise d2">PowerCodex should recognise what you actually want — a quick answer, an architecture overview, a build plan, or hands-on work — and act on it. PowerApps-first, but never PowerApps-only. With a real Agent mode, a smart intent router, a canvas that renders <em>any</em> artifact, a workspace file tree, and resizable panels.</p>
+  <div class="meta rise d3">
+    <span>5 confirmed defects</span><span>6 workstreams</span><span>Targets <code class="inl">tools/lifecycle</code></span><span>No new runtime deps</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ============ DIAGNOSIS ============ -->
+  <section id="why" class="rise">
+    <p class="kicker">What's actually broken</p>
+    <h2>Diagnosis — grounded in the code</h2>
+    <p class="lead">Five issues, each traced to a specific place in the shipped app. This is the honest starting point; every workstream below maps back to one of these.</p>
+
+    <div class="panel" style="margin-top:18px">
+      <div class="problem">
+        <div class="n">1</div>
+        <div class="bd">
+          <b>Agent mode is a no-op.</b> Typing a message while "Agent" is selected silently flips back to Chat and routes through the normal chat handler — the agent never <em>does</em> anything. The Agent button only reacts when a plan already exists; otherwise it prints a canned line. The single real execution path (<code class="inl">build()</code>) is wired exclusively to the hard-coded PowerApps lifecycle loop.
+          <div class="where mono">assets/chat.html · onSend() L562–568 (<code class="inl">if(app.mode==='agent') setMode('chat')</code>) · modeAgent.onclick L573 · build() L379</div>
+        </div>
+      </div>
+      <div class="problem">
+        <div class="n">2</div>
+        <div class="bd">
+          <b>The chat is hard-wired to only ever produce a plan.</b> The system prompt forbids any answer that isn't a friendly 2–4 sentence blurb plus a <code class="inl">&lt;&lt;&lt;PLAN…&gt;&gt;&gt;</code> block, and the offline brain <em>always</em> synthesises a build plan — even when you asked a question. "Give me an architecture overview" comes back as a tiny blurb plus an irrelevant build card. There is no intent detection at all.
+          <div class="where mono">lib/chat.js · SYSTEM L9–21 · heuristicPlan always-on L88 · history capped to 12 turns L25</div>
+        </div>
+      </div>
+      <div class="problem">
+        <div class="n">3</div>
+        <div class="bd">
+          <b>Everything downstream assumes one shape: a PowerApps screen over a table.</b> Capability flags (<span class="mono">filterByUser, sort, highlight, search, rowAction</span>) and tasks (<code class="inl">code.screen</code> / <code class="inl">dataverse.*</code>) are the only vocabulary. There is no representation for a Power BI dashboard, an architecture document, or any other artifact — and <b>no MCP routing anywhere</b> (a repo-wide search for "mcp" returns nothing).
+          <div class="where mono">lib/planner.js · lib/planhtml.js (SAMPLE rows, "Now vs After") · lib/codegen.js</div>
+        </div>
+      </div>
+      <div class="problem">
+        <div class="n">4</div>
+        <div class="bd">
+          <b>It doesn't learn as the conversation progresses.</b> The provider sees only the last 12 chat turns. Build outcomes are folded back into <em>individual</em> plan documents, but nothing accumulates project-level memory — goals, decisions, preferences, what's been built — that the assistant re-reads on every turn.
+          <div class="where mono">lib/chat.js buildPrompt L25 · lib/planhtml.js foldOutcome (per-plan only)</div>
+        </div>
+      </div>
+      <div class="problem">
+        <div class="n">5</div>
+        <div class="bd">
+          <b>No workspace file tree, and the canvas can't be resized.</b> The folder browser returns directory names only — never files. The canvas is a fixed-width toggle drawer (<code class="inl">width:min(46%,560px)</code>) with no drag-to-resize and no way to give the preview more room.
+          <div class="where mono">lib/browse.js (dirs only) · assets/chat.html .canvas L171–172 (fixed width, toggle only)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout bad" style="margin-top:18px"><b>Compounding factor.</b> The desktop shell boots the server with <code class="inl">simulate:false</code> (<span class="mono">desktop/main.js L31</span>). The real engine only does real work for a code-app or a browser project; a just-created workspace whose dependencies are still installing fails the build gate — so even the one path that "works" frequently <em>looks</em> broken. Honest status messaging is part of the fix.</div>
+  </section>
+
+  <!-- ============ VISION ============ -->
+  <section id="vision">
+    <p class="kicker">Where this goes</p>
+    <h2>PowerCodex as a universal build companion</h2>
+    <p class="lead">One window that can chat, answer, plan, and <em>act</em> — and is smart enough to tell the difference on its own. PowerApps remains the flagship path (scaffold → code → test → deploy), but the same surface drives any project: a Power BI dashboard, an architecture write-up, a static site, or plain Q&amp;A.</p>
+
+    <div class="grid3" style="margin-top:18px">
+      <div class="card"><div class="ic">🧭</div><div class="num">PRINCIPLE 01</div><h3>Intent-first</h3><p>The assistant classifies each turn before it answers. A question gets an answer; a build request gets a plan; "do it" runs the agent. No forced plan cards.</p></div>
+      <div class="card"><div class="ic">🧱</div><div class="num">PRINCIPLE 02</div><h3>Artifact-agnostic canvas</h3><p>The canvas renders whatever the AI authored — a plan, an architecture doc, a Power BI dashboard HTML, a diagram — not just the one PowerApps plan template.</p></div>
+      <div class="card"><div class="ic">🔌</div><div class="num">PRINCIPLE 03</div><h3>Right tool per project</h3><p>Detect the project type and route to the right capability: codegen for code apps, the Power BI MCP for BI work, generic file authoring otherwise.</p></div>
+      <div class="card"><div class="ic">🧠</div><div class="num">PRINCIPLE 04</div><h3>Remembers &amp; learns</h3><p>A durable project memory captures goals, decisions, preferences and outcomes, and is fed into every turn so the assistant gets smarter as you go.</p></div>
+      <div class="card"><div class="ic">⚡</div><div class="num">PRINCIPLE 05</div><h3>Real Agent mode</h3><p>Agent mode is a distinct, working mode that executes against the workspace and streams live progress — gated, honest, and reversible.</p></div>
+      <div class="card"><div class="ic">🪟</div><div class="num">PRINCIPLE 06</div><h3>A real workspace</h3><p>See the files and folders you're working in, click to preview, and drag the splitter to give chat or canvas the room it needs.</p></div>
+    </div>
+  </section>
+
+  <!-- ============ WORKSTREAMS ============ -->
+  <section id="work">
+    <p class="kicker">How we build it</p>
+    <h2>Six workstreams</h2>
+    <p class="lead">Each is independently shippable and maps to a diagnosis above. All changes live under <code class="inl">tools/lifecycle</code> (the engine the desktop app vendors at build time); no new runtime dependencies are required.</p>
+
+    <!-- WS1 -->
+    <div class="ws">
+      <div class="wsh"><span class="tag">WS&nbsp;1</span><span class="t">Make Agent mode real</span><span class="pr"><span class="pill bad">fixes #1</span></span></div>
+      <div class="wsb">
+        <p class="lead" style="margin:0 0 14px">Turn the dead toggle into a genuine mode. <b>Chat</b> converses and proposes; <b>Agent</b> executes against the active workspace and streams progress. Decouple "Agent" from the PowerApps-only <code class="inl">build()</code> path.</p>
+        <div class="two">
+          <div>
+            <p class="lbl">Client (assets/chat.html)</p>
+            <ul class="clean">
+              <li>Remove the <code class="inl">if(app.mode==='agent') setMode('chat')</code> bounce in <code class="inl">onSend()</code>; route to <code class="inl">handleAgent()</code> when in Agent mode.</li>
+              <li>Agent send posts to a new <code class="inl">POST /api/agent</code> with the message, history, active provider and a chosen <b>objective</b> (build / edit / run / explain-in-repo).</li>
+              <li>Render a live <b>run/activity card</b> (reuse the existing <code class="inl">.run</code> + tool-stream styling) fed by the bus, not the canned 7-stage strip.</li>
+              <li>Keep the permission toggles (Build / Auto-fix / Publish) as the agent's guardrails.</li>
+            </ul>
+          </div>
+          <div>
+            <p class="lbl">Server (lib/agent.js — new)</p>
+            <ul class="clean">
+              <li>A general agent runner that drives the resolved provider (Claude Code CLI when present) with the workspace as context, streaming tokens + <code class="inl">onTool</code> events onto the bus.</li>
+              <li>For PowerApps build objectives it delegates to the existing controller (<code class="inl">intake</code>+<code class="inl">start</code>) so nothing regresses.</li>
+              <li>For everything else it runs a bounded, tool-using session and writes results as artifacts (WS3).</li>
+              <li><b>Honest degradation:</b> when no real CLI is present, say so plainly and fall back to the simulated brain — never pretend.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="callout" style="margin-top:16px">The provider bridge already streams tool activity (<code class="inl">lib/providers/_cli.js detectTool</code>) — Agent mode surfaces those events instead of throwing them away.</div>
+      </div>
+    </div>
+
+    <!-- WS2 -->
+    <div class="ws">
+      <div class="wsh"><span class="tag">WS&nbsp;2</span><span class="t">The smart intent router</span><span class="pr"><span class="pill bad">fixes #2</span></span></div>
+      <div class="wsb">
+        <p class="lead" style="margin:0 0 6px">Before answering, classify the turn. This is the "is this a plan or not?" intelligence the app is missing.</p>
+        <div class="router">
+          <div class="in mono">"Give me an architecture overview of this app"</div>
+          <div class="arrow"></div>
+          <div class="lanes">
+            <div class="lane chat"><div class="h"><span class="e">💬</span>Chat</div><p>Open-ended talk. Reply normally, no card.</p></div>
+            <div class="lane answer"><div class="h"><span class="e">📐</span>Answer / Artifact</div><p>"Architecture overview", "explain", "compare" → author a document &amp; show it in the canvas.</p></div>
+            <div class="lane plan"><div class="h"><span class="e">📋</span>Plan</div><p>"Build me a screen that…" → the plan card (today's behaviour), kept intact.</p></div>
+            <div class="lane agent"><div class="h"><span class="e">⚡</span>Act</div><p>"Do it" / "fix it" / "deploy" → hand to Agent mode (WS1).</p></div>
+          </div>
+        </div>
+        <div class="two" style="margin-top:18px">
+          <div>
+            <p class="lbl">Implementation (lib/chat.js)</p>
+            <ul class="clean">
+              <li>Replace the single plan-forcing <code class="inl">SYSTEM</code> with a router prompt that returns an <code class="inl">intent</code> + the response. Provider-led when a CLI is present; a deterministic keyword classifier as the offline fallback.</li>
+              <li>Only attach a plan when <code class="inl">intent==='plan'</code>. Stop the unconditional <code class="inl">heuristicPlan()</code>.</li>
+              <li>Add intents: <code class="inl">chat</code>, <code class="inl">answer</code>, <code class="inl">plan</code>, <code class="inl">act</code>, <code class="inl">artifact</code>.</li>
+            </ul>
+          </div>
+          <div>
+            <p class="lbl">Behaviour the maker feels</p>
+            <ul class="clean">
+              <li>Questions get real answers — including technical ones, since the "no jargon ever" rule is relaxed for <code class="inl">answer</code> intents.</li>
+              <li>The plan card stops showing up uninvited.</li>
+              <li>The canvas opens automatically when an artifact is produced.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WS3 -->
+    <div class="ws">
+      <div class="wsh"><span class="tag">WS&nbsp;3</span><span class="t">A canvas that renders any artifact</span><span class="pr"><span class="pill bad">fixes #3</span></span></div>
+      <div class="wsb">
+        <p class="lead" style="margin:0 0 14px">Generalise the plan-document generator into an <b>artifact</b> system. The plan HTML stays as one artifact <em>type</em>; new types share the same save/register/render path so the canvas can show them all.</p>
+        <div class="two">
+          <div>
+            <p class="lbl">New: lib/artifacts.js</p>
+            <ul class="clean">
+              <li>A registry of artifact types — each is <code class="inl">{ id, kind, title, file, createdAt }</code> saved under <code class="inl">.powercodex/artifacts/</code> alongside today's <code class="inl">.powercodex/plans/</code>.</li>
+              <li>Renderers per kind: <b>plan</b> (existing <code class="inl">planhtml.js</code>), <b>architecture</b>, <b>powerbi-dashboard</b>, <b>document</b>, <b>diagram</b>.</li>
+              <li>Generic free-form HTML capture: when the agent authors an HTML file, register it as an artifact so the canvas renders it.</li>
+            </ul>
+          </div>
+          <div>
+            <p class="lbl">Server + client</p>
+            <ul class="clean">
+              <li><code class="inl">GET /api/artifacts</code> lists them; the existing <code class="inl">.powercodex/plans/</code> file-server route is widened to also serve <code class="inl">.powercodex/artifacts/</code> (same path-traversal guard).</li>
+              <li>The canvas iframe already renders any saved HTML by URL — point it at the artifact file (today's <code class="inl">refreshCanvas()</code> generalises cleanly).</li>
+              <li>A small artifact switcher in the canvas header to flip between recent artifacts.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="callout pur" style="margin-top:16px"><b>"Architecture overview" worked example.</b> Router → <code class="inl">artifact: architecture</code>. The agent reads the repo digest (<code class="inl">lib/digest.js</code> already exists), authors an architecture HTML (components, routes, data flow, engines, deploy path), saves it as an artifact, and the canvas opens it — exactly the kind of overview you'd expect.</div>
+      </div>
+    </div>
+
+    <!-- WS4 -->
+    <div class="ws">
+      <div class="wsh"><span class="tag">WS&nbsp;4</span><span class="t">Project-type detection &amp; MCP routing</span><span class="pr"><span class="pill bad">fixes #3</span></span></div>
+      <div class="wsb">
+        <p class="lead" style="margin:0 0 14px">Let the workspace decide which capabilities engage — and bring in the Power BI MCP for BI work, while staying graceful when a server isn't there.</p>
+        <div class="two">
+          <div>
+            <p class="lbl">Detection (extend lib/engines.js)</p>
+            <ul class="clean">
+              <li>Today it detects <b>code app</b> + <b>browser project</b>. Add detectors for <b>Power BI</b> (<code class="inl">.pbix</code> / <code class="inl">.pbip</code> / TMDL), <b>generic web</b>, and <b>docs/empty</b>.</li>
+              <li>Surface the detected type in <code class="inl">/api/state.project</code> so the chat header can show it ("Power BI project", "Code app").</li>
+            </ul>
+          </div>
+          <div>
+            <p class="lbl">MCP bridge (lib/mcp.js — new)</p>
+            <ul class="clean">
+              <li>Read MCP server definitions from the workspace's <code class="inl">.vscode/mcp.json</code> (where VS Code keeps them) and expose available servers to the agent.</li>
+              <li>When a Power BI project is detected and a Power BI MCP is configured, the agent can call it for dataset / dashboard tasks.</li>
+              <li><b>Optional &amp; safe:</b> no MCP configured → the agent authors a standalone Power BI dashboard HTML artifact instead. Never a hard dependency.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="callout" style="margin-top:16px">This is the "create a Power BI dashboard HTML using the Power BI MCP" path you described: detect Power BI → prefer the MCP if present → otherwise produce a real HTML artifact you can use immediately.</div>
+      </div>
+    </div>
+
+    <!-- WS5 -->
+    <div class="ws">
+      <div class="wsh"><span class="tag">WS&nbsp;5</span><span class="t">Conversation memory &amp; learning</span><span class="pr"><span class="pill bad">fixes #4</span></span></div>
+      <div class="wsb">
+        <div class="two">
+          <div>
+            <p class="lbl">New: lib/memory.js</p>
+            <ul class="clean">
+              <li>A durable, append-friendly project memory at <code class="inl">.powercodex/memory.json</code>: <b>goals</b>, <b>decisions</b>, <b>preferences</b>, <b>artifacts built</b>, <b>open questions</b>.</li>
+              <li>Updated after each turn and each build outcome (extends what <code class="inl">foldOutcome</code> already does, but project-wide).</li>
+              <li>Summarised into a compact "what we know so far" block injected into every prompt — so context survives past the 12-turn window.</li>
+            </ul>
+          </div>
+          <div>
+            <p class="lbl">Wired into</p>
+            <ul class="clean">
+              <li><code class="inl">lib/chat.js buildPrompt()</code> — prepend the memory summary above the recent turns.</li>
+              <li><code class="inl">lib/agent.js</code> — the agent reads memory before acting and writes decisions back.</li>
+              <li>A "Memory" view in the status panel so the maker can see (and correct) what PowerCodex believes.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="callout good" style="margin-top:16px"><b>Honest learning.</b> Memory is plain JSON in the workspace, fully inspectable and editable — the assistant gets smarter without anything opaque happening behind the maker's back.</div>
+      </div>
+    </div>
+
+    <!-- WS6 -->
+    <div class="ws">
+      <div class="wsh"><span class="tag">WS&nbsp;6</span><span class="t">Workspace tree &amp; resizable panels</span><span class="pr"><span class="pill bad">fixes #5</span></span></div>
+      <div class="wsb">
+        <div class="mock">
+          <div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span style="margin-left:8px">PowerCodex — your app</span>
+            <span style="margin-left:auto" class="seg"><span class="on">💬 Chat</span><span>⚡ Agent</span></span>
+          </div>
+          <div class="body">
+            <div class="tree">
+              <div class="ti dir">▾ src</div>
+              <div class="ti ind">▾ pages</div>
+              <div class="ti ind sel" style="padding-left:32px">Dashboard.tsx</div>
+              <div class="ti ind" style="padding-left:32px">Tasks.tsx</div>
+              <div class="ti ind">App.tsx</div>
+              <div class="ti dir">▸ .powercodex</div>
+              <div class="ti">package.json</div>
+            </div>
+            <div class="chatcol">
+              <div class="b me">Give me an architecture overview</div>
+              <div class="b ai">Here's how your app fits together — opening it in the canvas →</div>
+              <div class="b ai">3 routes, 5 components, code-gen + build-verify engine, Vercel deploy path.</div>
+            </div>
+            <div class="canvascol">
+              <div class="grip"></div>
+              <div class="ch">architecture-overview.html · drag the edge to resize ⟷</div>
+              <div class="pv"><div class="h">Architecture overview</div>Routes → Components → Engine → Deploy. Rendered as a saved artifact.</div>
+            </div>
+          </div>
+        </div>
+        <div class="two" style="margin-top:18px">
+          <div>
+            <p class="lbl">File tree</p>
+            <ul class="clean">
+              <li>New <code class="inl">GET /api/tree</code> backed by an extended <code class="inl">lib/browse.js</code> that returns <b>files and folders</b> (lazy, per-folder; respects <code class="inl">.gitignore</code> / skips <code class="inl">node_modules</code>).</li>
+              <li>A collapsible left panel in <code class="inl">chat.html</code> showing the active workspace; click a file to preview it in the canvas (text/HTML/image).</li>
+              <li>Live-ish: refresh on focus and after each agent run so newly written files appear.</li>
+            </ul>
+          </div>
+          <div>
+            <p class="lbl">Resizable layout</p>
+            <ul class="clean">
+              <li>Replace the canvas's fixed <code class="inl">width:min(46%,560px)</code> with a draggable splitter (pointer events, min/max clamps).</li>
+              <li>Persist the chosen widths to <code class="inl">localStorage</code> so the layout sticks between sessions.</li>
+              <li>The tree panel is likewise collapsible/resizable; on narrow widths both overlay as today.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FILE MAP ============ -->
+  <section id="filemap">
+    <p class="kicker">At a glance</p>
+    <h2>Files touched</h2>
+    <div class="panel">
+      <table>
+        <tr><th>File</th><th>Change</th><th>WS</th></tr>
+        <tr><td class="mono">lib/agent.js</td><td><b>New.</b> General agent runner (provider + tools + bus streaming); delegates PowerApps builds to the controller.</td><td>1</td></tr>
+        <tr><td class="mono">lib/chat.js</td><td>Intent router replaces the plan-only system prompt; memory summary injected into the prompt.</td><td>2, 5</td></tr>
+        <tr><td class="mono">lib/artifacts.js</td><td><b>New.</b> Artifact registry + renderers (plan, architecture, powerbi-dashboard, document, diagram).</td><td>3</td></tr>
+        <tr><td class="mono">lib/engines.js</td><td>Add project-type detectors (Power BI, generic web, docs) beyond code-app / browser.</td><td>4</td></tr>
+        <tr><td class="mono">lib/mcp.js</td><td><b>New.</b> Read <code class="inl">.vscode/mcp.json</code>; expose servers to the agent; optional Power BI routing.</td><td>4</td></tr>
+        <tr><td class="mono">lib/memory.js</td><td><b>New.</b> Durable project memory (<code class="inl">.powercodex/memory.json</code>) read into every turn.</td><td>5</td></tr>
+        <tr><td class="mono">lib/browse.js</td><td>Extend to list files (not just dirs); add <code class="inl">.gitignore</code> / <code class="inl">node_modules</code> skipping.</td><td>6</td></tr>
+        <tr><td class="mono">lib/server.js</td><td>New routes: <code class="inl">/api/agent</code>, <code class="inl">/api/artifacts</code>, <code class="inl">/api/tree</code>; widen the artifact file-server.</td><td>1,3,6</td></tr>
+        <tr><td class="mono">assets/chat.html</td><td>Fix Agent send; intent-aware rendering; artifact canvas; file-tree panel; resizable splitter.</td><td>1,2,3,6</td></tr>
+      </table>
+      <div class="callout" style="margin-top:16px">All of these are vendored into the desktop <code class="inl">.exe</code> automatically by <code class="inl">desktop/scripts/sync-lifecycle.js</code> at build time — no change to the Electron shell is required, except optionally widening the native picker's reach.</div>
+    </div>
+  </section>
+
+  <!-- ============ PHASING ============ -->
+  <section id="phasing">
+    <p class="kicker">Sequencing</p>
+    <h2>Phasing</h2>
+    <p class="lead">Ordered so the most painful, most visible problems land first and each phase is usable on its own.</p>
+    <div class="timeline">
+      <div class="tl">
+        <div class="ph">Phase 1 · Make it respond like a brain</div>
+        <h3>Intent router + relax the plan-only prompt (WS2)</h3>
+        <p>Smallest change with the biggest felt difference: questions get answers, the architecture overview works, and plan cards stop appearing uninvited. No new surfaces — just <code class="inl">chat.js</code>.</p>
+      </div>
+      <div class="tl">
+        <div class="ph">Phase 2 · Make Agent mode do something</div>
+        <h3>Real Agent runner + live activity (WS1)</h3>
+        <p>The toggle becomes a true mode. <code class="inl">/api/agent</code> + <code class="inl">lib/agent.js</code>, reusing the bus and tool-stream the provider bridge already emits.</p>
+      </div>
+      <div class="tl">
+        <div class="ph">Phase 3 · Make the canvas universal</div>
+        <h3>Artifacts + architecture renderer (WS3)</h3>
+        <p>Generalise the plan generator; the canvas renders any saved artifact. The architecture overview becomes a first-class artifact type.</p>
+      </div>
+      <div class="tl">
+        <div class="ph">Phase 4 · Make the window a workspace</div>
+        <h3>File tree + resizable panels (WS6)</h3>
+        <p>See your files, click to preview, drag to resize. Pure UI/UX on top of one new read-only endpoint.</p>
+      </div>
+      <div class="tl">
+        <div class="ph">Phase 5 · Make it broader &amp; smarter</div>
+        <h3>Project-type detection, MCP routing, memory (WS4 + WS5)</h3>
+        <p>Power BI (and other) projects light up the right capabilities; the Power BI MCP is used when present; durable memory makes every later turn sharper.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ RISKS ============ -->
+  <section id="risks">
+    <p class="kicker">Keeping it honest</p>
+    <h2>Risks &amp; guardrails</h2>
+    <div class="grid">
+      <div class="card"><h3>Don't break the flagship path</h3><p>The PowerApps plan→build→test→heal loop stays exactly as-is; Agent's "build" objective delegates to the same controller. New behaviour is additive.</p></div>
+      <div class="card"><h3>Agent must never pretend</h3><p>With no real CLI, Agent mode says so and falls back to the simulated brain — matching the project's existing "honest by default" stance.</p></div>
+      <div class="card"><h3>MCP is optional</h3><p>Power BI / other MCP routing is a best-effort enhancement. Missing server → author a standalone artifact instead. No hard dependency, ever.</p></div>
+      <div class="card"><h3>File access stays scoped &amp; read-mostly</h3><p>The tree and artifact server keep the existing path-traversal guards and only serve inside the active workspace. Writes remain gated by the permission toggles.</p></div>
+      <div class="card"><h3>Classifier can be wrong</h3><p>Intent is a hint, not a cage: every reply offers a one-tap "actually, build this" / "just answer" correction, and the maker can always switch modes.</p></div>
+      <div class="card"><h3>Memory must be inspectable</h3><p>Plain JSON in the workspace, shown in a Memory view, editable by the maker — learning without a black box.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="panel" style="text-align:center">
+      <p class="kicker" style="margin-bottom:6px">The one-line version</p>
+      <h2 style="margin:0 0 10px">PowerCodex stops assuming, and starts understanding.</h2>
+      <p class="lead" style="margin:0 auto;max-width:720px">It tells a question from a build, answers either, acts when asked, renders whatever it makes, remembers the project, and finally feels like the workspace it always wanted to be — PowerApps-first, everything-else-capable.</p>
+    </div>
+  </section>
+
+  <div class="foot">
+    PowerCodex · Universal Agent &amp; Workspace plan · drafted 2026-06-08 · targets <span class="mono">tools/lifecycle</span> · no new runtime dependencies
+  </div>
+</div>
+</body>
+</html>

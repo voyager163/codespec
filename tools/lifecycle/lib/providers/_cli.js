@@ -15,6 +15,23 @@ function hasBin(bin) {
   }
 }
 
+// A quick, bounded synchronous probe — for "is this CLI authenticated?" style checks
+// (e.g. `gh auth status`). Returns { ok, code, out } and never throws. A timeout or a
+// missing binary reads as not-ok, which is the honest answer.
+function probeSync(cmd, args, { timeoutMs = 8000, input } = {}) {
+  try {
+    const r = spawnSync(cmd, args, {
+      encoding: 'utf8',
+      timeout: timeoutMs,
+      input: input != null ? String(input) : undefined,
+      shell: process.platform === 'win32',
+    });
+    return { ok: r.status === 0, code: r.status, out: (r.stdout || '') + (r.stderr || '') };
+  } catch {
+    return { ok: false, code: -1, out: '' };
+  }
+}
+
 // Best-effort recognizer for tool-activity lines some CLIs print while working
 // (e.g. Claude Code's "⏺ Edit(file)" or a "Tool: name target" line). Returns a
 // { name, target, meta } event or null. Plain prose lines return null, so onTool
@@ -38,18 +55,21 @@ function detectTool(line) {
 // with whatever it has and the caller falls back. Resolves; never rejects on a
 // non-zero exit (the caller decides policy from { text, code, aborted, timedOut }).
 // onTool, when given, fires for each recognized tool-activity line (see detectTool).
-function streamCli(cmd, args, { onToken, onTool, signal, input, timeoutMs = 60000 } = {}) {
+function streamCli(cmd, args, { onToken, onTool, signal, input, timeoutMs = 60000, cwd } = {}) {
   return new Promise((resolve) => {
     let child;
+    // Run inside the active workspace when given, so an agent CLI's file tools act on
+    // the maker's project — not wherever the desktop shell was launched.
+    const spawnOpts = cwd ? { cwd } : {};
     // On Windows the resolved binary is often a .cmd shim, which needs a shell.
     // We pass the whole command as one shell string (no separate args array) so
     // Node doesn't emit DEP0190 and nothing is mis-concatenated — the prompt is
     // on stdin, and flags never contain spaces.
     try {
       if (process.platform === 'win32') {
-        child = spawn([cmd, ...args].join(' '), { shell: true });
+        child = spawn([cmd, ...args].join(' '), { shell: true, ...spawnOpts });
       } else {
-        child = spawn(cmd, args, { shell: false });
+        child = spawn(cmd, args, { shell: false, ...spawnOpts });
       }
     } catch {
       resolve({ text: '', code: -1, aborted: false, timedOut: false, failed: true });
@@ -122,4 +142,4 @@ function streamCli(cmd, args, { onToken, onTool, signal, input, timeoutMs = 6000
   });
 }
 
-module.exports = { hasBin, streamCli, detectTool };
+module.exports = { hasBin, streamCli, detectTool, probeSync };

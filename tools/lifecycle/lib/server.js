@@ -9,6 +9,11 @@ const { Controller } = require('./control');
 const { listPlans, plansDir } = require('./plans');
 const providers = require('./providers');
 const chat = require('./chat');
+const memory = require('./memory');
+const agent = require('./agent');
+const artifacts = require('./artifacts');
+const project = require('./project');
+const mcp = require('./mcp');
 const browse = require('./browse');
 const { importInto } = require('./import');
 const { scaffold, installDeps, isScaffolded } = require('./scaffold');
@@ -122,11 +127,41 @@ function serve(root, opts = {}) {
     } catch {
       /* no config yet — basename is fine */
     }
-    return { name, root: activeRoot, mode };
+    // Detected project type + any MCP servers, so the UI can show "Power BI project"
+    // and the agent can route to the right tool. Best-effort; never blocks state.
+    let type = null;
+    let typeLabel = null;
+    let servers = [];
+    try {
+      const det = project.detect(activeRoot);
+      type = det.type;
+      typeLabel = det.label;
+    } catch {
+      /* leave null */
+    }
+    try {
+      servers = mcp.list(activeRoot);
+    } catch {
+      servers = [];
+    }
+    return { name, root: activeRoot, mode, type, typeLabel, mcp: servers };
   }
 
   const server = http.createServer(async (req, res) => {
     try {
+      // CSRF / cross-origin protection. The dashboard API mutates the local workspace —
+      // it writes files and drives the real build loop — so a request originating from any
+      // other web origin must never be honored. Browsers attach an Origin header to every
+      // cross-site request (including "simple" text/plain POSTs that skip preflight), so a
+      // mutating request carrying a non-local Origin is a forged cross-site request: reject
+      // it. Same-origin calls from our own dashboard send a localhost Origin (or none, for
+      // server-to-server/CLI callers), which are allowed.
+      if (req.method !== 'GET' && req.method !== 'HEAD' && req.url.startsWith('/api/')) {
+        const origin = req.headers.origin;
+        if (origin && !isLocalOrigin(origin)) {
+          return json(res, 403, { ok: false, error: 'cross-origin request blocked' });
+        }
+      }
       if (req.method === 'POST' && req.url.startsWith('/api/emit')) {
         const body = await readBody(req);
         emit(activeRoot, {
@@ -146,18 +181,105 @@ function serve(root, opts = {}) {
       // the agent can refer back to it later. Authoring must never break the chat reply.
       if (req.method === 'POST' && req.url.startsWith('/api/chat')) {
         const body = await readBody(req);
-        const out = await chat.respond(activeRoot, { message: body.message || '', history: body.history || [], providerId: body.provider });
+        // Feed the durable project memory into the turn so the assistant stays in context.
+        let mem = '';
+        try {
+          mem = memory.summarize(activeRoot);
+        } catch {
+          mem = '';
+        }
+        const out = await chat.respond(activeRoot, { message: body.message || '', history: body.history || [], providerId: body.provider, memory: mem });
+        // Learn from the turn (cheap heuristics; never blocks the reply).
+        try {
+          memory.noteTurn(activeRoot, { message: body.message || '', intent: out.intent });
+        } catch {
+          /* memory is best-effort */
+        }
         if (out && out.plan) {
           try {
             const entry = require('./planhtml').authorPlan(activeRoot, { goal: body.message || '', plan: out.plan, provider: out.provider });
             out.planFile = entry.file;
             out.planId = entry.id;
+            try {
+              memory.record(activeRoot, { artifact: { id: entry.id, kind: 'plan', title: entry.title } });
+            } catch {
+              /* best-effort */
+            }
           } catch (e) {
             // Leave the reply intact; the Canvas falls back to its inline skeleton.
             out.planError = e.message;
           }
+        } else if (out && (out.intent === 'artifact' || (out.intent === 'answer' && artifacts.kindFromMessage(body.message || '') === 'architecture'))) {
+          // A non-build deliverable (Power BI dashboard, architecture overview, document…)
+          // is authored as an artifact the Canvas renders — this is the "architecture
+          // overview" path the maker asked for.
+          try {
+            const kind = artifacts.kindFromMessage(body.message || '');
+            const entry = artifacts.save(activeRoot, { kind, goal: body.message || '' });
+            out.artifactFile = entry.file;
+            out.artifactId = entry.id;
+            out.artifactKind = entry.kind;
+            try {
+              memory.record(activeRoot, { artifact: entry });
+            } catch {
+              /* best-effort */
+            }
+          } catch (e) {
+            out.artifactError = e.message;
+          }
         }
         return json(res, 200, out);
+      }
+      // Agent mode: EXECUTE against the active workspace. Streams activity onto the live
+      // bus, authors artifacts, or (for a build request) drives the real lifecycle loop —
+      // the same engine the chat's "Build this" uses.
+      if (req.method === 'POST' && req.url.startsWith('/api/agent')) {
+        const body = await readBody(req);
+        const boundEmit = (e) => {
+          emit(activeRoot, Object.assign({ rotation: 0, stage: 3, agent: 'agent', level: 'info', message: '' }, e));
+          render(activeRoot);
+        };
+        let memSummary = '';
+        try {
+          memSummary = memory.summarize(activeRoot);
+        } catch {
+          memSummary = '';
+        }
+        const result = await agent.run(activeRoot, { message: body.message || '', history: body.history || [], provider: body.provider, emit: boundEmit, memory: memSummary });
+        try {
+          memory.noteTurn(activeRoot, { message: body.message || '', intent: result.intent });
+        } catch {
+          /* best-effort */
+        }
+        if (result.kind === 'build') {
+          // Plan deterministically, author the plan document, then intake + start the loop.
+          const plan = chat.heuristicPlan(body.message || '');
+          try {
+            const entry = require('./planhtml').authorPlan(activeRoot, { goal: body.message || '', plan, provider: result.provider });
+            result.planFile = entry.file;
+            result.planId = entry.id;
+            result.plan = { title: 'Plan: ' + plan.title, items: plan.items };
+            try {
+              memory.record(activeRoot, { artifact: { id: entry.id, kind: 'plan', title: entry.title } });
+            } catch {
+              /* best-effort */
+            }
+            await controller.action({
+              type: 'intake',
+              goal: body.message || '',
+              mvp: plan.items.map((i) => '• ' + i).join('\n'),
+              plan: { title: plan.title, items: plan.items },
+              provider: body.provider,
+              planId: entry.id,
+            });
+            const started = await controller.action({ type: 'start', rotations: 2 });
+            result.building = !!(started && started.started);
+            result.reply = result.reply || 'On it — building now. Watch the progress in the status panel.';
+          } catch (e) {
+            result.buildError = e.message;
+          }
+        }
+        return json(res, 200, result);
       }
       if (req.method === 'POST' && req.url.startsWith('/api/action')) {
         const body = await readBody(req);
@@ -165,7 +287,16 @@ function serve(root, opts = {}) {
         // app into the active workspace; everything else is loop control.
         if (body.type === 'open-project') return json(res, 200, openProject(body.path));
         if (body.type === 'create-project') return json(res, 200, createProject(body));
+        // Open the whole project in VS Code, or launch a provider sign-in in a terminal.
+        if (body.type === 'open-in-vscode') return json(res, 200, require('./setup').openInVSCode(activeRoot));
+        if (body.type === 'provider-signin') return json(res, 200, require('./setup').signIn(body.provider));
         return json(res, 200, await controller.action(body));
+      }
+      // Deep readiness: installed AND signed in, per provider (probes the CLIs, so it can
+      // take a few seconds). Drives the no-degrade setup gate.
+      if (req.url.startsWith('/api/providers/ready')) {
+        const list = await providers.readiness();
+        return json(res, 200, { providers: list, anyReady: providers.anyRealReady(list), vscode: require('./setup').vsCodeAvailable() });
       }
       if (req.url.startsWith('/api/providers')) {
         return json(res, 200, { providers: providers.list() });
@@ -178,6 +309,70 @@ function serve(root, opts = {}) {
         } catch (e) {
           return json(res, 200, { ok: false, error: e.message });
         }
+      }
+      // The workspace file tree (files + folders), scoped to the active project.
+      if (req.url.startsWith('/api/tree')) {
+        const u = new URL(req.url, 'http://localhost');
+        const p = u.searchParams.get('path');
+        const wsRoot = path.resolve(activeRoot);
+        const abs = p ? path.resolve(p) : wsRoot;
+        if (!abs.startsWith(wsRoot)) return json(res, 200, { ok: false, error: 'outside workspace', root: activeRoot });
+        try {
+          return json(res, 200, Object.assign({ ok: true, root: activeRoot }, browse.listTree(abs)));
+        } catch (e) {
+          return json(res, 200, { ok: false, error: e.message, root: activeRoot });
+        }
+      }
+      // Saved artifacts (architecture overviews, dashboards, documents…) for the Canvas switcher.
+      if (req.url.startsWith('/api/artifacts')) {
+        return json(res, 200, { artifacts: artifacts.list(activeRoot) });
+      }
+      // Preview any file inside the active workspace (HTML renders, images show, text/code
+      // is wrapped in a readable page). Path-traversal guarded to the workspace root.
+      if (req.url.startsWith('/api/file')) {
+        const u = new URL(req.url, 'http://localhost');
+        const rel = u.searchParams.get('path');
+        if (!rel) {
+          res.writeHead(400, { 'content-type': 'text/plain' });
+          res.end('path required');
+          return;
+        }
+        const wsRoot = path.resolve(activeRoot);
+        const abs = path.resolve(activeRoot, rel);
+        if (!abs.startsWith(wsRoot) || !fs.existsSync(abs) || fs.statSync(abs).isDirectory()) {
+          res.writeHead(404, { 'content-type': 'text/plain' });
+          res.end('Not found');
+          return;
+        }
+        const ext = path.extname(abs).toLowerCase();
+        const RAW = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.svg': 'image/svg+xml', '.webp': 'image/webp' };
+        if (ext === '.html' || ext === '.htm') {
+          res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
+          res.end(fs.readFileSync(abs, 'utf8'));
+          return;
+        }
+        if (RAW[ext]) {
+          res.writeHead(200, { 'content-type': RAW[ext], 'cache-control': 'no-store' });
+          res.end(fs.readFileSync(abs));
+          return;
+        }
+        // Text / code: wrap in a styled page so the Canvas iframe shows it cleanly.
+        let content = '';
+        try {
+          const st = fs.statSync(abs);
+          content = st.size > 2_000_000 ? '(file too large to preview)' : fs.readFileSync(abs, 'utf8');
+        } catch {
+          content = '';
+        }
+        const escHtml = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+        const page =
+          '<!doctype html><meta charset="utf-8"><style>body{margin:0;background:#0b0d12;color:#cdd6ea;font:12.5px/1.6 ui-monospace,Menlo,Consolas,monospace}' +
+          '.h{position:sticky;top:0;background:#11151e;color:#99a2b8;padding:8px 14px;border-bottom:1px solid #262c3a;font-family:-apple-system,Segoe UI,sans-serif}' +
+          'pre{margin:0;padding:14px;white-space:pre-wrap;word-break:break-word}</style>' +
+          '<div class="h">' + escHtml(rel) + '</div><pre>' + escHtml(content) + '</pre>';
+        res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
+        res.end(page);
+        return;
       }
       if (req.url.startsWith('/api/state')) {
         return json(res, 200, Object.assign(deriveState(activeRoot), { control: controller.status(), project: projectInfo() }));
@@ -218,10 +413,11 @@ function serve(root, opts = {}) {
       // Serve generated plan artifacts (the plan viewer): the rich .html, its structured
       // .json sibling, and any captured screenshots under shots/. Path-traversal guarded —
       // only files inside .powercodex/plans/ are served.
-      if (/\.powercodex\/plans\//.test(req.url) && /\.(html|json|png)$/.test(req.url.split('?')[0])) {
+      if (/\.powercodex\/(plans|artifacts)\//.test(req.url) && /\.(html|json|png)$/.test(req.url.split('?')[0])) {
         const rel = decodeURIComponent(req.url.split('?')[0].replace(/^\/+/, ''));
         const abs = path.resolve(activeRoot, rel);
-        if (abs.startsWith(path.resolve(plansDir(activeRoot))) && fs.existsSync(abs)) {
+        const okBase = abs.startsWith(path.resolve(plansDir(activeRoot))) || abs.startsWith(path.resolve(artifacts.artifactsDir(activeRoot)));
+        if (okBase && fs.existsSync(abs)) {
           const type = abs.endsWith('.json') ? 'application/json' : abs.endsWith('.png') ? 'image/png' : 'text/html; charset=utf-8';
           res.writeHead(200, { 'content-type': type, 'cache-control': 'no-store' });
           res.end(abs.endsWith('.png') ? fs.readFileSync(abs) : fs.readFileSync(abs, 'utf8'));
@@ -243,7 +439,10 @@ function serve(root, opts = {}) {
     }
   });
 
-  server.listen(port, () => {
+  // Bind to loopback only. The dashboard drives privileged local actions (file writes,
+  // build loop, provider sign-in) and has no network authentication, so it must not be
+  // reachable from other hosts on the LAN.
+  server.listen(port, '127.0.0.1', () => {
     const actual = server.address().port;
     const url = `http://localhost:${actual}`;
     console.log(`PowerCodex live dashboard → ${url}`);
@@ -270,6 +469,17 @@ function openBrowser(url) {
     spawn(cmd, args, { stdio: 'ignore', detached: true }).unref();
   } catch {
     /* opening is best-effort */
+  }
+}
+
+// True when an Origin header points at our own loopback server (the dashboard itself).
+// Used to reject forged cross-site requests to the mutating /api endpoints.
+function isLocalOrigin(origin) {
+  try {
+    const h = new URL(origin).hostname;
+    return h === 'localhost' || h === '127.0.0.1' || h === '[::1]' || h === '::1';
+  } catch {
+    return false;
   }
 }
 

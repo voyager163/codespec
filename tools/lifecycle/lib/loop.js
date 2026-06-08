@@ -257,6 +257,11 @@ async function runLoop(root, opts = {}) {
         finishedAt: new Date().toISOString(),
       };
       require('./planhtml').foldOutcome(root, opts.planId, outcome);
+      try {
+        require('./memory').noteOutcome(root, outcome);
+      } catch {
+        /* memory is best-effort */
+      }
     } catch {
       /* re-rendering the plan must never affect the loop's result */
     }
@@ -279,6 +284,18 @@ function resolveTasks(opts, root) {
     } catch {
       /* fall through to the sample */
     }
+  }
+  // No plan/goal. For a code app, fall back to building a real generic screen on-device
+  // (never a tenant task that would require Power Platform sign-in). Only a non-code
+  // project falls back to the Dataverse sample, which keeps the simulated demo legible.
+  try {
+    if (require('./codegen').isCodeApp(root)) {
+      const { planTasks } = require('./planner');
+      const out = planTasks({ goal: 'A simple list screen for your app', plan: { title: 'Plan: Main screen', items: ['Show a searchable list', 'Mark items done'] } });
+      if (out.tasks && out.tasks.length) return out.tasks;
+    }
+  } catch {
+    /* fall through to the sample */
   }
   return [
     { type: 'dataverse.table.create', displayName: 'Project', name: 'cr123_project' },

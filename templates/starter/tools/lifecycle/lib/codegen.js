@@ -37,6 +37,26 @@ function isCodeApp(root) {
   }
 }
 
+// A screen's `name` becomes a filename under src/pages/. It can originate from
+// client-supplied intake tasks, so it must never be trusted as a path: strip it
+// down to a safe, single-segment slug (no separators, no `..`, no leading dots).
+// Returns '' when nothing usable remains, so callers can reject the task.
+function safeScreenName(raw) {
+  const slug = String(raw == null ? '' : raw)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-') // collapse anything non-alphanumeric to a hyphen
+    .replace(/^-+|-+$/g, '') // trim leading/trailing hyphens
+    .slice(0, 64);
+  return slug;
+}
+
+// Defence in depth: confirm the resolved write target stays inside `dir`.
+function isWithin(dir, target) {
+  const base = path.resolve(dir);
+  const resolved = path.resolve(target);
+  return resolved === base || resolved.startsWith(base + path.sep);
+}
+
 // ---- the deterministic screen generator ---------------------------------------
 
 // Produce a strict-TypeScript React screen implementing the capability flags against
@@ -273,6 +293,13 @@ async function buildCodeTasks({ root, tasks, emit, rotation = 1, provider } = {}
       results.push({ task: task.type, name: task.displayName || task.name, status: 'skipped', created: false, reason: 'not a code task' });
       continue;
     }
+    // Never trust task.name as a path component — it can arrive from a client-supplied
+    // intake payload. Slugify to a single safe segment and reject if nothing remains.
+    const kebab = safeScreenName(task.name);
+    if (!kebab) {
+      results.push({ task: task.type, name: task.displayName || task.componentName || task.name, status: 'skipped', created: false, reason: 'invalid screen name' });
+      continue;
+    }
     const name = task.displayName || task.componentName;
     await emitSafe(emit, { rotation, stage: 3, agent: 'build-executor', level: 'info', message: `Authoring screen "${name}" in code` });
 
@@ -286,8 +313,13 @@ async function buildCodeTasks({ root, tasks, emit, rotation = 1, provider } = {}
       await emitSafe(emit, { rotation, stage: 3, agent: 'build-executor', level: 'info', message: `AI authored "${name}" · validated as a real component` });
     }
 
-    const pagesPath = path.join(srcDir, 'pages', task.name + '.tsx');
+    const pagesDir = path.join(srcDir, 'pages');
+    const pagesPath = path.join(pagesDir, kebab + '.tsx');
     let created = false;
+    if (!isWithin(pagesDir, pagesPath)) {
+      results.push({ task: task.type, name, status: 'skipped', created: false, reason: 'invalid screen name' });
+      continue;
+    }
     try {
       fs.writeFileSync(pagesPath, code.endsWith('\n') ? code : code + '\n');
       created = true;
@@ -297,15 +329,15 @@ async function buildCodeTasks({ root, tasks, emit, rotation = 1, provider } = {}
       continue;
     }
 
-    const wired = wireRouter(srcDir, { componentName: task.componentName, route: task.route, kebab: task.name });
+    const wired = wireRouter(srcDir, { componentName: task.componentName, route: task.route, kebab });
     await emitSafe(emit, {
       rotation,
       stage: 3,
       agent: 'build-executor',
       level: 'good',
       message: wired.wired
-        ? `Built "${name}" → src/pages/${task.name}.tsx · ${wired.already ? 'already routed' : 'added to your app’s routes at ' + task.route}`
-        : `Built "${name}" → src/pages/${task.name}.tsx · couldn’t auto-route (${wired.reason}); link it from your menu`,
+        ? `Built "${name}" → src/pages/${kebab}.tsx · ${wired.already ? 'already routed' : 'added to your app’s routes at ' + task.route}`
+        : `Built "${name}" → src/pages/${kebab}.tsx · couldn’t auto-route (${wired.reason}); link it from your menu`,
     });
 
     results.push({

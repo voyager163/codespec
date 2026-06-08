@@ -43,4 +43,39 @@ function listDir(dir) {
   };
 }
 
-module.exports = { listDir };
+// Folders we never descend into for the workspace tree — noise that would bury the
+// maker's own files.
+const TREE_SKIP = new Set(['node_modules', '.git', 'dist', 'build', 'out', '.next', '.cache', 'release', 'release2', 'release3', 'release4', 'out-installer', 'vendor', '.profiles']);
+
+// List one level of a folder for the workspace file tree: BOTH files and folders (the
+// picker above is dirs-only). Folders sort first, then files, alphabetically. `.powercodex`
+// is shown (it's the project's own state) but heavy/generated dirs are skipped. Read-only.
+function listTree(dir) {
+  const target = dir && String(dir).trim() ? path.resolve(String(dir)) : os.homedir();
+  const st = fs.statSync(target); // throws → caller returns { ok:false }
+  if (!st.isDirectory()) throw new Error('Not a folder');
+
+  const entries = fs
+    .readdirSync(target, { withFileTypes: true })
+    .filter((d) => {
+      if (d.isDirectory()) return !TREE_SKIP.has(d.name);
+      return true;
+    })
+    .map((d) => {
+      const full = path.join(target, d.name);
+      let size = null;
+      if (!d.isDirectory()) {
+        try {
+          size = fs.statSync(full).size;
+        } catch {
+          size = null;
+        }
+      }
+      return { name: d.name, path: full, dir: d.isDirectory(), size };
+    })
+    .sort((a, b) => (a.dir === b.dir ? a.name.localeCompare(b.name) : a.dir ? -1 : 1));
+
+  return { path: target, entries };
+}
+
+module.exports = { listDir, listTree };
