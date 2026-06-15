@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PowerCodex as an MCP Server — Bring Your Own AI</title>
+<style>
+  :root {
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --bg: #0b0d12;
+    --bg-soft: #12151d;
+    --panel: #161a24;
+    --panel-2: #1c2130;
+    --line: #262c3a;
+    --line-2: #313a4d;
+    --text: #e8ecf4;
+    --muted: #99a2b8;
+    --faint: #6b7488;
+    --accent: #6ea8fe;
+    --accent-2: #a78bfa;
+    --good: #5ad19a;
+    --bad: #f08a8a;
+    --warn: #f5c97b;
+    --radius: 16px;
+    --shadow: 0 20px 60px -20px rgba(0,0,0,0.6);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(167,139,250,0.14), transparent 60%),
+      radial-gradient(900px 500px at -10% 10%, rgba(110,168,254,0.12), transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 24px 120px; }
+  .mono { font-family: "SF Mono", "JetBrains Mono", Consolas, Menlo, monospace; }
+
+  /* entrance */
+  .rise { opacity: 0; transform: translateY(14px); animation: rise 600ms var(--ease-out) forwards; }
+  @keyframes rise { to { opacity: 1; transform: translateY(0); } }
+  .d1 { animation-delay: 40ms; } .d2 { animation-delay: 90ms; } .d3 { animation-delay: 140ms; }
+  .d4 { animation-delay: 190ms; } .d5 { animation-delay: 240ms; }
+
+  /* hero */
+  header.hero { padding: 92px 24px 36px; text-align: center; max-width: 940px; margin: 0 auto; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--accent); background: rgba(110,168,254,0.1);
+    border: 1px solid rgba(110,168,254,0.25);
+    padding: 6px 14px; border-radius: 999px; margin-bottom: 22px;
+  }
+  .eyebrow .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+    box-shadow: 0 0 0 0 rgba(110,168,254,0.6); animation: pulse 2.4s var(--ease-out) infinite; }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(110,168,254,0.5); }
+    70% { box-shadow: 0 0 0 9px rgba(110,168,254,0); }
+    100% { box-shadow: 0 0 0 0 rgba(110,168,254,0); }
+  }
+  h1 {
+    font-size: clamp(34px, 6.4vw, 56px); line-height: 1.06; margin: 0 0 18px; letter-spacing: -0.02em;
+    background: linear-gradient(180deg, #fff, #b9c2d8);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .sub { color: var(--muted); font-size: 18px; max-width: 780px; margin: 0 auto; }
+  .meta { margin-top: 26px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; color: var(--faint); font-size: 13px; }
+  .meta span { border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; }
+  .doclinks { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 18px; }
+  .doclinks a { border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px; text-decoration: none; color: var(--muted); font-size: 13px; transition: border-color 160ms var(--ease-out), color 160ms var(--ease-out); }
+  .doclinks a:hover { border-color: var(--accent); color: var(--text); }
+
+  /* sections */
+  section { margin-top: 72px; }
+  .kicker { color: var(--accent-2); font-weight: 600; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; margin: 0 0 10px; }
+  h2 { font-size: 28px; margin: 0 0 14px; letter-spacing: -0.01em; }
+  h3 { font-size: 18px; margin: 0 0 8px; }
+  p.lead { color: var(--muted); font-size: 16px; max-width: 840px; }
+
+  .panel { background: linear-gradient(180deg, var(--panel), var(--bg-soft));
+    border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 820px) { .grid, .grid3 { grid-template-columns: 1fr; } }
+
+  .card { background: var(--panel-2); border: 1px solid var(--line); border-radius: 14px; padding: 20px;
+    transition: transform 200ms var(--ease-out), border-color 200ms var(--ease-out), box-shadow 200ms var(--ease-out); }
+  .card:hover { transform: translateY(-3px); border-color: rgba(110,168,254,0.4); box-shadow: 0 18px 40px -22px rgba(110,168,254,0.5); }
+  .card h3 { display: flex; align-items: center; gap: 10px; font-size: 16px; }
+  .card .ic { width: 30px; height: 30px; flex: none; display: grid; place-items: center; border-radius: 9px; background: rgba(110,168,254,0.12); color: var(--accent); font-size: 15px; }
+  .card p { color: var(--muted); font-size: 14px; margin: 6px 0 0; }
+  .card.pur .ic { background: rgba(167,139,250,0.14); color: var(--accent-2); }
+  .card.good .ic { background: rgba(90,209,154,0.14); color: var(--good); }
+  .card.warn .ic { background: rgba(245,201,123,0.14); color: var(--warn); }
+
+  .pill { display: inline-block; font-size: 12px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .pill.good { color: var(--good); border-color: rgba(90,209,154,0.35); background: rgba(90,209,154,0.08); }
+  .pill.warn { color: var(--warn); border-color: rgba(245,201,123,0.35); background: rgba(245,201,123,0.08); }
+  .pill.acc { color: var(--accent); border-color: rgba(110,168,254,0.35); background: rgba(110,168,254,0.08); }
+  .pill.pur { color: var(--accent-2); border-color: rgba(167,139,250,0.35); background: rgba(167,139,250,0.08); }
+  .pill.bad { color: var(--bad); border-color: rgba(240,138,138,0.35); background: rgba(240,138,138,0.08); }
+
+  ul.clean { list-style: none; padding: 0; margin: 12px 0 0; }
+  ul.clean li { position: relative; padding-left: 26px; margin: 9px 0; color: var(--muted); font-size: 14.5px; }
+  ul.clean li::before { content: "→"; position: absolute; left: 0; color: var(--accent); }
+  ul.clean li b { color: var(--text); font-weight: 600; }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 14px; }
+  th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--faint); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+  td { color: var(--muted); } td b { color: var(--text); }
+  td code, p code, li code { font-family: "SF Mono", Consolas, monospace; font-size: 12.5px; color: var(--accent); background: rgba(110,168,254,0.08); border: 1px solid rgba(110,168,254,0.16); border-radius: 5px; padding: 1px 6px; }
+
+  .callout { border-left: 3px solid var(--warn); background: rgba(245,201,123,0.06); padding: 16px 18px; border-radius: 0 12px 12px 0; margin-top: 16px; }
+  .callout.acc { border-left-color: var(--accent); background: rgba(110,168,254,0.06); }
+  .callout.good { border-left-color: var(--good); background: rgba(90,209,154,0.06); }
+  .callout.bad { border-left-color: var(--bad); background: rgba(240,138,138,0.06); }
+  .callout h3 { margin: 0 0 6px; color: var(--text); font-size: 16px; }
+  .callout p { margin: 0; color: var(--muted); font-size: 14.5px; }
+
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--line), transparent); margin: 8px 0; }
+  a { color: var(--accent); }
+
+  /* code block */
+  pre.code { background: #0a0c11; border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; overflow-x: auto;
+    font-family: "SF Mono", Consolas, monospace; font-size: 12.5px; line-height: 1.7; color: #cdd6e6; margin-top: 14px; }
+  pre.code .c { color: var(--faint); } pre.code .k { color: var(--accent-2); } pre.code .s { color: var(--good); } pre.code .p { color: var(--accent); }
+
+  /* layered diagram */
+  .stack { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+  .layer { border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; background: var(--panel-2); display: flex; align-items: center; gap: 14px; }
+  .layer .lt { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); flex: none; width: 110px; }
+  .layer .lc { flex: 1; display: flex; flex-wrap: wrap; gap: 8px; }
+  .layer .chip2 { font-size: 12.5px; padding: 5px 11px; border-radius: 8px; background: #0e1118; border: 1px solid var(--line); color: var(--muted); }
+  .layer.client { border-color: rgba(167,139,250,0.4); background: linear-gradient(180deg, rgba(167,139,250,0.07), transparent); }
+  .layer.proto { border-color: rgba(110,168,254,0.4); background: linear-gradient(180deg, rgba(110,168,254,0.07), transparent); }
+  .layer.core { border-color: rgba(90,209,154,0.35); background: linear-gradient(180deg, rgba(90,209,154,0.06), transparent); }
+  .arrowdown { text-align: center; color: var(--faint); font-size: 18px; line-height: 1; }
+
+  /* step flow */
+  .flow { display: flex; flex-direction: column; gap: 0; margin-top: 8px; }
+  .step { display: grid; grid-template-columns: 44px 1fr; gap: 16px; padding: 18px 0; border-bottom: 1px dashed var(--line); }
+  .step:last-child { border-bottom: 0; }
+  .step .nm { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; color: var(--bg); background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+  .step .nm.g { background: linear-gradient(135deg, var(--good), #3fb985); }
+  .step h3 { margin: 4px 0 6px; font-size: 17px; }
+  .step p { color: var(--muted); font-size: 14.5px; margin: 0 0 6px; }
+  .step .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+
+  /* window mockup */
+  .win { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); background: var(--bg-soft); margin-top: 18px; }
+  .win .chrome { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #0e1118; border-bottom: 1px solid var(--line); }
+  .win .dots { display: flex; gap: 6px; flex: none; }
+  .win .dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .win .dots i.r { background: #f0716f; } .win .dots i.y { background: #f5c97b; } .win .dots i.g { background: #5ad19a; }
+  .win .url { flex: 1; font-size: 12px; color: var(--faint); background: #0a0c11; border: 1px solid var(--line); border-radius: 7px; padding: 4px 10px; text-align: center; }
+
+  /* chat transcript */
+  .chat { padding: 16px; display: flex; flex-direction: column; gap: 14px; background: #0a0c11; }
+  .msg { display: flex; gap: 10px; max-width: 94%; }
+  .msg .av { width: 26px; height: 26px; border-radius: 7px; flex: none; display: grid; place-items: center; font-size: 13px; }
+  .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+  .msg.user .av { background: var(--panel-2); border: 1px solid var(--line); }
+  .msg.ai .av { background: linear-gradient(135deg, var(--accent-2), #7c5cf0); color: #fff; font-weight: 800; }
+  .msg.tool .av { background: rgba(90,209,154,0.16); border: 1px solid rgba(90,209,154,0.3); color: var(--good); }
+  .msg .bub { border-radius: 12px; padding: 10px 13px; font-size: 13.5px; }
+  .msg.user .bub { background: rgba(110,168,254,0.12); border: 1px solid rgba(110,168,254,0.25); color: var(--text); }
+  .msg.ai .bub { background: var(--panel-2); border: 1px solid var(--line); color: var(--muted); }
+  .msg.tool .bub { background: rgba(90,209,154,0.07); border: 1px solid rgba(90,209,154,0.22); color: var(--muted); font-family: "SF Mono", Consolas, monospace; font-size: 12px; }
+  .msg .bub b { color: var(--text); }
+  .msg .bub .tname { color: var(--good); font-weight: 700; }
+  .msg .bub .gate { display:inline-flex; align-items:center; gap:7px; margin-top:8px; font-size:12px; color: var(--warn); background: rgba(245,201,123,0.1); border: 1px solid rgba(245,201,123,0.28); border-radius: 8px; padding: 5px 9px; }
+
+  /* recommendation block */
+  .reco { border: 1px solid rgba(110,168,254,0.35); background: linear-gradient(180deg, rgba(110,168,254,0.08), rgba(110,168,254,0.02)); border-radius: 14px; padding: 16px 18px; margin: 16px 0; display: flex; gap: 14px; align-items: flex-start; }
+  .reco .rb { flex: none; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #06203f; background: var(--accent); padding: 6px 12px; border-radius: 999px; }
+  .reco p { margin: 0; color: var(--text); font-size: 14.5px; }
+
+  .options { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 4px; }
+  @media (max-width: 720px) { .options { grid-template-columns: 1fr; } }
+  .opt { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .opt header { padding: 12px 16px; font-weight: 700; font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
+  .opt.win2 header { background: rgba(90,209,154,0.12); border-bottom: 1px solid rgba(90,209,154,0.25); }
+  .opt.alt header { background: rgba(245,201,123,0.1); border-bottom: 1px solid rgba(245,201,123,0.22); }
+  .opt .pick { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--good); }
+  .opt ul { list-style: none; margin: 0; padding: 14px 16px; }
+  .opt li { font-size: 13.5px; color: var(--muted); padding: 5px 0 5px 22px; position: relative; }
+  .opt li.pro::before { content: "+"; position: absolute; left: 0; color: var(--good); font-weight: 800; }
+  .opt li.con::before { content: "\2212"; position: absolute; left: 0; color: var(--bad); font-weight: 800; }
+
+  .ready { margin-top: 16px; text-align: center; padding: 22px; border: 1px solid rgba(90,209,154,0.35); border-radius: 14px; background: linear-gradient(180deg, rgba(90,209,154,0.08), transparent); }
+  .ready .big { font-size: 18px; font-weight: 700; color: var(--good); }
+  .ready .check { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--good); color: #06281a; font-size: 20px; font-weight: 900; margin-bottom: 10px; }
+
+  /* phase timeline */
+  .phases { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 18px; }
+  @media (max-width: 820px) { .phases { grid-template-columns: 1fr; } }
+  .phase { border: 1px solid var(--line); padding: 18px; position: relative; }
+  .phase:first-child { border-radius: 14px 0 0 14px; }
+  .phase:last-child { border-radius: 0 14px 14px 0; }
+  @media (max-width: 820px) { .phase, .phase:first-child, .phase:last-child { border-radius: 12px; margin-bottom: 10px; } }
+  .phase .pn { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+  .phase h4 { margin: 6px 0 8px; font-size: 15px; }
+  .phase p { margin: 0; font-size: 13px; color: var(--muted); }
+  .phase .pt { display: inline-block; margin-top: 10px; font-size: 11px; color: var(--faint); border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px; }
+
+  footer { margin-top: 84px; text-align: center; color: var(--faint); font-size: 13px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rise { animation: none; opacity: 1; transform: none; }
+    .eyebrow .dot { animation: none; }
+    *, *::before, *::after { transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+  <header class="hero">
+    <div class="eyebrow rise d1"><span class="dot"></span> Plan · The MCP route — your AI, our lifecycle</div>
+    <h1 class="rise d2">PowerCodex as an MCP server:<br/>run the whole loop from any AI you already use</h1>
+    <p class="sub rise d3">Today PowerCodex's plan&nbsp;→&nbsp;approve&nbsp;→&nbsp;build&nbsp;→&nbsp;run&nbsp;→&nbsp;test&nbsp;→&nbsp;self-heal&nbsp;→&nbsp;observe loop lives inside one editor. This plan exposes that same engine over the <b>Model Context Protocol</b> — so Claude Desktop, Cursor, Cline, ChatGPT, or a custom agent can drive it directly, with every dangerous action still gated by a human <code>yes</code>.</p>
+    <div class="meta rise d4">
+      <span>Today: 2026-06-16</span>
+      <span>Audience: PowerCodex maintainers &amp; integrators</span>
+      <span>Status: plan for endorsement</span>
+    </div>
+    <div class="doclinks rise d5">
+      <a href="./powercodex-master-plan.html">← Master plan (the engine)</a>
+      <a href="./autonomous-lifecycle-loop-plan.html">Lifecycle loop</a>
+      <a href="./live-dashboard-system.html">Live dashboard</a>
+      <a href="../integration-guide.html">Integration guide</a>
+    </div>
+  </header>
+
+  <div class="wrap">
+
+    <!-- TL;DR -->
+    <section class="rise d2">
+      <p class="kicker">The whole idea in one paragraph</p>
+      <h2>Wrap the existing engine in a thin MCP server. Don't rebuild it — expose it.</h2>
+      <p class="lead">PowerCodex already has the hard parts: the OpenSpec HTML planning workflow, the two managed-browser engines (build &amp; self-healing test), the consent gate (<code>Approved_rights/</code>), the live dashboard, and the learning log. The MCP route adds <b>one new surface</b> — a standards-compliant MCP server that publishes those capabilities as <b>Tools</b> (verbs the AI can call), <b>Resources</b> (artifacts the AI can read), and <b>Prompts</b> (the <code>/opsx</code> workflows as reusable templates). Any MCP-capable client connects, and the user steers the entire lifecycle in their own chat — while the human-in-the-loop gates are enforced <i>server-side</i> through MCP <b>elicitation</b>, so "bring your own AI" never means "bypass the approval."</p>
+      <div class="grid3" style="margin-top:18px;">
+        <div class="card"><h3><span class="ic">◆</span>Tools</h3><p>The 7 lifecycle stages become callable verbs: <code>plan_change</code>, <code>build_assets</code>, <code>run_app</code>, <code>test_app</code>, <code>self_heal</code>, <code>observe</code>. The AI orchestrates; the server does the work.</p></div>
+        <div class="card pur"><h3><span class="ic">▤</span>Resources</h3><p>The spec HTML, the dashboard state, the task contracts, and the <code>Learning_Experience/</code> log are read-only context the AI can pull on demand.</p></div>
+        <div class="card good"><h3><span class="ic">⌘</span>Prompts</h3><p>The OpenSpec slash-commands (<code>opsx:propose</code>, <code>opsx:apply</code>…) ship as MCP prompt templates — discoverable in any client's prompt picker.</p></div>
+      </div>
+      <div class="callout acc"><h3>Same engine, new front door</h3><p>The MCP server is an <b>adapter</b>, not a fork. It calls the exact same skills, engines, and gates the editor build uses. A bug fixed in the loop is fixed for both surfaces — there is one source of truth.</p></div>
+    </section>
+
+    <!-- WHY MCP -->
+    <section class="rise d2">
+      <p class="kicker">Why an MCP server at all</p>
+      <h2>From "PowerCodex's editor" to "your AI, anywhere"</h2>
+      <p class="lead">The Model Context Protocol is the emerging open standard (JSON-RPC 2.0 over stdio or streamable HTTP) for connecting AI assistants to external systems. Shipping PowerCodex as an MCP server means the user no longer has to adopt a specific editor or chat app — they bring the assistant they already trust, and PowerCodex becomes one of its tools.</p>
+      <div class="grid" style="margin-top:18px;">
+        <div class="card"><h3><span class="ic">🔌</span>Bring your own AI</h3><p>Claude Desktop, Claude Code, Cursor, Cline, Windsurf, VS Code Copilot (MCP), ChatGPT desktop, or a bespoke Agent SDK app — anything that speaks MCP can drive the loop.</p></div>
+        <div class="card"><h3><span class="ic">🧩</span>Composable</h3><p>PowerCodex sits alongside the user's other MCP servers (GitHub, Playwright, filesystem, Jira). Their AI can weave a Power App build into a larger workflow.</p></div>
+        <div class="card"><h3><span class="ic">🛡️</span>Gates travel with it</h3><p>The consent gate isn't a UI nicety — it's enforced in the server via elicitation. No client can call <code>build</code> or <code>push</code> without a human approving the elicited request.</p></div>
+        <div class="card"><h3><span class="ic">📈</span>One engine to maintain</h3><p>Editor users and MCP users share the same engines, dashboard, and learning log. No second codebase, no drift.</p></div>
+      </div>
+      <div class="callout"><h3>What MCP does <i>not</i> change</h3><p>The Power Platform mechanics are identical: managed Edge browser in the maker portal for builds, <code>power-apps push</code> vs <code>npm run dev</code> for runs, e2e tests against the approved MVP, opsx self-heal on failure. MCP only changes <b>who issues the instructions</b> and <b>how approvals are requested</b>.</p></div>
+    </section>
+
+    <!-- ARCHITECTURE -->
+    <section class="rise d2">
+      <p class="kicker">The shape of it</p>
+      <h2>Three layers: the client, the protocol, the engine</h2>
+      <p class="lead">The MCP server is a single new process that the engine already running today can be wrapped in. It speaks MCP upward to whatever AI client the user picked, and calls down into the existing PowerCodex internals.</p>
+
+      <div class="panel">
+        <div class="stack">
+          <div class="layer client">
+            <div class="lt">Your AI client</div>
+            <div class="lc">
+              <span class="chip2">Claude Desktop / Code</span>
+              <span class="chip2">Cursor</span>
+              <span class="chip2">Cline</span>
+              <span class="chip2">VS Code Copilot (MCP)</span>
+              <span class="chip2">Custom Agent SDK app</span>
+            </div>
+          </div>
+          <div class="arrowdown">↓ &nbsp; JSON-RPC 2.0 · tools/list · tools/call · resources/read · prompts/get · elicitation · sampling</div>
+          <div class="layer proto">
+            <div class="lt">PowerCodex MCP server</div>
+            <div class="lc">
+              <span class="chip2">stdio transport</span>
+              <span class="chip2">streamable HTTP transport</span>
+              <span class="chip2">Tools registry</span>
+              <span class="chip2">Resources registry</span>
+              <span class="chip2">Prompts registry</span>
+              <span class="chip2">Consent / elicitation broker</span>
+            </div>
+          </div>
+          <div class="arrowdown">↓ &nbsp; in-process calls — no new logic, just routing</div>
+          <div class="layer core">
+            <div class="lt">Existing engine</div>
+            <div class="lc">
+              <span class="chip2">OpenSpec HTML workflow</span>
+              <span class="chip2">Engine 1 · build executor</span>
+              <span class="chip2">Engine 2 · self-healing tester</span>
+              <span class="chip2">Approved_rights/ gate</span>
+              <span class="chip2">Live dashboard (:4321)</span>
+              <span class="chip2">Learning_Experience/</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top:18px;">
+        <div class="card"><h3><span class="ic">⇄</span>Two transports, two audiences</h3><p><b>stdio</b> for local, single-user setups — the client spawns the server as a subprocess (Claude Desktop, Cursor). <b>Streamable HTTP</b> (with OAuth) for hosted/team use, where one PowerCodex instance serves many remote clients.</p></div>
+        <div class="card"><h3><span class="ic">🗂️</span>One project, one session</h3><p>The server scopes every session to a project root (passed via MCP <b>roots</b>). The spec, the rights folder, the dashboard, and the learning log all resolve relative to that root — exactly as the editor build does today.</p></div>
+      </div>
+    </section>
+
+    <!-- TOOL CATALOG -->
+    <section class="rise d2">
+      <p class="kicker">The contract · what the AI can actually call</p>
+      <h2>The tool catalog — the 7-stage loop as MCP verbs</h2>
+      <p class="lead">Each lifecycle stage becomes one tool with a typed input schema and a structured result. Tools are deliberately coarse-grained (one stage = one call) so the AI orchestrates the <i>order</i> while PowerCodex owns the <i>execution</i>. Destructive tools declare a <code>destructiveHint</code> annotation and route through the consent broker before doing anything.</p>
+
+      <table>
+        <thead><tr><th>Tool</th><th>Stage</th><th>What it does</th><th>Gate</th></tr></thead>
+        <tbody>
+          <tr><td><b><code>start_project</code></b></td><td>0 · Intake</td><td>Captures the goal + MVP, registers <code>Approved_rights/</code>, opens the dashboard, returns a session id.</td><td><span class="pill warn">elicits rights</span></td></tr>
+          <tr><td><b><code>plan_change</code></b></td><td>1 · Plan</td><td>Runs the OpenSpec HTML workflow: Now→After, recommendation, questions batched once. Returns the spec artifact URI.</td><td><span class="pill good">safe</span></td></tr>
+          <tr><td><b><code>approve_change</code></b></td><td>2 · Approve</td><td>Records the human endorsement of a specific spec; unlocks build for that change only.</td><td><span class="pill warn">elicits approval</span></td></tr>
+          <tr><td><b><code>build_assets</code></b></td><td>3 · Build</td><td>Engine 1 drives the managed Edge browser to create Dataverse tables, columns, flows, connections — verified in-portal.</td><td><span class="pill bad">destructive · gated</span></td></tr>
+          <tr><td><b><code>run_app</code></b></td><td>4 · Run</td><td>Decides <code>power-apps push</code> (Dataverse wired) vs <code>npm run dev</code> (local), returns the live app URL.</td><td><span class="pill bad">push gated</span></td></tr>
+          <tr><td><b><code>test_app</code></b></td><td>5 · Test</td><td>Engine 2 runs e2e assertions against the approved MVP; returns pass/fail per screen + coverage.</td><td><span class="pill good">safe</span></td></tr>
+          <tr><td><b><code>self_heal</code></b></td><td>5 · Heal</td><td>On a real bug, drives opsx explore→propose→apply, re-runs, loops until green or cap hit.</td><td><span class="pill warn">capped · may gate</span></td></tr>
+          <tr><td><b><code>observe</code></b></td><td>6 · Observe</td><td>Scans the running app for defects/gaps/improvements and drafts the <i>next</i> spec in the same HTML format.</td><td><span class="pill good">safe</span></td></tr>
+          <tr><td><b><code>get_status</code></b></td><td>any</td><td>Returns the live loop state — current stage, test counts, pending gates — same data the dashboard renders.</td><td><span class="pill good">safe</span></td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout acc" style="margin-top:20px;"><h3>Why coarse tools beat fine tools here</h3><p>If the AI had to call <code>create_table</code>, <code>add_column</code>, <code>wire_relationship</code> one at a time, every client would re-implement orchestration — and get it subtly wrong. By making <code>build_assets</code> the unit, PowerCodex keeps idempotency, verification, and rollback inside the engine. The AI decides <i>what to build next</i>, not <i>how to click the portal</i>.</p></div>
+
+      <h3 style="margin-top:28px;">Example: the <code>build_assets</code> tool definition</h3>
+      <pre class="code"><span class="c">// Advertised in tools/list — the AI sees this schema and the safety hints</span>
+{
+  <span class="k">"name"</span>: <span class="s">"build_assets"</span>,
+  <span class="k">"title"</span>: <span class="s">"Build Power Platform assets from the approved spec"</span>,
+  <span class="k">"description"</span>: <span class="s">"Creates Dataverse tables, columns, relationships, flows and connections in the maker portal, then re-reads the portal to verify each one. Requires an approved change."</span>,
+  <span class="k">"inputSchema"</span>: {
+    <span class="k">"type"</span>: <span class="s">"object"</span>,
+    <span class="k">"properties"</span>: {
+      <span class="k">"sessionId"</span>: { <span class="k">"type"</span>: <span class="s">"string"</span> },
+      <span class="k">"changeId"</span>:  { <span class="k">"type"</span>: <span class="s">"string"</span>, <span class="k">"description"</span>: <span class="s">"the approved change to build"</span> }
+    },
+    <span class="k">"required"</span>: [<span class="s">"sessionId"</span>, <span class="s">"changeId"</span>]
+  },
+  <span class="k">"annotations"</span>: {
+    <span class="k">"destructiveHint"</span>: <span class="p">true</span>,   <span class="c">// mutates the tenant — broker will elicit consent</span>
+    <span class="k">"idempotentHint"</span>: <span class="p">true</span>,    <span class="c">// re-running converges, never duplicates</span>
+    <span class="k">"openWorldHint"</span>: <span class="p">true</span>      <span class="c">// touches an external system (Power Platform)</span>
+  }
+}</pre>
+    </section>
+
+    <!-- RESOURCES & PROMPTS -->
+    <section class="rise d2">
+      <p class="kicker">The other two MCP primitives</p>
+      <h2>Resources to read, Prompts to reuse</h2>
+      <p class="lead">Tools are verbs, but an AI also needs <b>context to read</b> and <b>workflows to launch</b>. PowerCodex exposes both so a fresh client can orient itself without the user re-explaining the project.</p>
+
+      <div class="grid">
+        <div class="panel">
+          <h3 style="margin-top:0;">▤ Resources (read-only context)</h3>
+          <ul class="clean">
+            <li><b><code>powercodex://spec/{changeId}</code></b> — the rendered HTML spec artifact + its markdown twin.</li>
+            <li><b><code>powercodex://status</code></b> — live loop state JSON (stage, tests, gates).</li>
+            <li><b><code>powercodex://mvp</code></b> — the approved MVP benchmark the app is tested against.</li>
+            <li><b><code>powercodex://tasks/{changeId}</code></b> — the declarative task contracts Engine&nbsp;1 will execute.</li>
+            <li><b><code>powercodex://learnings</code></b> — the <code>Learning_Experience/</code> digest the agent consults before planning.</li>
+            <li><b><code>powercodex://rights</code></b> — the current <code>Approved_rights/</code> grants (what the AI is allowed to do unattended).</li>
+          </ul>
+          <p style="color:var(--faint);font-size:13px;margin-top:12px;">Resources support <code>resources/subscribe</code> — the AI is notified when the spec or status changes, so it can react to a self-heal loop without polling.</p>
+        </div>
+        <div class="panel">
+          <h3 style="margin-top:0;">⌘ Prompts (reusable workflows)</h3>
+          <ul class="clean">
+            <li><b><code>opsx:propose</code></b> — draft a new change as an HTML spec artifact.</li>
+            <li><b><code>opsx:continue</code></b> — resume an in-flight change.</li>
+            <li><b><code>opsx:apply</code></b> — implement an approved change.</li>
+            <li><b><code>opsx:verify</code></b> — check a change against its spec.</li>
+            <li><b><code>opsx:archive</code></b> — close out a shipped change.</li>
+            <li><b><code>build-a-power-app</code></b> — the full guided loop, end to end, for first-timers.</li>
+          </ul>
+          <p style="color:var(--faint);font-size:13px;margin-top:12px;">These appear in the client's prompt/slash-command picker. The user types <code>/build-a-power-app</code> in their own AI and the template injects the right system framing + tool sequence.</p>
+        </div>
+      </div>
+
+      <div class="callout good"><h3>Sampling closes the loop</h3><p>For steps that need model reasoning <i>inside</i> the engine (e.g. interpreting a goal, drafting a self-heal proposal), the server uses MCP <b>sampling</b> to ask the connected client's model to think — so PowerCodex needs <b>no API key of its own</b>. The user's AI does the reasoning; PowerCodex does the doing. One subscription, not two.</p></div>
+    </section>
+
+    <!-- CONSENT GATE -->
+    <section class="rise d2">
+      <p class="kicker">The non-negotiable part</p>
+      <h2>How "bring your own AI" still can't skip your approval</h2>
+      <p class="lead">The biggest risk of opening the loop to any client is that an over-eager agent fires <code>build_assets</code> or <code>run_app push</code> without a human in the loop. PowerCodex enforces the gate <b>server-side</b>, where no client prompt can override it, using MCP <b>elicitation</b> — the protocol's built-in mechanism for a server to pause and request structured input from the human.</p>
+
+      <div class="win">
+        <div class="chrome"><span class="dots"><i class="r"></i><i class="y"></i><i class="g"></i></span><span class="url mono">Your AI client — building "projects-hub"</span></div>
+        <div class="chat">
+          <div class="msg user"><span class="av">🧑</span><div class="bub">Great, the plan looks right. Go ahead and build it.</div></div>
+          <div class="msg ai"><span class="av">P</span><div class="bub">Calling <span class="tname">build_assets</span> for change <b>add-task-board</b>…</div></div>
+          <div class="msg tool"><span class="av">◆</span><div class="bub">⏸ <b>elicitation/create</b> → server is requesting consent<br/>"Build will create <b>2 Dataverse tables</b>, <b>9 columns</b>, <b>1 relationship</b> and <b>1 flow</b> in tenant <b>contoso.crm</b>. This mutates your environment. Approve?"<span class="gate">⚠ Awaiting human approval — cannot proceed without it</span></div></div>
+          <div class="msg user"><span class="av">🧑</span><div class="bub">Approve ✓</div></div>
+          <div class="msg tool"><span class="av">◆</span><div class="bub">Consent recorded. Engine 1 launching managed Edge → creating &amp; verifying assets… <b>8/8 verified in portal ✓</b></div></div>
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top:18px;">
+        <div class="card warn"><h3><span class="ic">⏸</span>Elicitation, not trust</h3><p>Every <code>destructiveHint: true</code> tool calls <code>elicitation/create</code> first. The client is <i>required</i> to surface it to the human and return accept/decline. A "yes" from the AI alone is never enough.</p></div>
+        <div class="card"><h3><span class="ic">📁</span>Approved_rights is the source of truth</h3><p>If the user pre-granted <code>build</code> in <code>Approved_rights/</code>, the broker can auto-satisfy the gate — exactly the same rule the editor build follows. The folder, not the client, decides.</p></div>
+        <div class="card"><h3><span class="ic">🚫</span>Fails closed</h3><p>If a client doesn't support elicitation, gated tools return a structured error pointing to the dashboard's manual-approve button. Default is always "don't act."</p></div>
+      </div>
+
+      <div class="callout bad"><h3>Threat model, stated plainly</h3><p>Opening an MCP surface means untrusted prompts can reach the tool layer. Mitigations: (1) destructive tools always elicit; (2) the server validates that <code>changeId</code> was actually approved before <code>build_assets</code> runs; (3) HTTP transport requires OAuth with scoped tokens; (4) every tool call is logged to <code>Learning_Experience/</code> with the originating session. The AI can <i>propose</i> anything; it can <i>change</i> nothing without a recorded human yes.</p></div>
+    </section>
+
+    <!-- SETUP -->
+    <section class="rise d2">
+      <p class="kicker">What the user actually does</p>
+      <h2>Setup is one config block</h2>
+      <p class="lead">For local use the client spawns PowerCodex over stdio. The user adds one entry to their client's MCP config and points it at a project folder. No servers to host, no keys to manage — the AI's own model does the reasoning via sampling.</p>
+
+      <h3 style="margin-top:22px;">Claude Desktop / Cursor / Cline — <code>mcp.json</code></h3>
+      <pre class="code">{
+  <span class="k">"mcpServers"</span>: {
+    <span class="k">"powercodex"</span>: {
+      <span class="k">"command"</span>: <span class="s">"npx"</span>,
+      <span class="k">"args"</span>: [<span class="s">"-y"</span>, <span class="s">"@voyager163/powercodex-mcp"</span>, <span class="s">"--root"</span>, <span class="s">"C:/work/projects-hub"</span>],
+      <span class="k">"env"</span>: { <span class="k">"POWERCODEX_DASHBOARD"</span>: <span class="s">"4321"</span> }
+    }
+  }
+}</pre>
+
+      <h3 style="margin-top:22px;">Hosted / team — streamable HTTP with OAuth</h3>
+      <pre class="code">{
+  <span class="k">"mcpServers"</span>: {
+    <span class="k">"powercodex"</span>: {
+      <span class="k">"url"</span>: <span class="s">"https://powercodex.contoso.com/mcp"</span>,
+      <span class="k">"transport"</span>: <span class="s">"http"</span>
+      <span class="c">// client runs the OAuth flow on first connect; tokens are scoped per project</span>
+    }
+  }
+}</pre>
+
+      <div class="callout acc"><h3>The dashboard still opens</h3><p>Whichever transport you use, <code>start_project</code> launches the same live dashboard on <code>localhost:4321</code> (or the configured port). The user watches the loop there exactly as editor users do — the MCP route doesn't take the visibility away, it adds a second way to steer.</p></div>
+    </section>
+
+    <!-- WALKTHROUGH -->
+    <section class="rise d2">
+      <p class="kicker">A day in the life · MCP edition</p>
+      <h2>One goal to a self-healing app — from your own chat</h2>
+      <p class="lead">Here is the full loop as the user experiences it inside their own AI client. Every PowerCodex action is a tool call; every dangerous one pauses for a human yes.</p>
+
+      <div class="panel">
+        <div class="flow">
+          <div class="step"><div class="nm">0</div><div>
+            <h3>You describe the app</h3>
+            <p>"Build a field-team app to track Projects and Tasks with status and due dates." Your AI calls <span class="tname mono">start_project</span> — PowerCodex captures the goal, asks for your MVP, and <b>elicits your rights</b> (may it run build/push unattended?). The dashboard opens.</p>
+            <div class="tags"><span class="pill acc">start_project</span><span class="pill warn">elicits rights</span></div>
+          </div></div>
+          <div class="step"><div class="nm">1</div><div>
+            <h3>It plans — and shows its work</h3>
+            <p>Your AI calls <span class="tname mono">plan_change</span>. PowerCodex authors the HTML spec (Now→After, a recommendation with pros/cons, every question batched once) and returns <code>powercodex://spec/add-task-board</code>. Your AI reads the resource and summarises it to you.</p>
+            <div class="tags"><span class="pill acc">plan_change</span><span class="pill pur">resources/read</span></div>
+          </div></div>
+          <div class="step"><div class="nm">2</div><div>
+            <h3>You approve</h3>
+            <p>You say "looks good." Your AI calls <span class="tname mono">approve_change</span>; the server records your endorsement and unlocks build <i>for that change only</i>.</p>
+            <div class="tags"><span class="pill warn">approve_change · elicited</span></div>
+          </div></div>
+          <div class="step"><div class="nm">3</div><div>
+            <h3>It builds — after one more yes</h3>
+            <p>Your AI calls <span class="tname mono">build_assets</span>. The consent broker elicits: "this creates 2 tables + 1 flow in contoso.crm." You approve. Engine&nbsp;1 drives the managed browser and verifies every asset in the portal.</p>
+            <div class="tags"><span class="pill bad">build_assets · gated</span><span class="pill good">verified in portal</span></div>
+          </div></div>
+          <div class="step"><div class="nm">4</div><div>
+            <h3>It runs the app</h3>
+            <p>Your AI calls <span class="tname mono">run_app</span>. Dataverse is wired, so PowerCodex chooses <code>power-apps push</code> and returns the live app link. Push consent is satisfied by your earlier rights grant.</p>
+            <div class="tags"><span class="pill bad">run_app push</span><span class="pill good">app link returned</span></div>
+          </div></div>
+          <div class="step"><div class="nm">5</div><div>
+            <h3>It tests, and fixes itself</h3>
+            <p>Your AI calls <span class="tname mono">test_app</span>; one screen fails. It calls <span class="tname mono">self_heal</span>, which runs opsx explore→propose→apply, rebuilds, and re-tests — looping until green or the iteration cap escalates back to you.</p>
+            <div class="tags"><span class="pill acc">test_app</span><span class="pill pur">self_heal via opsx</span><span class="pill warn">capped</span></div>
+          </div></div>
+          <div class="step"><div class="nm g">6</div><div>
+            <h3>It observes and proposes the next thing</h3>
+            <p>Your AI calls <span class="tname mono">observe</span>. PowerCodex spots a coverage gap, drafts the next spec in the same HTML format, and notifies you. You're back at step 1 — but the next plan wrote itself. Every rotation appends to <code>Learning_Experience/</code>.</p>
+            <div class="tags"><span class="pill acc">observe</span><span class="pill good">learns &amp; loops</span></div>
+          </div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DECISION: WHAT TO SHIP -->
+    <section class="rise d2">
+      <p class="kicker">A real decision to make</p>
+      <h2>Recommendation: ship local stdio first, hosted HTTP second</h2>
+      <p class="lead">The two transports serve different users and carry very different risk. We don't have to choose forever — but we should choose what ships in v1.</p>
+
+      <div class="reco">
+        <span class="rb">Recommends</span>
+        <p><b>Ship the stdio (local, single-user) server first.</b> It's the smallest surface, needs no auth infrastructure, matches how solo makers already run PowerCodex, and lets us harden the tool/consent contract before exposing it to a network. Add streamable HTTP + OAuth as a fast-follow once the tool catalog is proven.</p>
+      </div>
+      <div class="options">
+        <div class="opt win2"><header>v1 · Local stdio server <span class="pick">★ recommended first</span></header>
+          <ul>
+            <li class="pro">No auth, no hosting — works the moment they add the config</li>
+            <li class="pro">Same trust boundary as running PowerCodex today</li>
+            <li class="pro">Fastest path to "drive it from Claude Desktop"</li>
+            <li class="con">One user, one machine — no team sharing</li>
+          </ul></div>
+        <div class="opt alt"><header>v2 · Hosted streamable HTTP</header>
+          <ul>
+            <li class="pro">One instance serves a whole team remotely</li>
+            <li class="pro">Centralised rights, audit, and learning log</li>
+            <li class="con">Requires OAuth, token scoping, network hardening</li>
+            <li class="con">Bigger attack surface — must land v1's gates first</li>
+          </ul></div>
+      </div>
+    </section>
+
+    <!-- ROLLOUT -->
+    <section class="rise d2">
+      <p class="kicker">How we get there</p>
+      <h2>Four phases, each shippable on its own</h2>
+      <div class="phases">
+        <div class="phase">
+          <div class="pn">Phase 1</div>
+          <h4>Read-only server</h4>
+          <p>Expose Resources + <code>get_status</code> + the <code>opsx</code> Prompts over stdio. No mutations. Any client can inspect a project. Proves the wiring.</p>
+          <span class="pt">lowest risk</span>
+        </div>
+        <div class="phase">
+          <div class="pn">Phase 2</div>
+          <h4>Safe tools</h4>
+          <p>Add <code>start_project</code>, <code>plan_change</code>, <code>test_app</code>, <code>observe</code> — everything that doesn't mutate the tenant. The AI can plan and test, not build.</p>
+          <span class="pt">plan + test</span>
+        </div>
+        <div class="phase">
+          <div class="pn">Phase 3</div>
+          <h4>Gated mutations</h4>
+          <p>Wire the consent broker and add <code>approve_change</code>, <code>build_assets</code>, <code>run_app</code>, <code>self_heal</code>. The full loop, locally, with elicitation enforced.</p>
+          <span class="pt">the real thing</span>
+        </div>
+        <div class="phase">
+          <div class="pn">Phase 4</div>
+          <h4>Hosted &amp; multi-user</h4>
+          <p>Streamable HTTP transport, OAuth, scoped tokens, centralised audit. One PowerCodex serving a team of AIs.</p>
+          <span class="pt">scale out</span>
+        </div>
+      </div>
+      <div class="callout good" style="margin-top:18px;"><h3>Every phase is a real release</h3><p>Phase 1 alone is useful — a maker can point Claude at an existing PowerCodex project and ask "what's the status, what's left?" We don't hold value back waiting for the full loop.</p></div>
+    </section>
+
+    <!-- OPEN QUESTIONS -->
+    <section class="rise d2">
+      <p class="kicker">Asked once, so we don't drip-feed them</p>
+      <h2>Open questions for your endorsement</h2>
+      <div class="panel">
+        <ul class="clean">
+          <li><b>Package &amp; name.</b> Ship as <code>@voyager163/powercodex-mcp</code> (separate package wrapping the engine) or a subcommand of the existing CLI (<code>codespec mcp</code>)? <span class="pill acc">recommend: subcommand — one install, one version</span></li>
+          <li><b>Reasoning source.</b> Lean entirely on MCP <b>sampling</b> (the client's model does all thinking, zero keys for us) or allow an optional fallback API key for clients that don't support sampling? <span class="pill acc">recommend: sampling-first, key optional</span></li>
+          <li><b>Granularity.</b> Keep tools coarse (one stage = one call) as proposed, or also expose a single <code>run_loop</code> mega-tool that runs all stages autonomously between gates? <span class="pill warn">trade-off: autonomy vs control</span></li>
+          <li><b>Dashboard coupling.</b> Should the MCP server require the dashboard process, or run headless and expose status purely as a resource for clients with no browser?</li>
+          <li><b>Multi-tenant rights.</b> For Phase 4, does each OAuth identity get its own <code>Approved_rights/</code>, or is there a shared org policy that overrides individuals?</li>
+        </ul>
+      </div>
+      <div class="ready">
+        <div class="check">✓</div>
+        <div class="big">"This is the complete MCP plan — I have no more questions to ask."</div>
+        <p style="color:var(--muted);margin:8px 0 0;font-size:13.5px;">Endorse the recommendations above (or amend them) and I'll turn this into an <code>opsx</code> change with proposal, spec deltas, and tasks.</p>
+      </div>
+    </section>
+
+    <footer>
+      PowerCodex · The MCP route — your AI, our lifecycle &nbsp;·&nbsp; 2026-06-16 &nbsp;·&nbsp;
+      Built in the same HTML-first format every PowerCodex change uses.
+    </footer>
+
+  </div>
+</body>
+</html>
