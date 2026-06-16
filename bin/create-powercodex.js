@@ -82,8 +82,8 @@ function parseArgs(args) {
 
 function printHelp() {
   console.log(`Usage: ${commandName} [project-name] [options]\n`);
-  console.log('Install: npm install -g @voyager163/powercodex@latest');
-  console.log('Run without installing: npx @voyager163/powercodex [project-name] [options]\n');
+  console.log('Install: npm install -g @elfredseow/powercodex@latest');
+  console.log('Run without installing: npx @elfredseow/powercodex [project-name] [options]\n');
   console.log('Options:');
   console.log('  --skip-install   Create the project without running npm install');
   console.log('  --skip-git       Create the project without running git init');

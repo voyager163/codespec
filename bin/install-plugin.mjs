@@ -4,7 +4,7 @@
 //   node bin/install-plugin.mjs              → project-scoped (default)
 //   node bin/install-plugin.mjs --user       → user-scoped (all projects)
 //   node bin/install-plugin.mjs --root /path → set POWERCODEX_ROOT explicitly
-//   npx @voyager163/powercodex install-powercodex-mcp
+//   npx @elfredseow/powercodex install-powercodex-mcp
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -29,7 +29,7 @@ powercodex install-powercodex-mcp — register the PowerCodex MCP server with Cl
 
 Usage:
   node bin/install-plugin.mjs [options]
-  npx @voyager163/powercodex install-powercodex-mcp [options]
+  npx @elfredseow/powercodex install-powercodex-mcp [options]
 
 Options:
   --user         Register at user scope (available in all projects)
@@ -37,9 +37,9 @@ Options:
   -h, --help     Show this help
 
 Examples:
-  npx @voyager163/powercodex install-powercodex-mcp
-  npx @voyager163/powercodex install-powercodex-mcp --user
-  npx @voyager163/powercodex install-powercodex-mcp --root /path/to/my-project
+  npx @elfredseow/powercodex install-powercodex-mcp
+  npx @elfredseow/powercodex install-powercodex-mcp --user
+  npx @elfredseow/powercodex install-powercodex-mcp --root /path/to/my-project
 `);
   process.exit(0);
 }

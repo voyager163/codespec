@@ -1,8 +1,29 @@
 {
-  "name": "@voyager163/powercodex",
+  "name": "@elfredseow/powercodex",
   "version": "0.2.0",
   "description": "Create a Power Apps Code Apps project prepared for OpenSpec workflows. Includes a lifecycle engine, Dataverse automation, and an MCP server.",
   "license": "MIT",
+  "keywords": [
+    "power-apps",
+    "power-platform",
+    "code-apps",
+    "openspec",
+    "dataverse",
+    "mcp",
+    "scaffold",
+    "cli"
+  ],
+  "homepage": "https://github.com/voyager163/codespec#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/voyager163/codespec.git"
+  },
+  "bugs": {
+    "url": "https://github.com/voyager163/codespec/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
     "powercodex": "bin/create-powercodex.js",
     "create-powercodex": "bin/create-powercodex.js",

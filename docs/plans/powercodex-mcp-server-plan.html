@@ -433,7 +433,7 @@
   <span class="k">"mcpServers"</span>: {
     <span class="k">"powercodex"</span>: {
       <span class="k">"command"</span>: <span class="s">"npx"</span>,
-      <span class="k">"args"</span>: [<span class="s">"-y"</span>, <span class="s">"@voyager163/powercodex-mcp"</span>, <span class="s">"--root"</span>, <span class="s">"C:/work/projects-hub"</span>],
+      <span class="k">"args"</span>: [<span class="s">"-y"</span>, <span class="s">"@elfredseow/powercodex-mcp"</span>, <span class="s">"--root"</span>, <span class="s">"C:/work/projects-hub"</span>],
       <span class="k">"env"</span>: { <span class="k">"POWERCODEX_DASHBOARD"</span>: <span class="s">"4321"</span> }
     }
   }
@@ -567,7 +567,7 @@
       <h2>Open questions for your endorsement</h2>
       <div class="panel">
         <ul class="clean">
-          <li><b>Package &amp; name.</b> Ship as <code>@voyager163/powercodex-mcp</code> (separate package wrapping the engine) or a subcommand of the existing CLI (<code>codespec mcp</code>)? <span class="pill acc">recommend: subcommand — one install, one version</span></li>
+          <li><b>Package &amp; name.</b> Ship as <code>@elfredseow/powercodex-mcp</code> (separate package wrapping the engine) or a subcommand of the existing CLI (<code>codespec mcp</code>)? <span class="pill acc">recommend: subcommand — one install, one version</span></li>
           <li><b>Reasoning source.</b> Lean entirely on MCP <b>sampling</b> (the client's model does all thinking, zero keys for us) or allow an optional fallback API key for clients that don't support sampling? <span class="pill acc">recommend: sampling-first, key optional</span></li>
           <li><b>Granularity.</b> Keep tools coarse (one stage = one call) as proposed, or also expose a single <code>run_loop</code> mega-tool that runs all stages autonomously between gates? <span class="pill warn">trade-off: autonomy vs control</span></li>
           <li><b>Dashboard coupling.</b> Should the MCP server require the dashboard process, or run headless and expose status purely as a resource for clients with no browser?</li>

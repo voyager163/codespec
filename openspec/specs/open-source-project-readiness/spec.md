@@ -26,7 +26,7 @@ The repository README SHALL display public trust signals for project release sta
 #### Scenario: README badges are displayed
 
 - **WHEN** a reader views the README header
-- **THEN** badges SHALL link to the repository latest release, stargazers, license, and `@voyager163/powercodex` npm package page.
+- **THEN** badges SHALL link to the repository latest release, stargazers, license, and `@elfredseow/powercodex` npm package page.
 
 #### Scenario: Badge metadata changes upstream
 

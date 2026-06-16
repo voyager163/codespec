@@ -6,13 +6,13 @@ Define the behavior of the PowerCodex initializer for creating Power Apps Code A
 
 ### Requirement: PowerCodex CLI Identity
 
-The initializer SHALL use `powercodex` as the project identity, SHALL publish the npm package as `@voyager163/powercodex`, and SHALL expose `powercodex` as the primary executable command.
+The initializer SHALL use `powercodex` as the project identity, SHALL publish the npm package as `@elfredseow/powercodex`, and SHALL expose `powercodex` as the primary executable command.
 
 #### Scenario: Package metadata names PowerCodex initializer
 
 Given a developer inspects the package metadata
 When the package name and binary entries are read
-Then the package name SHALL identify the initializer as `@voyager163/powercodex`
+Then the package name SHALL identify the initializer as `@elfredseow/powercodex`
 And the binary entries SHALL expose `powercodex` as the primary command
 And they MAY expose `create-powercodex` as a backwards-compatible bin alias.
 
@@ -21,7 +21,7 @@ And they MAY expose `create-powercodex` as a backwards-compatible bin alias.
 Given the developer runs the initializer help command
 When usage information is printed
 Then it SHALL show `powercodex [project-name] [options]`
-And it SHALL mention `npm install -g @voyager163/powercodex@latest` as the global install command.
+And it SHALL mention `npm install -g @elfredseow/powercodex@latest` as the global install command.
 
 ### Requirement: PowerCodex Documentation Identity
 

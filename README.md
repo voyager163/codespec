@@ -18,7 +18,7 @@
 	<a href="https://github.com/voyager163/powercodex/blob/main/LICENSE">
 		<img src="https://img.shields.io/github/license/voyager163/powercodex" alt="License" />
 	</a>
-	<a href="https://www.npmjs.com/package/@voyager163/powercodex">
+	<a href="https://www.npmjs.com/package/@elfredseow/powercodex">
 		<img src="https://img.shields.io/npm/v/%40voyager163%2Fpowercodex?label=npm" alt="npm version" />
 	</a>
 </p>
@@ -52,7 +52,7 @@ The goal is practical spec-driven development for Code Apps. PowerCodex uses Ope
 ## Quick Start
 
 ```bash
-npm install -g @voyager163/powercodex@latest
+npm install -g @elfredseow/powercodex@latest
 powercodex my-app
 cd my-app
 code .
@@ -61,7 +61,7 @@ code .
 To create a project without a global install, run:
 
 ```bash
-npx @voyager163/powercodex my-app
+npx @elfredseow/powercodex my-app
 ```
 
 Initialize the Power Apps code app for your target environment:
@@ -390,7 +390,7 @@ Before publishing a package version:
 
 1. Run `npm run verify`.
 2. Run `npm pack --dry-run` and inspect the included files.
-3. Confirm `npm install -g @voyager163/powercodex@latest` installs the `powercodex` command after publishing.
+3. Confirm `npm install -g @elfredseow/powercodex@latest` installs the `powercodex` command after publishing.
 4. Confirm `templates/starter` contains no local secrets or generated build output.
 5. Confirm [templates/openspec/config.yaml](templates/openspec/config.yaml) has the desired Power Apps Code Apps defaults.
 6. Confirm [templates/github](templates/github) contains exactly the expected OPSX prompts and skills.

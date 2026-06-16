@@ -307,15 +307,15 @@
 npm run install-powercodex-mcp
 
 <span class="cmt"># Or via npx — no clone needed (once published to npm)</span>
-npx @voyager163/powercodex install-powercodex-mcp</pre>
+npx @elfredseow/powercodex install-powercodex-mcp</pre>
 
       <p>That registers the server at <strong>project scope</strong> (saved to <code>.claude/settings.json</code>). To register it for <em>all</em> your projects instead:</p>
       <pre>npm run install-powercodex-mcp -- --user
 <span class="cmt"># or</span>
-npx @voyager163/powercodex install-powercodex-mcp --user</pre>
+npx @elfredseow/powercodex install-powercodex-mcp --user</pre>
 
       <p>To point the server at a different project root than the current directory:</p>
-      <pre>npx @voyager163/powercodex install-powercodex-mcp --root /absolute/path/to/project</pre>
+      <pre>npx @elfredseow/powercodex install-powercodex-mcp --root /absolute/path/to/project</pre>
 
       <div class="callout tip">
         <div class="callout-title">What the command does</div>
@@ -346,7 +346,7 @@ claude mcp add --scope user \
   <span class="key">"mcpServers"</span><span class="kw">:</span> <span class="kw">{</span>
     <span class="key">"powercodex"</span><span class="kw">:</span> <span class="kw">{</span>
       <span class="key">"command"</span><span class="kw">:</span> <span class="str">"npx"</span>,
-      <span class="key">"args"</span><span class="kw">:</span> <span class="kw">[</span><span class="str">"-y"</span>, <span class="str">"@voyager163/powercodex"</span>, <span class="str">"mcp"</span><span class="kw">]</span>,
+      <span class="key">"args"</span><span class="kw">:</span> <span class="kw">[</span><span class="str">"-y"</span>, <span class="str">"@elfredseow/powercodex"</span>, <span class="str">"mcp"</span><span class="kw">]</span>,
       <span class="key">"env"</span><span class="kw">:</span> <span class="kw">{</span> <span class="key">"POWERCODEX_ROOT"</span><span class="kw">:</span> <span class="str">"/absolute/path/to/your/project"</span> <span class="kw">}</span>
     <span class="kw">}</span>
   <span class="kw">}</span>

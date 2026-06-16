@@ -13,7 +13,7 @@
 //   }
 //
 // Or use npx after publishing:
-//   "command": "npx", "args": ["-y", "@voyager163/powercodex", "mcp"]
+//   "command": "npx", "args": ["-y", "@elfredseow/powercodex", "mcp"]
 
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { createServer } from '../src/mcp/server.mjs';
