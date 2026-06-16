@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PowerCodex → MCP Server Conversion Plan</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2a2d3e;
+      --accent: #7c6af7;
+      --accent2: #4fc3f7;
+      --accent3: #81c784;
+      --warn: #ffb74d;
+      --danger: #e57373;
+      --text: #e2e8f0;
+      --muted: #8892a4;
+      --code-bg: #12141e;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); line-height: 1.65; }
+
+    /* ── Layout ── */
+    .hero {
+      background: linear-gradient(135deg, #1a1d27 0%, #12141e 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 48px 64px 40px;
+    }
+    .hero-eyebrow { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); font-weight: 600; margin-bottom: 12px; }
+    .hero h1 { font-size: 2.4rem; font-weight: 700; line-height: 1.2; margin-bottom: 14px; }
+    .hero h1 span { color: var(--accent); }
+    .hero p { color: var(--muted); font-size: 1.05rem; max-width: 680px; }
+    .hero-meta { margin-top: 20px; display: flex; gap: 24px; flex-wrap: wrap; }
+    .badge { display: inline-flex; align-items: center; gap: 6px; background: #24273a; border: 1px solid var(--border); border-radius: 20px; padding: 4px 14px; font-size: 12px; color: var(--muted); }
+    .badge.green { border-color: var(--accent3); color: var(--accent3); }
+    .badge.blue  { border-color: var(--accent2); color: var(--accent2); }
+    .badge.purple{ border-color: var(--accent);  color: var(--accent);  }
+
+    main { max-width: 1100px; margin: 0 auto; padding: 48px 48px 80px; }
+
+    /* ── Sections ── */
+    .section { margin-bottom: 56px; }
+    .section-title {
+      font-size: 1.3rem; font-weight: 700; margin-bottom: 24px;
+      padding-bottom: 10px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .section-num {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--accent); color: #fff; font-size: 13px;
+      display: inline-flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;
+    }
+
+    /* ── Grid cards ── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    @media(max-width:800px) { .grid-2,.grid-3 { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+    }
+    .card-title { font-size: .85rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 10px; }
+    .card-title.purple { color: var(--accent); }
+    .card-title.blue   { color: var(--accent2); }
+    .card-title.green  { color: var(--accent3); }
+    .card-title.warn   { color: var(--warn); }
+    .card p { font-size: .9rem; color: var(--muted); margin-bottom: 6px; }
+    .card ul { padding-left: 16px; }
+    .card ul li { font-size: .88rem; color: var(--muted); margin-bottom: 4px; }
+
+    /* ── Mapping table ── */
+    table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+    th { background: #1e2133; color: var(--accent); text-transform: uppercase; font-size: .75rem; letter-spacing: .07em; padding: 10px 14px; text-align: left; border-bottom: 2px solid var(--border); }
+    td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--muted); vertical-align: top; }
+    tr:hover td { background: #1e2133; }
+    td:first-child { color: var(--text); font-weight: 500; }
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: .75rem; font-weight: 600; margin-right: 4px; }
+    .tag.tool     { background: #2a1f5e; color: #a78bfa; }
+    .tag.resource { background: #1a3a2a; color: #6ee7b7; }
+    .tag.prompt   { background: #1a2e4a; color: #67e8f9; }
+
+    /* ── Code blocks ── */
+    pre {
+      background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px;
+      padding: 18px 20px; overflow-x: auto; font-size: .82rem; line-height: 1.7;
+      font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+      color: #cdd6f4;
+    }
+    code { font-family: inherit; }
+    .kw  { color: #89b4fa; }
+    .str { color: #a6e3a1; }
+    .cmt { color: #585b70; }
+    .fn  { color: #cba6f7; }
+    .num { color: #fab387; }
+    .key { color: #89dceb; }
+
+    /* ── Timeline phases ── */
+    .timeline { position: relative; padding-left: 36px; }
+    .timeline::before { content:''; position:absolute; left:12px; top:0; bottom:0; width:2px; background:var(--border); }
+    .phase { position: relative; margin-bottom: 32px; }
+    .phase-dot {
+      position: absolute; left: -30px; top: 4px;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: var(--accent); border: 2px solid var(--bg);
+    }
+    .phase-dot.done   { background: var(--accent3); }
+    .phase-dot.warn   { background: var(--warn); }
+    .phase-title { font-weight: 700; font-size: 1rem; margin-bottom: 4px; }
+    .phase-sub   { font-size: .83rem; color: var(--muted); margin-bottom: 10px; }
+    .steps { list-style: none; }
+    .steps li {
+      font-size: .87rem; color: var(--muted); padding: 5px 0 5px 20px;
+      border-left: 2px solid var(--border); margin-bottom: 4px;
+      position: relative;
+    }
+    .steps li::before { content: '→'; position: absolute; left: 4px; color: var(--accent); }
+
+    /* ── Arch diagram ── */
+    .arch {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+      padding: 28px 32px; font-family: 'Cascadia Code', monospace; font-size: .82rem; line-height: 2;
+      color: #cdd6f4; white-space: pre;
+      overflow-x: auto;
+    }
+
+    /* ── Callouts ── */
+    .callout {
+      border-left: 3px solid var(--accent); background: #1a1d2e;
+      border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 20px 0; font-size: .9rem;
+    }
+    .callout.warn  { border-color: var(--warn);   background: #1e1a12; }
+    .callout.green { border-color: var(--accent3); background: #121e16; }
+    .callout strong { color: var(--text); }
+
+    /* ── File tree ── */
+    .tree {
+      background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px;
+      padding: 18px 20px; font-family: monospace; font-size: .83rem; line-height: 1.8;
+      color: #cdd6f4;
+    }
+    .tree .dir  { color: var(--accent2); }
+    .tree .file { color: #a6e3a1; }
+    .tree .new  { color: var(--warn); }
+    .tree .note { color: var(--muted); font-style: italic; }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════ HERO ══════════════════════════════════ -->
+<div class="hero">
+  <div class="hero-eyebrow">Conversion Plan · PowerCodex</div>
+  <h1>CLI → <span>MCP Server</span></h1>
+  <p>
+    A phased plan to expose PowerCodex's lifecycle engine, project scaffolder,
+    and planning tools as a Model Context Protocol (MCP) server — letting any
+    MCP-compatible host (Claude Desktop, VS Code, Cursor, etc.) drive
+    Power Apps development natively.
+  </p>
+  <div class="hero-meta">
+    <span class="badge green">● MCP SDK 1.x</span>
+    <span class="badge blue">● Node.js ≥ 20.19</span>
+    <span class="badge purple">● Zero new dependencies on core logic</span>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════ MAIN ══════════════════════════════════ -->
+<main>
+
+  <!-- ─── 1 · Why MCP ─── -->
+  <div class="section">
+    <div class="section-title"><span class="section-num">1</span> Why convert to MCP?</div>
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-title purple">Host-native UX</div>
+        <p>Claude Desktop, VS Code, and Cursor can call PowerCodex tools directly from the chat UI — no terminal needed.</p>
+      </div>
+      <div class="card">
+        <div class="card-title blue">AI-driven loops</div>
+        <p>Claude can read lifecycle state as a <em>resource</em>, call <em>tools</em> to advance phases, and receive streaming progress — fully agentic.</p>
+      </div>
+      <div class="card">
+        <div class="card-title green">Zero logic rewrite</div>
+        <p>The existing lifecycle engine, plan generator, story/digest system, and compliance meter stay unchanged — MCP is a thin transport layer on top.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── 2 · Capability mapping ─── -->
+  <div class="section">
+    <div class="section-title"><span class="section-num">2</span> Capability → MCP primitive mapping</div>
+    <p style="color:var(--muted);font-size:.88rem;margin-bottom:16px;">
+      MCP has three primitives: <strong>Tools</strong> (model-invokable actions),
+      <strong>Resources</strong> (readable data), and <strong>Prompts</strong> (templated instructions).
+    </p>
+    <table>
+      <thead>
+        <tr><th>Existing capability</th><th>MCP primitive</th><th>Name</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>scaffold new project</td>
+          <td><span class="tag tool">Tool</span></td>
+          <td><code>scaffold_project</code></td>
+          <td>Wraps <code>create-powercodex.js</code>; returns created file list</td>
+        </tr>
+        <tr>
+          <td>import brownfield app</td>
+          <td><span class="tag tool">Tool</span></td>
+          <td><code>import_project</code></td>
+          <td>Calls <code>import.js --analyze</code>; returns digest JSON</td>
+        </tr>
+        <tr>
+          <td>start lifecycle loop</td>
+          <td><span class="tag tool">Tool</span></td>
+          <td><code>start_lifecycle_loop</code></td>
+          <td>Spawns <code>loop.js</code> in background; returns run ID</td>
+        </tr>
+        <tr>
+          <td>advance / stop loop</td>
+          <td><span class="tag tool">Tool</span></td>
+          <td><code>control_lifecycle</code></td>
+          <td>Action enum: <code>approve | pause | stop | rotate</code></td>
+        </tr>
+        <tr>
+          <td>generate plan (planner.js)</td>
+          <td><span class="tag tool">Tool</span></td>
+          <td><code>generate_plan</code></td>
+          <td>Returns HTML plan string; host can write to disk or display</td>
+        </tr>
+        <tr>
+          <td>generate user stories</td>
+          <td><span class="tag tool">Tool</span></td>
+          <td><code>generate_stories</code></td>
+          <td>Calls <code>stories.js</code>; returns structured story array</td>
+        </tr>
+        <tr>
+          <td>propose MVP</td>
+          <td><span class="tag tool">Tool</span></td>
+          <td><code>propose_mvp</code></td>
+          <td>Calls <code>digest.js</code> → <code>planner.js</code></td>
+        </tr>
+        <tr>
+          <td>log lesson (reflect)</td>
+          <td><span class="tag tool">Tool</span></td>
+          <td><code>log_lesson</code></td>
+          <td>Appends to <code>Learning_Experience/</code></td>
+        </tr>
+        <tr>
+          <td>compliance score</td>
+          <td><span class="tag tool">Tool</span></td>
+          <td><code>get_compliance</code></td>
+          <td>Returns goal↔MVP + stories↔code meters as JSON</td>
+        </tr>
+        <tr>
+          <td>list Edge profiles</td>
+          <td><span class="tag tool">Tool</span></td>
+          <td><code>list_edge_profiles</code></td>
+          <td>Reads <code>edge-profiles.js</code>; returns array of profile names</td>
+        </tr>
+        <tr>
+          <td><code>/api/state</code> endpoint</td>
+          <td><span class="tag resource">Resource</span></td>
+          <td><code>powercodex://lifecycle/state</code></td>
+          <td>Live JSON: current phase, stage, scores, last log line</td>
+        </tr>
+        <tr>
+          <td>plan registry</td>
+          <td><span class="tag resource">Resource</span></td>
+          <td><code>powercodex://plans/{id}</code></td>
+          <td>Each registered HTML plan; list via resource template</td>
+        </tr>
+        <tr>
+          <td>Learning_Experience lessons</td>
+          <td><span class="tag resource">Resource</span></td>
+          <td><code>powercodex://lessons</code></td>
+          <td>Aggregated lessons JSON from workspace.js</td>
+        </tr>
+        <tr>
+          <td>OPSX prompt files</td>
+          <td><span class="tag prompt">Prompt</span></td>
+          <td><code>opsx_{workflow}</code></td>
+          <td>All 11 <code>.github/prompts/*.md</code> surfaced as MCP prompts</td>
+        </tr>
+        <tr>
+          <td>cockpit slash commands</td>
+          <td><span class="tag prompt">Prompt</span></td>
+          <td><code>cockpit_intent</code></td>
+          <td>Template that maps natural language → cockpit command</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ─── 3 · Architecture ─── -->
+  <div class="section">
+    <div class="section-title"><span class="section-num">3</span> Target architecture</div>
+    <div class="arch">
+┌──────────────────────────────────────────────────────────────┐
+│  MCP Host  (Claude Desktop / VS Code / Cursor / Claude Code) │
+│                                                              │
+│   User: "scaffold a new Power App called 'InspectionApp'"   │
+│            │  (Tool call: scaffold_project)                  │
+└────────────┼─────────────────────────────────────────────────┘
+             │  stdio or SSE transport
+             ▼
+┌─────────────────────────────────────────────────────────────┐
+│              powercodex-mcp  (NEW — thin layer)             │
+│  src/                                                       │
+│  ├── server.mjs          ← MCP server entry, tool registry  │
+│  ├── tools/              ← one file per MCP tool            │
+│  │   ├── scaffold.mjs                                       │
+│  │   ├── import.mjs                                         │
+│  │   ├── lifecycle.mjs   ← start / control / state          │
+│  │   ├── planner.mjs                                        │
+│  │   ├── stories.mjs                                        │
+│  │   └── compliance.mjs                                     │
+│  ├── resources/          ← resource handlers                │
+│  │   ├── state.mjs       ← reads loop.js state store        │
+│  │   └── plans.mjs                                          │
+│  └── prompts/            ← opsx prompt loader               │
+│      └── opsx.mjs                                           │
+│                          ↓ imports (unchanged)              │
+│  tools/lifecycle/lib/    ← ALL EXISTING LOGIC UNCHANGED     │
+│  bin/create-powercodex.js                                   │
+└─────────────────────────────────────────────────────────────┘</div>
+    <div class="callout green">
+      <strong>Key principle:</strong> The MCP layer is a thin adapter. Every tool handler
+      calls into the existing <code>tools/lifecycle/lib/</code> modules by <code>import</code> —
+      no copy-paste, no reimplementation.
+    </div>
+  </div>
+
+  <!-- ─── 4 · File structure ─── -->
+  <div class="section">
+    <div class="section-title"><span class="section-num">4</span> New file structure</div>
+    <div class="tree">
+<span class="dir">codespec/</span>
+├── <span class="file">package.json</span>               <span class="note">← add "mcp" bin entry + @modelcontextprotocol/sdk dep</span>
+├── <span class="dir">bin/</span>
+│   ├── <span class="file">create-powercodex.js</span>   <span class="note">← UNCHANGED</span>
+│   └── <span class="new">powercodex-mcp.mjs</span>     <span class="note">← NEW: MCP server entry point</span>
+├── <span class="dir">src/mcp/</span>                   <span class="note">← NEW directory</span>
+│   ├── <span class="new">server.mjs</span>
+│   ├── <span class="dir">tools/</span>
+│   │   ├── <span class="new">scaffold.mjs</span>
+│   │   ├── <span class="new">import.mjs</span>
+│   │   ├── <span class="new">lifecycle.mjs</span>
+│   │   ├── <span class="new">planner.mjs</span>
+│   │   ├── <span class="new">stories.mjs</span>
+│   │   └── <span class="new">compliance.mjs</span>
+│   ├── <span class="dir">resources/</span>
+│   │   ├── <span class="new">state.mjs</span>
+│   │   └── <span class="new">plans.mjs</span>
+│   └── <span class="dir">prompts/</span>
+│       └── <span class="new">opsx.mjs</span>
+└── <span class="dir">tools/lifecycle/</span>            <span class="note">← UNCHANGED — imported by MCP tools</span></div>
+  </div>
+
+  <!-- ─── 5 · Phase plan ─── -->
+  <div class="section">
+    <div class="section-title"><span class="section-num">5</span> Implementation phases</div>
+    <div class="timeline">
+
+      <div class="phase">
+        <div class="phase-dot"></div>
+        <div class="phase-title">Phase 1 — Foundation</div>
+        <div class="phase-sub">~2–3 hours · Get a working MCP server that Claude Desktop can connect to</div>
+        <ul class="steps">
+          <li>Add <code>@modelcontextprotocol/sdk</code> to <code>package.json</code> (the official Anthropic SDK)</li>
+          <li>Create <code>bin/powercodex-mcp.mjs</code> — starts stdio server, imports <code>src/mcp/server.mjs</code></li>
+          <li>Register the server in Claude Desktop's <code>claude_desktop_config.json</code> under <code>mcpServers</code></li>
+          <li>Implement one smoke-test tool: <code>ping</code> → returns <code>{ ok: true, version }</code></li>
+          <li>Verify the tool appears and calls succeed in Claude Desktop</li>
+        </ul>
+      </div>
+
+      <div class="phase">
+        <div class="phase-dot"></div>
+        <div class="phase-title">Phase 2 — Scaffold &amp; Import tools</div>
+        <div class="phase-sub">~3–4 hours · The two most standalone capabilities</div>
+        <ul class="steps">
+          <li>Implement <code>scaffold_project(name, targetDir, options)</code> — child-process <code>create-powercodex.js</code>, stream output back as progress notifications</li>
+          <li>Implement <code>import_project(projectDir)</code> — calls <code>import.js</code> analyze path, returns digest</li>
+          <li>Add Zod input schemas (validated by MCP SDK automatically)</li>
+          <li>Write a test: ask Claude "scaffold a new app called TestApp in /tmp" and verify folder exists</li>
+        </ul>
+      </div>
+
+      <div class="phase">
+        <div class="phase-dot"></div>
+        <div class="phase-title">Phase 3 — Lifecycle tools</div>
+        <div class="phase-sub">~4–6 hours · Core value — AI-driven loop control</div>
+        <ul class="steps">
+          <li>Implement <code>start_lifecycle_loop(goal, options)</code> — spawns <code>loop.js</code>, stores run ID in memory map</li>
+          <li>Implement <code>control_lifecycle(runId, action)</code> — posts to loop's event emitter (approve/pause/stop)</li>
+          <li>Implement <code>powercodex://lifecycle/state</code> resource — reads loop state store, returns JSON</li>
+          <li>Handle streaming: emit MCP progress notifications as loop advances stages</li>
+          <li>Implement <code>get_compliance(projectDir)</code> — calls <code>compliance.js</code></li>
+        </ul>
+      </div>
+
+      <div class="phase">
+        <div class="phase-dot"></div>
+        <div class="phase-title">Phase 4 — Planning &amp; Story tools</div>
+        <div class="phase-sub">~2–3 hours · Content-generation tools</div>
+        <ul class="steps">
+          <li>Implement <code>generate_plan(goal, projectDir)</code> — calls <code>planner.js</code>, registers in plan registry, returns HTML</li>
+          <li>Implement <code>generate_stories(projectDir)</code> — calls <code>stories.js</code>, returns structured array</li>
+          <li>Implement <code>propose_mvp(goal, projectDir)</code> — calls digest → planner pipeline</li>
+          <li>Implement <code>powercodex://plans/{id}</code> resource template — reads plan registry JSON</li>
+        </ul>
+      </div>
+
+      <div class="phase">
+        <div class="phase-dot"></div>
+        <div class="phase-title">Phase 5 — Prompts &amp; Lessons</div>
+        <div class="phase-sub">~1–2 hours · Surface OPSX prompts as MCP prompts</div>
+        <ul class="steps">
+          <li>Implement <code>opsx.mjs</code> — reads all <code>.github/prompts/*.md</code> files from the connected project dir, registers each as an MCP prompt</li>
+          <li>Implement <code>log_lesson(lesson, context)</code> tool — appends to <code>Learning_Experience/</code></li>
+          <li>Implement <code>powercodex://lessons</code> resource — calls <code>workspace.js</code> aggregate</li>
+          <li>Add <code>list_edge_profiles()</code> tool for real-run setup</li>
+        </ul>
+      </div>
+
+      <div class="phase">
+        <div class="phase-dot warn"></div>
+        <div class="phase-title">Phase 6 — Polish &amp; publish</div>
+        <div class="phase-sub">~2–3 hours · Package for distribution</div>
+        <ul class="steps">
+          <li>Add <code>"powercodex-mcp": "bin/powercodex-mcp.mjs"</code> to <code>package.json#bin</code></li>
+          <li>Write <code>claude_desktop_config.json</code> snippet in README — one-line install</li>
+          <li>Run self-test against MCP inspector (<code>npx @modelcontextprotocol/inspector</code>)</li>
+          <li>Bump to v0.2.0 and publish to npm</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ─── 6 · Code skeleton ─── -->
+  <div class="section">
+    <div class="section-title"><span class="section-num">6</span> Code skeleton</div>
+
+    <p style="color:var(--muted);font-size:.88rem;margin-bottom:12px;"><strong style="color:var(--text)">bin/powercodex-mcp.mjs</strong> — entry point</p>
+    <pre><code><span class="cmt">#!/usr/bin/env node</span>
+<span class="kw">import</span> { StdioServerTransport } <span class="kw">from</span> <span class="str">'@modelcontextprotocol/sdk/server/stdio.js'</span>;
+<span class="kw">import</span> { createServer } <span class="kw">from</span> <span class="str">'../src/mcp/server.mjs'</span>;
+
+<span class="kw">const</span> server = <span class="fn">createServer</span>();
+<span class="kw">const</span> transport = <span class="kw">new</span> <span class="fn">StdioServerTransport</span>();
+<span class="kw">await</span> server.<span class="fn">connect</span>(transport);</code></pre>
+
+    <p style="color:var(--muted);font-size:.88rem;margin-bottom:12px;margin-top:24px;"><strong style="color:var(--text)">src/mcp/server.mjs</strong> — server factory</p>
+    <pre><code><span class="kw">import</span> { McpServer } <span class="kw">from</span> <span class="str">'@modelcontextprotocol/sdk/server/mcp.js'</span>;
+<span class="kw">import</span> { scaffoldTool }   <span class="kw">from</span> <span class="str">'./tools/scaffold.mjs'</span>;
+<span class="kw">import</span> { lifecycleTools } <span class="kw">from</span> <span class="str">'./tools/lifecycle.mjs'</span>;
+<span class="kw">import</span> { plannerTool }    <span class="kw">from</span> <span class="str">'./tools/planner.mjs'</span>;
+<span class="kw">import</span> { stateResource }  <span class="kw">from</span> <span class="str">'./resources/state.mjs'</span>;
+<span class="kw">import</span> { opsx Prompts }   <span class="kw">from</span> <span class="str">'./prompts/opsx.mjs'</span>;
+
+<span class="kw">export function</span> <span class="fn">createServer</span>() {
+  <span class="kw">const</span> server = <span class="kw">new</span> <span class="fn">McpServer</span>({
+    name: <span class="str">'powercodex'</span>,
+    version: <span class="str">'0.2.0'</span>,
+  });
+
+  <span class="cmt">// Register tools</span>
+  <span class="fn">scaffoldTool</span>(server);
+  <span class="fn">lifecycleTools</span>(server);
+  <span class="fn">plannerTool</span>(server);
+
+  <span class="cmt">// Register resources</span>
+  <span class="fn">stateResource</span>(server);
+
+  <span class="cmt">// Register prompts</span>
+  <span class="fn">opsxPrompts</span>(server);
+
+  <span class="kw">return</span> server;
+}</code></pre>
+
+    <p style="color:var(--muted);font-size:.88rem;margin-bottom:12px;margin-top:24px;"><strong style="color:var(--text)">src/mcp/tools/scaffold.mjs</strong> — example tool</p>
+    <pre><code><span class="kw">import</span> { z } <span class="kw">from</span> <span class="str">'zod'</span>;
+<span class="kw">import</span> { execFile } <span class="kw">from</span> <span class="str">'node:child_process'</span>;
+<span class="kw">import</span> { promisify } <span class="kw">from</span> <span class="str">'node:util'</span>;
+<span class="kw">import</span> { fileURLToPath } <span class="kw">from</span> <span class="str">'node:url'</span>;
+<span class="kw">import</span> path <span class="kw">from</span> <span class="str">'node:path'</span>;
+
+<span class="kw">const</span> execAsync = <span class="fn">promisify</span>(execFile);
+<span class="kw">const</span> BIN = path.<span class="fn">resolve</span>(<span class="fn">fileURLToPath</span>(<span class="kw">import</span>.meta.url), <span class="str">'../../../../bin/create-powercodex.js'</span>);
+
+<span class="kw">export function</span> <span class="fn">scaffoldTool</span>(server) {
+  server.<span class="fn">tool</span>(
+    <span class="str">'scaffold_project'</span>,
+    {
+      name:      z.string().<span class="fn">describe</span>(<span class="str">'App name (kebab-case)'</span>),
+      targetDir: z.string().<span class="fn">describe</span>(<span class="str">'Absolute path to create the project in'</span>),
+      skipInstall: z.boolean().<span class="fn">optional</span>().<span class="fn">default</span>(<span class="kw">false</span>),
+      skipGit:     z.boolean().<span class="fn">optional</span>().<span class="fn">default</span>(<span class="kw">false</span>),
+    },
+    <span class="kw">async</span> ({ name, targetDir, skipInstall, skipGit }) => {
+      <span class="kw">const</span> args = [name];
+      <span class="kw">if</span> (skipInstall) args.<span class="fn">push</span>(<span class="str">'--skip-install'</span>);
+      <span class="kw">if</span> (skipGit)     args.<span class="fn">push</span>(<span class="str">'--skip-git'</span>);
+      <span class="kw">const</span> { stdout } = <span class="kw">await</span> <span class="fn">execAsync</span>(<span class="str">'node'</span>, [BIN, ...args], { cwd: targetDir });
+      <span class="kw">return</span> { content: [{ type: <span class="str">'text'</span>, text: stdout }] };
+    }
+  );
+}</code></pre>
+
+    <p style="color:var(--muted);font-size:.88rem;margin-bottom:12px;margin-top:24px;"><strong style="color:var(--text)">Claude Desktop config snippet</strong> (one-time setup)</p>
+    <pre><code><span class="cmt">// ~/Library/Application Support/Claude/claude_desktop_config.json</span>
+{
+  <span class="key">"mcpServers"</span>: {
+    <span class="key">"powercodex"</span>: {
+      <span class="key">"command"</span>: <span class="str">"node"</span>,
+      <span class="key">"args"</span>: [<span class="str">"/Users/manfredsiew/Documents/codespec/bin/powercodex-mcp.mjs"</span>]
+    }
+  }
+}</code></pre>
+  </div>
+
+  <!-- ─── 7 · Key decisions ─── -->
+  <div class="section">
+    <div class="section-title"><span class="section-num">7</span> Key decisions to make</div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title warn">Transport: stdio vs SSE?</div>
+        <p><strong style="color:var(--text)">Stdio</strong> — simplest, zero network config, works in Claude Desktop. Recommended for Phase 1–5.</p>
+        <p><strong style="color:var(--text)">SSE (HTTP)</strong> — needed if the lifecycle dashboard server and MCP server share a port. Use for Phase 6+ if you want browser + MCP in one process.</p>
+      </div>
+      <div class="card">
+        <div class="card-title warn">Lifecycle state: in-process vs file?</div>
+        <p>The existing <code>loop.js</code> holds state in memory. The MCP server is a separate process.</p>
+        <p>Options: <strong style="color:var(--text)">(a)</strong> Write state to a JSON file (simplest), <strong style="color:var(--text)">(b)</strong> MCP server spawns loop as a child and manages it, <strong style="color:var(--text)">(c)</strong> use SSE so they share a process.</p>
+      </div>
+      <div class="card">
+        <div class="card-title blue">Project dir: global vs per-call?</div>
+        <p>Pass <code>projectDir</code> as a parameter on every tool call (flexible, multi-project) or configure once at server startup via an env var (simpler).</p>
+        <p>Recommendation: <strong style="color:var(--text)">env var as default, per-call override</strong>.</p>
+      </div>
+      <div class="card">
+        <div class="card-title blue">Publish separately or same package?</div>
+        <p>Keep in same <code>@voyager163/powercodex</code> package — users get MCP for free with <code>npm i -g @voyager163/powercodex</code>.</p>
+        <p>Or publish <code>@voyager163/powercodex-mcp</code> separately — cleaner dep tree, opt-in only.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── 8 · Effort summary ─── -->
+  <div class="section">
+    <div class="section-title"><span class="section-num">8</span> Effort summary</div>
+    <table>
+      <thead><tr><th>Phase</th><th>Scope</th><th>Effort</th><th>Risk</th></tr></thead>
+      <tbody>
+        <tr><td>1 — Foundation</td><td>MCP server skeleton + ping tool + Claude Desktop wiring</td><td>2–3 h</td><td>Low</td></tr>
+        <tr><td>2 — Scaffold &amp; Import</td><td>2 tools, child-process wrappers</td><td>3–4 h</td><td>Low</td></tr>
+        <tr><td>3 — Lifecycle</td><td>Loop control + state resource + progress streaming</td><td>4–6 h</td><td>Medium (state sync)</td></tr>
+        <tr><td>4 — Planning &amp; Stories</td><td>3 tools + plan resource</td><td>2–3 h</td><td>Low</td></tr>
+        <tr><td>5 — Prompts &amp; Lessons</td><td>OPSX prompts + lesson tool</td><td>1–2 h</td><td>Low</td></tr>
+        <tr><td>6 — Polish &amp; publish</td><td>npm, docs, MCP inspector tests</td><td>2–3 h</td><td>Low</td></tr>
+      </tbody>
+    </table>
+    <div class="callout">
+      <strong>Total estimated effort:</strong> ~14–21 hours of focused engineering,
+      phased so Phase 1 + 2 alone give a fully working MCP server in ~6 hours.
+    </div>
+  </div>
+
+  <!-- ─── 9 · Next step ─── -->
+  <div class="section">
+    <div class="section-title"><span class="section-num">9</span> Recommended next step</div>
+    <div class="callout green">
+      <strong>Start with Phase 1.</strong> Run <code>npm install @modelcontextprotocol/sdk zod</code>,
+      create <code>bin/powercodex-mcp.mjs</code> and <code>src/mcp/server.mjs</code> with just the
+      <code>ping</code> tool, add the entry to <code>claude_desktop_config.json</code>, restart
+      Claude Desktop, and verify the tool appears in the tool list. Once that works,
+      the remaining phases are mechanical wiring.
+    </div>
+    <p style="color:var(--muted);font-size:.88rem;margin-top:16px;">
+      Ask Claude Code: <em>"implement Phase 1 of the MCP conversion plan"</em> to start coding immediately.
+    </p>
+  </div>
+
+</main>
+</body>
+</html>

@@ -361,7 +361,7 @@ async function selftest() {
     check('a maker recipe falls back to the portal home without an env', /^https:\/\/make\.powerapps\.com$/.test(tableRecipe.url(null)));
     check('the Power Automate recipe targets make.powerautomate.com', /make\.powerautomate\.com/.test(recipeFor('powerautomate.flow.create').url('ENV123')));
     check('table.create now has real DOM automation (build fn)', tableRecipe.automated === true && typeof tableRecipe.build === 'function');
-    check('recipes without DOM automation yet stay honest (column.add)', recipeFor('dataverse.column.add').automated === false && typeof recipeFor('dataverse.column.add').todo === 'string');
+    check('column.add now has real DOM automation (build fn)', recipeFor('dataverse.column.add').automated === true && typeof recipeFor('dataverse.column.add').build === 'function');
 
     // Edge profile picker — discover from a Local State file, resolve a selection, persist it.
     const edgeProfiles = require('./edge-profiles');

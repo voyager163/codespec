@@ -2,10 +2,9 @@
 
 // Maker-portal recipes: map a declarative build task to the real Power Platform
 // surface where that asset lives. Engine 1 (the real build executor) uses these to
-// NAVIGATE into Power Platform and confirm the surface loaded. The DOM steps that
-// actually author the asset (the "front end") are not automated yet — each recipe
-// carries `automated:false` and a `todo` describing exactly what's left, so the gap
-// is explicit rather than faked.
+// drive the browser and author the asset. Recipes with automated:true have a real
+// `build` function; automated:false recipes navigate to the surface but leave the
+// DOM authoring step for a future vertical slice.
 
 const POWERAPPS = 'https://make.powerapps.com';
 const POWERAUTOMATE = 'https://make.powerautomate.com';
@@ -36,10 +35,22 @@ const RECIPES = {
   },
   'dataverse.column.add': {
     surface: 'Dataverse Tables',
-    describe: 'open the Tables list to add a column',
-    url: (env) => scoped(POWERAPPS, env, 'tables'),
-    automated: false,
-    todo: 'open the target table → + New column → set name + data type → Save',
+    describe: 'open the table editor to add a column',
+    url: (env, task) => task && task.tableLogicalName
+      ? scoped(POWERAPPS, env, `entities/${task.tableLogicalName}/fields`)
+      : scoped(POWERAPPS, env, 'tables'),
+    automated: true,
+    build: (engineModule, context, { env, task } = {}) =>
+      engineModule.addDataverseColumn(context, {
+        environmentId: env,
+        tableLogicalName: task && task.tableLogicalName,
+        displayName: task && (task.displayName || task.name),
+        type: (task && task.columnType) || 'text',
+        choices: (task && task.choices) || [],
+        required: task && !!task.required,
+        description: (task && task.description) || '',
+      }),
+    todo: 'validate selectors against a live tenant; add lookup/relationship support',
   },
   'dataverse.connection.create': {
     surface: 'Connections',

@@ -11,6 +11,17 @@ const minNodeVersion = [20, 19, 0];
 const openspecPackage = '@fission-ai/openspec@latest';
 
 async function main() {
+  // Subcommand dispatch — must happen before parseArgs consumes argv.
+  const [firstArg, ...rest] = process.argv.slice(2);
+  if (firstArg === 'install-powercodex-mcp' || firstArg === 'mcp') {
+    const target = firstArg === 'mcp'
+      ? path.resolve(__dirname, 'powercodex-mcp.mjs')
+      : path.resolve(__dirname, 'install-plugin.mjs');
+    const result = childProcess.spawnSync(process.execPath, [target, ...rest], { stdio: 'inherit' });
+    process.exitCode = result.status ?? 1;
+    return;
+  }
+
   const options = parseArgs(process.argv.slice(2));
 
   if (options.help) {

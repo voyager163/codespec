@@ -17,6 +17,9 @@ const { importInto } = require('../lib/import');
 const providers = require('../lib/providers');
 const planRegistry = require('../lib/plans');
 
+const dataverseSchema = require('../lib/dataverse-schema');
+const pacInit = require('../lib/pac-init');
+
 const root = process.cwd();
 const [command, ...rest] = process.argv.slice(2);
 
@@ -49,6 +52,9 @@ Commands:
   init                      create .powercodex/live/ + Approved_rights/ + a dashboard
   dashboard                 re-render the static dashboard snapshot from the status bus
   selftest                  run the product against itself and assert it works
+  dataverse <sub>           manage Dataverse tables and columns via the maker portal
+  code-init                 pac code init — scaffold a Power Apps Code App (quick start)
+  code-push                 pac code push — push the built app to Power Apps
 
 serve also accepts --open to launch the browser automatically.
 
@@ -70,6 +76,24 @@ loop options:
                             Falls back to simulation with a recommendation otherwise.
   --app-url <url>           the live app URL the real e2e engine should smoke-test
   --env <environmentId>     Power Platform environment for Engine 1 to enter (maker surfaces)
+  --fix-mode <mode>         what to do when tests stay red after self-heal:
+                              manual (default) — stop and escalate to you
+                              diff             — apply the fix, show a diff event, wait for your approval
+                              auto             — keep fixing and re-running until green (up to --max-heal-retries)
+  --max-heal-retries <n>    max auto-fix attempts per rotation (default 3, used with --fix-mode auto)
+
+dataverse options:
+  init   [--name <TableName>]         create .powercodex/dataverse-schema.json template
+  apply  [--env <envId>] [--dry-run]  open managed Edge, create tables + columns, write logical names
+  status                              show schema intent vs what has been applied
+
+code-init options:
+  --app-name <name>         app display name (default MyPowerApp)
+  --env-url  <url>          Power Platform environment URL (triggers pac auth if needed)
+  --out-dir  <path>         where to create the app scaffold (default: ./src)
+
+code-push options:
+  --app-dir  <path>         directory containing the built app (default: ./src)
 
 Open http://localhost:4321 (serve) — it polls /api/state and updates live.`);
 }
@@ -243,15 +267,126 @@ async function main() {
     }
     case 'loop': {
       const rotations = Number.parseInt(flag('rotations'), 10) || 1;
+      const fixModeArg = typeof flag('fix-mode') === 'string' ? flag('fix-mode') : 'manual';
       const summary = await runLoop(root, {
         fresh: flag('fresh') === true,
         rotations,
         simulate: flag('real') !== true,
         appUrl: typeof flag('app-url') === 'string' ? flag('app-url') : undefined,
         env: typeof flag('env') === 'string' ? flag('env') : undefined,
+        fixMode: fixModeArg,
+        maxHealRetries: Number.parseInt(flag('max-heal-retries'), 10) || 3,
       });
       console.log('\nSummary:', JSON.stringify(summary));
       console.log('Dashboard:', path.join(liveDir(root), 'index.html'));
+      break;
+    }
+
+    case 'dataverse': {
+      const sub = rest[0] || 'status';
+      if (sub === 'init') {
+        // Create the schema template file.
+        const tableName = typeof flag('name') === 'string' ? flag('name') : undefined;
+        const result = dataverseSchema.initSchema(root, {
+          displayName: tableName || 'MyTable',
+          pluralName: tableName ? tableName + 's' : 'MyTables',
+        });
+        if (result.created) {
+          console.log('✓ Schema template created:', result.path);
+          console.log('  Edit it to describe your tables and columns, then run:');
+          console.log('  powercodex-lifecycle dataverse apply');
+        } else {
+          console.log('Schema file already exists:', result.path);
+          console.log('  Edit it and run: powercodex-lifecycle dataverse apply');
+        }
+      } else if (sub === 'apply') {
+        // Read schema and drive the browser to create tables + columns.
+        const dryRun = flag('dry-run') === true;
+        const envId = typeof flag('env') === 'string' ? flag('env') : undefined;
+        console.log(dryRun ? 'Dry run — no browser will open.' : 'Opening managed Edge to apply schema…');
+        const result = await dataverseSchema.applySchema(root, {
+          environmentId: envId,
+          dryRun,
+          emit: async ({ level, message }) => {
+            const icon = { good: '✓', warn: '⚠', bad: '✗', info: '·' }[level] || '·';
+            console.log(`  ${icon} ${message}`);
+          },
+        });
+        console.log(`\nDone. ${result.tables.length} table(s) processed · ${result.errors.length} error(s).`);
+        if (result.errors.length) {
+          for (const e of result.errors) console.log(`  ✗ ${e.table}${e.column ? `.${e.column}` : ''}: ${e.reason}`);
+        }
+        console.log('State written to .powercodex/dataverse.json');
+      } else if (sub === 'status') {
+        const schema = dataverseSchema.readSchema(root);
+        const state = dataverseSchema.readState(root);
+        if (!schema) {
+          console.log('No schema file found. Run: powercodex-lifecycle dataverse init');
+        } else {
+          console.log(`Schema: ${(schema.tables || []).length} table(s) defined`);
+          console.log(`State:  ${(state.tables || []).length} table(s) applied${state.appliedAt ? ` · last applied ${state.appliedAt}` : ''}`);
+          for (const t of state.tables || []) {
+            console.log(`  ${t.logicalName ? '✓' : '·'} ${t.displayName} → ${t.logicalName || '(logical name not yet captured)'}`);
+            for (const c of t.columns || []) {
+              console.log(`      ${c.logicalName ? '✓' : '·'} ${c.displayName} (${c.type}) → ${c.logicalName || '(not captured)'}`);
+            }
+          }
+        }
+      } else {
+        console.log('Usage: powercodex-lifecycle dataverse <init|apply|status>');
+        console.log('  init   [--name <TableName>]         create .powercodex/dataverse-schema.json template');
+        console.log('  apply  [--env <envId>] [--dry-run]  open Edge, create tables/columns, write logical names');
+        console.log('  status                               show schema intent vs applied state');
+      }
+      break;
+    }
+
+    case 'code-init': {
+      // Wrap pac code init for the Power Apps Code App quick start.
+      const appName = typeof flag('app-name') === 'string' ? flag('app-name') : rest[1] || 'MyPowerApp';
+      const envUrl = typeof flag('env-url') === 'string' ? flag('env-url') : undefined;
+      const outDir = typeof flag('out-dir') === 'string' ? flag('out-dir') : undefined;
+      console.log(`Initialising Power Apps Code App "${appName}"…`);
+      if (envUrl) console.log(`  Environment: ${envUrl}`);
+      const result = await pacInit.initCodeApp(root, {
+        appName,
+        environmentUrl: envUrl,
+        outputDir: outDir,
+        emit: async ({ level, message }) => {
+          const icon = { good: '✓', warn: '⚠', bad: '✗', info: '·' }[level] || '·';
+          console.log(`  ${icon} ${message}`);
+        },
+      });
+      if (result.initialised) {
+        console.log(`\n✓ Code App ready at: ${result.appDir}`);
+        console.log('  Next steps:');
+        console.log('  1. npm install           (inside the generated app folder)');
+        console.log('  2. npm run build         (build the app)');
+        console.log('  3. powercodex-lifecycle code-push  (pac code push)');
+      } else {
+        console.error('\n✗ Initialisation failed:', result.error);
+        process.exitCode = 1;
+      }
+      break;
+    }
+
+    case 'code-push': {
+      // Push the built Code App to Power Apps using pac code push.
+      const pushDir = typeof flag('app-dir') === 'string' ? flag('app-dir') : undefined;
+      console.log('Pushing Code App to Power Apps…');
+      const pr = await pacInit.pushCodeApp(root, {
+        appDir: pushDir,
+        emit: async ({ level, message }) => {
+          const icon = { good: '✓', warn: '⚠', bad: '✗', info: '·' }[level] || '·';
+          console.log(`  ${icon} ${message}`);
+        },
+      });
+      if (pr.pushed) {
+        console.log('\n✓ Push succeeded.');
+      } else {
+        console.error('\n✗ Push failed:', pr.error);
+        process.exitCode = 1;
+      }
       break;
     }
     case 'emit': {

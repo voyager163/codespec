@@ -16,9 +16,17 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 // "never-ending" safe: rights gate, iteration cap, and a no-progress detector.
 //
 // `opts.delayMs` paces the emits so the live dashboard can be watched moving.
+// Fix-mode controls what happens when tests remain red after the first self-heal:
+//   'manual' (default) — stop and escalate to the user
+//   'diff'             — apply the fix, emit the diff summary, wait for approval, then re-run
+//   'auto'             — keep applying fixes and re-running until green (up to maxHealRetries)
+const VALID_FIX_MODES = ['manual', 'diff', 'auto'];
+
 async function runLoop(root, opts = {}) {
   const simulate = opts.simulate !== false; // simulated unless explicitly --real
   const maxRotations = opts.rotations || 1;
+  const fixMode = VALID_FIX_MODES.includes(opts.fixMode) ? opts.fixMode : 'manual';
+  const maxHealRetries = typeof opts.maxHealRetries === 'number' ? opts.maxHealRetries : 3;
   const liveRender = opts.render !== false;
   const delayMs = opts.delayMs || 0;
   if (opts.fresh) reset(root);
@@ -49,7 +57,7 @@ async function runLoop(root, opts = {}) {
   }
   const eng = await resolveEngines(root, { simulate, emit, provider });
   const realMode = !!eng.real;
-  const summary = { rotations: 0, specsRun: 0, selfHeals: 0, observations: 0, stopped: false, mode: eng.mode };
+  const summary = { rotations: 0, specsRun: 0, selfHeals: 0, observations: 0, stopped: false, mode: eng.mode, fixMode };
 
   // Step 0 — intake + rights gate
   await emit({ rotation: 0, stage: 0, agent: 'intake', level: 'info', message: 'Project start · dashboard opened, intake gate active' });
@@ -166,11 +174,16 @@ async function runLoop(root, opts = {}) {
       });
     }
 
-    // Step 5 — test, with self-heal via opsx
+    // Step 5 — test, with self-heal + fix-mode loop.
+    // fixMode controls what happens when tests remain red after the first heal:
+    //   manual — stop immediately and escalate (current default)
+    //   diff   — apply the fix, emit a diff event, wait for approval, then re-run once
+    //   auto   — keep healing and re-running until green or maxHealRetries is exhausted
     const specs = opts.specs || ['projects-grid.spec.ts', 'status-chip.spec.ts', 'new-project.spec.ts'];
     const injectDefect = r === 1 && opts.selfHeal !== false ? specs[0] : null;
     summary.specsRun += specs.length;
     let result = await eng.e2eTester({ emit, rotation: r, specs, injectDefect, baseUrl });
+
     if (!result.passed) {
       const signature = result.failures.join(',');
       if (signature === prevFailureSignature) {
@@ -180,14 +193,78 @@ async function runLoop(root, opts = {}) {
       }
       prevFailureSignature = signature;
       await emit({ rotation: r, stage: 5, agent: 'e2e-tester', level: 'bad', message: `${result.failures.length} check(s) red · coverage ${result.coverage}%` });
+
+      // First heal attempt (always runs regardless of fixMode).
       await emit({ rotation: r, stage: 5, agent: 'e2e-tester', level: 'info', message: `Self-heal: repairing ${result.failures[0]}` });
       summary.selfHeals += 1;
-      // Real self-heal: let the engine fix what failed (revert to a known-good screen,
-      // or re-author), then re-run the real check. Simulated mode has no heal hook and
-      // re-runs without the injected defect.
       if (eng.heal) await eng.heal({ emit, rotation: r, failures: result.failures });
       result = await eng.e2eTester({ emit, rotation: r, specs, injectDefect: null, baseUrl });
+
+      // If still red, apply the chosen fix strategy.
+      if (!result.passed) {
+        if (fixMode === 'auto') {
+          // Keep healing up to maxHealRetries without pausing.
+          let retries = 0;
+          while (!result.passed && retries < maxHealRetries) {
+            retries += 1;
+            const newSig = result.failures.join(',');
+            if (newSig === prevFailureSignature) {
+              await emit({ rotation: r, stage: 5, agent: 'e2e-tester', level: 'warn', message: `Auto-fix: no progress after ${retries} attempt(s) · stopping` });
+              summary.stopped = true;
+              break;
+            }
+            prevFailureSignature = newSig;
+            await emit({ rotation: r, stage: 5, agent: 'e2e-tester', level: 'info', message: `Auto-fix attempt ${retries}/${maxHealRetries}: repairing ${result.failures[0]}` });
+            summary.selfHeals += 1;
+            if (eng.heal) await eng.heal({ emit, rotation: r, failures: result.failures });
+            result = await eng.e2eTester({ emit, rotation: r, specs, injectDefect: null, baseUrl });
+          }
+          if (!result.passed && !summary.stopped) {
+            await emit({ rotation: r, stage: 5, agent: 'e2e-tester', level: 'warn', message: `Auto-fix exhausted (${maxHealRetries} attempt(s)) · still red · escalating` });
+            summary.stopped = true;
+          }
+        } else if (fixMode === 'diff') {
+          // Emit the fix summary so the user can review, then wait for approval.
+          await emit({
+            rotation: r,
+            stage: 5,
+            agent: 'e2e-tester',
+            level: 'info',
+            message: `Fix applied for ${result.failures.length} issue(s) · review the diff and approve to re-run`,
+            data: { fixMode: 'diff', failures: result.failures, needsApproval: true },
+          });
+          if (opts.isApproved) {
+            const approved = await waitForApproval(opts.isApproved, opts.isPaused, emit, r, { timeoutMs: 300000 });
+            if (approved) {
+              await emit({ rotation: r, stage: 5, agent: 'e2e-tester', level: 'info', message: 'Diff approved · re-running tests' });
+              if (eng.heal) await eng.heal({ emit, rotation: r, failures: result.failures });
+              result = await eng.e2eTester({ emit, rotation: r, specs, injectDefect: null, baseUrl });
+              if (!result.passed) {
+                await emit({ rotation: r, stage: 5, agent: 'e2e-tester', level: 'warn', message: `Still red after approved fix · ${result.failures.length} issue(s) · escalating` });
+                summary.stopped = true;
+              }
+            } else {
+              await emit({ rotation: r, stage: 5, agent: 'e2e-tester', level: 'warn', message: 'Diff not approved within timeout · stopping' });
+              summary.stopped = true;
+            }
+          } else {
+            // No approval gate configured: apply fix and continue (best-effort).
+            if (eng.heal) await eng.heal({ emit, rotation: r, failures: result.failures });
+            result = await eng.e2eTester({ emit, rotation: r, specs, injectDefect: null, baseUrl });
+            if (!result.passed) {
+              await emit({ rotation: r, stage: 5, agent: 'e2e-tester', level: 'warn', message: `Still red after fix (no approval gate) · ${result.failures.length} issue(s) · escalating` });
+              summary.stopped = true;
+            }
+          }
+        } else {
+          // manual (default): stop and escalate.
+          await emit({ rotation: r, stage: 5, agent: 'e2e-tester', level: 'warn', message: `Still red after self-heal · ${result.failures.length} issue(s) · escalating to you` });
+          summary.stopped = true;
+        }
+      }
     }
+
+    if (summary.stopped) break;
     lastTest = result;
     // Only claim green when it actually is. A real app still red after self-heal escalates.
     if (result.passed) {
@@ -211,10 +288,6 @@ async function runLoop(root, opts = {}) {
           /* screenshots are a nice-to-have; never let one fail the run */
         }
       }
-    } else {
-      await emit({ rotation: r, stage: 5, agent: 'e2e-tester', level: 'warn', message: `Still red after self-heal · ${result.failures.length} issue(s) · escalating to you` });
-      summary.stopped = true;
-      break;
     }
 
     // Step 6 — observe -> re-spec

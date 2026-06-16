@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PowerCodex MCP Server — User Guide</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #1e2133;
+      --border: #2a2d3e;
+      --accent: #7c6af7;
+      --accent2: #4fc3f7;
+      --accent3: #81c784;
+      --warn: #ffb74d;
+      --danger: #e57373;
+      --text: #e2e8f0;
+      --muted: #8892a4;
+      --code-bg: #12141e;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); line-height: 1.65; }
+
+    /* ── Hero ── */
+    .hero {
+      background: linear-gradient(135deg, #1a1d27 0%, #12141e 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 48px 64px 40px;
+    }
+    .hero-eyebrow {
+      font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+      color: var(--accent); font-weight: 600; margin-bottom: 12px;
+    }
+    .hero h1 { font-size: 2.4rem; font-weight: 700; line-height: 1.2; margin-bottom: 14px; }
+    .hero h1 span { color: var(--accent); }
+    .hero p { color: var(--muted); font-size: 1.05rem; max-width: 720px; }
+    .hero-meta { margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #24273a; border: 1px solid var(--border);
+      border-radius: 20px; padding: 4px 14px; font-size: 12px; color: var(--muted);
+    }
+    .badge.green  { border-color: var(--accent3); color: var(--accent3); }
+    .badge.blue   { border-color: var(--accent2); color: var(--accent2); }
+    .badge.purple { border-color: var(--accent);  color: var(--accent);  }
+    .badge.warn   { border-color: var(--warn);    color: var(--warn);    }
+
+    /* ── Nav ── */
+    nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 64px;
+      display: flex; gap: 0; overflow-x: auto;
+    }
+    nav a {
+      display: block; padding: 14px 18px; font-size: .84rem; font-weight: 500;
+      color: var(--muted); text-decoration: none; white-space: nowrap;
+      border-bottom: 2px solid transparent; transition: color .15s, border-color .15s;
+    }
+    nav a:hover { color: var(--text); border-bottom-color: var(--accent); }
+
+    /* ── Layout ── */
+    .layout { display: flex; max-width: 1200px; margin: 0 auto; }
+    aside {
+      width: 240px; flex-shrink: 0; padding: 32px 24px 80px;
+      border-right: 1px solid var(--border); position: sticky; top: 0;
+      height: 100vh; overflow-y: auto;
+    }
+    aside h3 { font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; margin-top: 24px; }
+    aside h3:first-child { margin-top: 0; }
+    aside a {
+      display: block; padding: 5px 0; font-size: .84rem; color: var(--muted);
+      text-decoration: none; transition: color .15s;
+    }
+    aside a:hover { color: var(--accent); }
+    main { flex: 1; padding: 48px 48px 80px; min-width: 0; }
+
+    /* ── Section ── */
+    .section { margin-bottom: 60px; scroll-margin-top: 24px; }
+    .section-title {
+      font-size: 1.4rem; font-weight: 700; margin-bottom: 20px;
+      padding-bottom: 12px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .section-num {
+      width: 28px; height: 28px; border-radius: 50%; background: var(--accent);
+      color: #fff; font-size: 13px; display: inline-flex; align-items: center;
+      justify-content: center; font-weight: 700; flex-shrink: 0;
+    }
+    h3.sub { font-size: 1.05rem; font-weight: 600; margin: 28px 0 12px; color: var(--text); }
+    p { color: var(--muted); margin-bottom: 12px; font-size: .93rem; }
+    ul, ol { padding-left: 20px; margin-bottom: 12px; }
+    li { color: var(--muted); font-size: .9rem; margin-bottom: 5px; }
+    li strong { color: var(--text); }
+
+    /* ── Cards ── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+    @media(max-width: 900px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 18px 20px;
+    }
+    .card-label {
+      font-size: .72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .09em; margin-bottom: 8px;
+    }
+    .card-label.purple { color: var(--accent); }
+    .card-label.blue   { color: var(--accent2); }
+    .card-label.green  { color: var(--accent3); }
+    .card-label.warn   { color: var(--warn); }
+    .card h4 { font-size: .95rem; margin-bottom: 6px; }
+    .card p  { font-size: .85rem; }
+
+    /* ── Tool blocks ── */
+    .tool-block {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; margin-bottom: 20px; overflow: hidden;
+    }
+    .tool-header {
+      background: var(--surface2); padding: 14px 20px;
+      display: flex; align-items: center; gap: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .tool-name {
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: .95rem; color: #cba6f7; font-weight: 600;
+    }
+    .tool-badge {
+      font-size: .72rem; font-weight: 700; text-transform: uppercase;
+      padding: 2px 8px; border-radius: 4px; margin-left: auto;
+    }
+    .tool-badge.tool     { background: #2a1f5e; color: #a78bfa; }
+    .tool-badge.resource { background: #1a3a2a; color: #6ee7b7; }
+    .tool-badge.prompt   { background: #1a2e4a; color: #67e8f9; }
+    .tool-body { padding: 16px 20px; }
+    .tool-body p { margin-bottom: 10px; }
+    .params { margin-top: 10px; }
+    .param-row {
+      display: grid; grid-template-columns: 180px 100px 1fr;
+      gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border);
+      align-items: start; font-size: .83rem;
+    }
+    .param-row:last-child { border-bottom: none; }
+    .param-name { font-family: monospace; color: #89dceb; }
+    .param-type { color: var(--muted); font-size: .78rem; padding-top: 1px; }
+    .param-desc { color: var(--muted); }
+    .param-req  { color: var(--warn); font-size: .7rem; font-weight: 700; text-transform: uppercase; }
+    .param-opt  { color: var(--muted); font-size: .7rem; font-weight: 700; text-transform: uppercase; }
+
+    /* ── Code ── */
+    pre {
+      background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px;
+      padding: 18px 20px; overflow-x: auto; font-size: .82rem; line-height: 1.75;
+      font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+      color: #cdd6f4; margin-bottom: 16px;
+    }
+    .kw  { color: #89b4fa; }
+    .str { color: #a6e3a1; }
+    .cmt { color: #585b70; font-style: italic; }
+    .key { color: #89dceb; }
+    .num { color: #fab387; }
+    .fn  { color: #cba6f7; }
+    code { font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: .85em;
+           background: #1e2133; padding: 2px 6px; border-radius: 4px; color: #cdd6f4; }
+
+    /* ── Callout ── */
+    .callout {
+      border-left: 3px solid; border-radius: 0 8px 8px 0;
+      padding: 12px 16px; margin-bottom: 16px; font-size: .88rem;
+    }
+    .callout.info   { border-color: var(--accent2); background: rgba(79,195,247,.07); }
+    .callout.warn   { border-color: var(--warn);    background: rgba(255,183,77,.07); }
+    .callout.tip    { border-color: var(--accent3); background: rgba(129,199,132,.07); }
+    .callout-title  { font-weight: 700; margin-bottom: 4px; }
+    .callout.info .callout-title  { color: var(--accent2); }
+    .callout.warn .callout-title  { color: var(--warn); }
+    .callout.tip  .callout-title  { color: var(--accent3); }
+    .callout p { margin: 0; color: var(--muted); }
+
+    /* ── Steps ── */
+    .steps { counter-reset: step; }
+    .step  { display: flex; gap: 16px; margin-bottom: 20px; align-items: flex-start; }
+    .step-num {
+      counter-increment: step;
+      width: 30px; height: 30px; flex-shrink: 0;
+      background: var(--accent); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .8rem; font-weight: 700; color: #fff;
+    }
+    .step-num::before { content: counter(step); }
+    .step-body h4 { font-size: .9rem; margin-bottom: 5px; }
+    .step-body p  { margin: 0; font-size: .87rem; }
+
+    /* ── Table ── */
+    table { width: 100%; border-collapse: collapse; font-size: .88rem; margin-bottom: 20px; }
+    th {
+      background: var(--surface2); color: var(--accent);
+      text-transform: uppercase; font-size: .75rem; letter-spacing: .07em;
+      padding: 10px 14px; text-align: left; border-bottom: 2px solid var(--border);
+    }
+    td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--muted); vertical-align: top; }
+    tr:hover td { background: var(--surface2); }
+    td:first-child { color: var(--text); font-weight: 500; }
+    td code { font-size: .8em; }
+
+    /* ── Tag ── */
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: .75rem; font-weight: 600; margin: 1px; }
+    .tag.tool     { background: #2a1f5e; color: #a78bfa; }
+    .tag.resource { background: #1a3a2a; color: #6ee7b7; }
+    .tag.prompt   { background: #1a2e4a; color: #67e8f9; }
+
+    /* ── Flow diagram (CSS-only) ── */
+    .flow { display: flex; align-items: center; gap: 0; flex-wrap: wrap; margin: 16px 0 20px; }
+    .flow-node {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 14px; font-size: .82rem;
+      text-align: center; min-width: 130px;
+    }
+    .flow-node .fn-label { color: var(--accent); font-weight: 600; font-size: .75rem; margin-bottom: 3px; }
+    .flow-node .fn-name  { font-family: monospace; font-size: .8rem; color: #cba6f7; }
+    .flow-arrow { color: var(--muted); padding: 0 8px; font-size: 1.2rem; }
+
+    @media(max-width: 768px) {
+      .hero { padding: 32px 24px 28px; }
+      nav { padding: 0 24px; }
+      aside { display: none; }
+      main { padding: 32px 24px 60px; }
+      .param-row { grid-template-columns: 1fr 80px; }
+      .param-desc { grid-column: 1 / -1; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════ Hero ═══ -->
+<div class="hero">
+  <div class="hero-eyebrow">PowerCodex</div>
+  <h1>MCP Server <span>User Guide</span></h1>
+  <p>
+    The PowerCodex MCP server exposes project scaffolding, Dataverse schema management,
+    lifecycle automation, and pac CLI operations as first-class tools for any
+    MCP-compatible AI host — Claude Desktop, Claude Code, VS Code, or Cursor.
+  </p>
+  <div class="hero-meta">
+    <span class="badge purple">v0.2.0</span>
+    <span class="badge blue">MCP Protocol</span>
+    <span class="badge green">9 Tools</span>
+    <span class="badge green">2 Resources</span>
+    <span class="badge">Prompts</span>
+  </div>
+</div>
+
+<nav>
+  <a href="#setup">Setup</a>
+  <a href="#scaffold">Scaffold</a>
+  <a href="#dataverse">Dataverse</a>
+  <a href="#lifecycle">Lifecycle</a>
+  <a href="#pac">PAC</a>
+  <a href="#resources">Resources</a>
+  <a href="#prompts">Prompts</a>
+  <a href="#workflows">Workflows</a>
+  <a href="#troubleshoot">Troubleshoot</a>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════ Body ═══ -->
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside>
+    <h3>Getting Started</h3>
+    <a href="#setup">Installation &amp; Setup</a>
+    <a href="#hosts">Supported Hosts</a>
+
+    <h3>Tools</h3>
+    <a href="#scaffold">scaffold_project</a>
+    <a href="#dataverse">Dataverse Tools</a>
+    <a href="#lifecycle">Lifecycle Tools</a>
+    <a href="#pac">PAC Tools</a>
+
+    <h3>Resources &amp; Prompts</h3>
+    <a href="#resources">Resources</a>
+    <a href="#prompts">OPSX Prompts</a>
+
+    <h3>Reference</h3>
+    <a href="#workflows">Common Workflows</a>
+    <a href="#troubleshoot">Troubleshoot</a>
+  </aside>
+
+  <main>
+
+    <!-- ═══ 1 · Setup ═══════════════════════════════════════════════════ -->
+    <section class="section" id="setup">
+      <div class="section-title"><span class="section-num">1</span> Installation &amp; Setup</div>
+
+      <p>
+        The fastest way to register the MCP server is with the built-in install command.
+        One terminal line is all you need.
+      </p>
+
+      <!-- Quick install -->
+      <h3 class="sub" id="hosts">Quick install — Claude Code</h3>
+      <p>Run this from your project directory. It calls <code>claude mcp add</code> for you.</p>
+      <pre><span class="cmt"># From this repo (local install)</span>
+npm run install-powercodex-mcp
+
+<span class="cmt"># Or via npx — no clone needed (once published to npm)</span>
+npx @voyager163/powercodex install-powercodex-mcp</pre>
+
+      <p>That registers the server at <strong>project scope</strong> (saved to <code>.claude/settings.json</code>). To register it for <em>all</em> your projects instead:</p>
+      <pre>npm run install-powercodex-mcp -- --user
+<span class="cmt"># or</span>
+npx @voyager163/powercodex install-powercodex-mcp --user</pre>
+
+      <p>To point the server at a different project root than the current directory:</p>
+      <pre>npx @voyager163/powercodex install-powercodex-mcp --root /absolute/path/to/project</pre>
+
+      <div class="callout tip">
+        <div class="callout-title">What the command does</div>
+        <p>It runs <code>claude mcp add --scope &lt;scope&gt; --env POWERCODEX_ROOT=&lt;root&gt; powercodex node /path/to/powercodex-mcp.mjs</code> under the hood, then prints a confirmation. Restart your AI host to activate.</p>
+      </div>
+
+      <!-- Equivalent manual commands -->
+      <h3 class="sub">Manual — claude mcp add (Claude Code CLI)</h3>
+      <p>If you prefer to type the raw <code>claude</code> command yourself:</p>
+      <pre><span class="cmt"># Project scope (writes to .claude/settings.json in your project):</span>
+claude mcp add --scope project \
+  --env POWERCODEX_ROOT=$(pwd) \
+  powercodex node $(pwd)/bin/powercodex-mcp.mjs
+
+<span class="cmt"># User scope (available in every project):</span>
+claude mcp add --scope user \
+  --env POWERCODEX_ROOT=$(pwd) \
+  powercodex node $(pwd)/bin/powercodex-mcp.mjs</pre>
+
+      <!-- Claude Desktop -->
+      <h3 class="sub">Claude Desktop (JSON config)</h3>
+      <p>
+        Claude Desktop doesn't support the CLI installer. Edit
+        <code>~/Library/Application Support/Claude/claude_desktop_config.json</code>
+        (macOS) or <code>%APPDATA%\Claude\claude_desktop_config.json</code> (Windows):
+      </p>
+      <pre><span class="kw">{</span>
+  <span class="key">"mcpServers"</span><span class="kw">:</span> <span class="kw">{</span>
+    <span class="key">"powercodex"</span><span class="kw">:</span> <span class="kw">{</span>
+      <span class="key">"command"</span><span class="kw">:</span> <span class="str">"npx"</span>,
+      <span class="key">"args"</span><span class="kw">:</span> <span class="kw">[</span><span class="str">"-y"</span>, <span class="str">"@voyager163/powercodex"</span>, <span class="str">"mcp"</span><span class="kw">]</span>,
+      <span class="key">"env"</span><span class="kw">:</span> <span class="kw">{</span> <span class="key">"POWERCODEX_ROOT"</span><span class="kw">:</span> <span class="str">"/absolute/path/to/your/project"</span> <span class="kw">}</span>
+    <span class="kw">}</span>
+  <span class="kw">}</span>
+<span class="kw">}</span></pre>
+
+      <div class="callout info">
+        <div class="callout-title">Verify the connection</div>
+        <p>After restarting your host, ask Claude: <em>"List my pac auth profiles."</em> If it responds with profile data (or "no profiles found"), the server is live.</p>
+      </div>
+
+      <h3 class="sub">Prerequisites</h3>
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-label purple">Required</div>
+          <h4>Node.js ≥ 20</h4>
+          <p>The MCP server is pure ESM. Node 20+ required.</p>
+        </div>
+        <div class="card">
+          <div class="card-label blue">For real browser runs</div>
+          <h4>Playwright</h4>
+          <p>Needed for <code>real: true</code> lifecycle runs and Dataverse UI automation.</p>
+        </div>
+        <div class="card">
+          <div class="card-label green">For Power Platform</div>
+          <h4>pac CLI</h4>
+          <p>The Power Platform CLI. Required for PAC tools and Code App deployment.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ 2 · Scaffold ═════════════════════════════════════════════════ -->
+    <section class="section" id="scaffold">
+      <div class="section-title"><span class="section-num">2</span> Scaffold Tool</div>
+
+      <p>Creates a new PowerCodex project (Vite + React + TypeScript + OpenSpec + pac) in one call.</p>
+
+      <div class="tool-block">
+        <div class="tool-header">
+          <span class="tool-name">scaffold_project</span>
+          <span class="tool-badge tool">tool</span>
+        </div>
+        <div class="tool-body">
+          <p>Runs <code>create-powercodex.js</code> to set up a fully wired project directory. After scaffolding, run <code>npm install</code> inside the new directory (unless <code>skipInstall</code> is true).</p>
+          <div class="params">
+            <div class="param-row" style="border-bottom:1px solid var(--border); padding-bottom:6px; margin-bottom:4px; font-size:.75rem; color:var(--muted);">
+              <span>PARAMETER</span><span>TYPE</span><span>DESCRIPTION</span>
+            </div>
+            <div class="param-row">
+              <span class="param-name">name</span>
+              <span class="param-type">string <span class="param-req">required</span></span>
+              <span class="param-desc">App name in kebab-case (e.g. <code>inspection-app</code>)</span>
+            </div>
+            <div class="param-row">
+              <span class="param-name">targetDir</span>
+              <span class="param-type">string <span class="param-req">required</span></span>
+              <span class="param-desc">Absolute path to the parent directory where the project folder is created</span>
+            </div>
+            <div class="param-row">
+              <span class="param-name">skipInstall</span>
+              <span class="param-type">boolean <span class="param-opt">optional</span></span>
+              <span class="param-desc">Skip <code>npm install</code> — faster but leaves <code>node_modules</code> absent. Default: <code>false</code></span>
+            </div>
+            <div class="param-row">
+              <span class="param-name">skipGit</span>
+              <span class="param-type">boolean <span class="param-opt">optional</span></span>
+              <span class="param-desc">Skip <code>git init</code>. Default: <code>false</code></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="sub">Example prompt</h3>
+      <pre><span class="cmt">-- Tell Claude:</span>
+Scaffold a new PowerCodex project called <span class="str">"site-inspection"</span> in <span class="str">"/Users/me/projects"</span>.</pre>
+
+      <p>Claude will call <code>scaffold_project</code> with <code>name="site-inspection"</code> and <code>targetDir="/Users/me/projects"</code>. The project is ready at <code>/Users/me/projects/site-inspection</code>.</p>
+    </section>
+
+    <!-- ═══ 3 · Dataverse ════════════════════════════════════════════════ -->
+    <section class="section" id="dataverse">
+      <div class="section-title"><span class="section-num">3</span> Dataverse Tools</div>
+
+      <p>
+        Manage your Dataverse schema using a code-first JSON definition.
+        The workflow is: <strong>init</strong> → edit <code>.powercodex/dataverse-schema.json</code>
+        → <strong>apply</strong> → inspect state.
+      </p>
+
+      <div class="flow">
+        <div class="flow-node"><div class="fn-label">Step 1</div><div class="fn-name">dataverse_init_schema</div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node"><div class="fn-label">Edit file</div><div class="fn-name">dataverse-schema.json</div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node"><div class="fn-label">Step 2</div><div class="fn-name">dataverse_apply_schema</div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node"><div class="fn-label">Inspect</div><div class="fn-name">dataverse_get_state</div></div>
+      </div>
+
+      <!-- dataverse_init_schema -->
+      <div class="tool-block">
+        <div class="tool-header">
+          <span class="tool-name">dataverse_init_schema</span>
+          <span class="tool-badge tool">tool</span>
+        </div>
+        <div class="tool-body">
+          <p>Creates <code>.powercodex/dataverse-schema.json</code> with a starter template. Safe to call when the file already exists — it won't overwrite.</p>
+          <div class="params">
+            <div class="param-row">
+              <span class="param-name">projectDir</span>
+              <span class="param-type">string <span class="param-opt">optional</span></span>
+              <span class="param-desc">Absolute path to the project root. Defaults to the <code>POWERCODEX_ROOT</code> the server was started with.</span>
+            </div>
+            <div class="param-row">
+              <span class="param-name">displayName</span>
+              <span class="param-type">string <span class="param-opt">optional</span></span>
+              <span class="param-desc">Display name for the first table in the template. Default: <code>"MyTable"</code></span>
+            </div>
+            <div class="param-row">
+              <span class="param-name">pluralName</span>
+              <span class="param-type">string <span class="param-opt">optional</span></span>
+              <span class="param-desc">Plural display name. Defaults to <code>displayName + "s"</code></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- dataverse_apply_schema -->
+      <div class="tool-block">
+        <div class="tool-header">
+          <span class="tool-name">dataverse_apply_schema</span>
+          <span class="tool-badge tool">tool</span>
+        </div>
+        <div class="tool-body">
+          <p>
+            Reads <code>.powercodex/dataverse-schema.json</code> and drives a managed Edge browser
+            to create any tables and columns not already present in the environment.
+            Results (including captured logical names) are saved to <code>.powercodex/dataverse.json</code>.
+          </p>
+          <div class="callout warn">
+            <div class="callout-title">Browser automation</div>
+            <p>With <code>dryRun: false</code> (the default) this opens a real browser window and makes live changes in your Power Platform environment. Use <code>dryRun: true</code> to preview actions first.</p>
+          </div>
+          <div class="params">
+            <div class="param-row">
+              <span class="param-name">projectDir</span>
+              <span class="param-type">string <span class="param-opt">optional</span></span>
+              <span class="param-desc">Absolute path to the project root.</span>
+            </div>
+            <div class="param-row">
+              <span class="param-name">environmentId</span>
+              <span class="param-type">string <span class="param-opt">optional</span></span>
+              <span class="param-desc">Power Platform environment GUID. Uses the default environment if omitted.</span>
+            </div>
+            <div class="param-row">
+              <span class="param-name">dryRun</span>
+              <span class="param-type">boolean <span class="param-opt">optional</span></span>
+              <span class="param-desc">Log what would be done without opening the browser. Default: <code>false</code></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- dataverse_get_state -->
+      <div class="tool-block">
+        <div class="tool-header">
+          <span class="tool-name">dataverse_get_state</span>
+          <span class="tool-badge tool">tool</span>
+        </div>
+        <div class="tool-body">
+          <p>Returns the current <code>.powercodex/dataverse.json</code> — the applied state including logical names captured after the last <code>apply</code> run.</p>
+          <div class="params">
+            <div class="param-row">
+              <span class="param-name">projectDir</span>
+              <span class="param-type">string <span class="param-opt">optional</span></span>
+              <span class="param-desc">Absolute path to the project root.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="sub">Example prompts</h3>
+      <pre><span class="cmt">-- Create a schema template for an "Inspection" table:</span>
+Init the Dataverse schema with a table called <span class="str">"Inspection"</span>.
+
+<span class="cmt">-- After editing dataverse-schema.json, apply it:</span>
+Apply my Dataverse schema. Do a dry run first so I can see what will change.
+
+<span class="cmt">-- Check what was actually created:</span>
+Show me the current Dataverse state for this project.</pre>
+    </section>
+
+    <!-- ═══ 4 · Lifecycle ════════════════════════════════════════════════ -->
+    <section class="section" id="lifecycle">
+      <div class="section-title"><span class="section-num">4</span> Lifecycle Tools</div>
+
+      <p>
+        The lifecycle loop is the core of PowerCodex automation. It runs <em>rotations</em>:
+        each rotation builds the app, runs tests, and (in non-manual modes) attempts to
+        self-heal failures.
+      </p>
+
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-label warn">manual</div>
+          <h4>Manual fix-mode</h4>
+          <p>Loop stops if tests stay red after build. You fix manually.</p>
+        </div>
+        <div class="card">
+          <div class="card-label blue">diff</div>
+          <h4>Diff fix-mode</h4>
+          <p>Loop shows a diff and waits for your approval before re-running tests.</p>
+        </div>
+        <div class="card">
+          <div class="card-label green">auto</div>
+          <h4>Auto fix-mode</h4>
+          <p>Loop keeps attempting fixes up to <code>maxHealRetries</code> without interruption.</p>
+        </div>
+      </div>
+
+      <!-- start_lifecycle_loop -->
+      <div class="tool-block">
+        <div class="tool-header">
+          <span class="tool-name">start_lifecycle_loop</span>
+          <span class="tool-badge tool">tool</span>
+        </div>
+        <div class="tool-body">
+          <p>Starts the lifecycle loop in-process and streams events back as a log. Blocks until all rotations complete (or the loop stops early).</p>
+          <div class="params">
+            <div class="param-row">
+              <span class="param-name">goal</span>
+              <span class="param-type">string <span class="param-opt">optional</span></span>
+              <span class="param-desc">Plain-English description of what the app should do. Passed to the AI planner.</span>
+            </div>
+            <div class="param-row">
+              <span class="param-name">rotations</span>
+              <span class="param-type">integer 1–20 <span class="param-opt">optional</span></span>
+              <span class="param-desc">Number of build-test cycles to run. Default: <code>1</code></span>
+            </div>
+            <div class="param-row">
+              <span class="param-name">fixMode</span>
+              <span class="param-type">enum <span class="param-opt">optional</span></span>
+              <span class="param-desc"><code>manual</code> | <code>diff</code> | <code>auto</code>. Default: <code>manual</code></span>
+            </div>
+            <div class="param-row">
+              <span class="param-name">maxHealRetries</span>
+              <span class="param-type">integer 1–10 <span class="param-opt">optional</span></span>
+              <span class="param-desc">Max self-heal attempts per rotation (auto mode only). Default: <code>3</code></span>
+            </div>
+            <div class="param-row">
+              <span class="param-name">real</span>
+              <span class="param-type">boolean <span class="param-opt">optional</span></span>
+              <span class="param-desc">Use real managed Edge browser for smoke tests. Requires Playwright. Default: <code>false</code> (simulated)</span>
+            </div>
+            <div class="param-row">
+              <span class="param-name">appUrl</span>
+              <span class="param-type">string <span class="param-opt">optional</span></span>
+              <span class="param-desc">Live app URL for real e2e smoke tests (only used when <code>real: true</code>)</span>
+            </div>
+            <div class="param-row">
+              <span class="param-name">environmentId</span>
+              <span class="param-type">string <span class="param-opt">optional</span></span>
+              <span class="param-desc">Power Platform environment GUID</span>
+            </div>
+            <div class="param-row">
+              <span class="param-name">projectDir</span>
+              <span class="param-type">string <span class="param-opt">optional</span></span>
+              <span class="param-desc">Project root. Defaults to <code>POWERCODEX_ROOT</code></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- approve_fix -->
+      <div class="tool-block">
+        <div class="tool-header">
+          <span class="tool-name">approve_fix</span>
+          <span class="tool-badge tool">tool</span>
+        </div>
+        <div class="tool-body">
+          <p>
+            Used exclusively in <strong>diff fix-mode</strong>. When the loop pauses at a fix diff
+            and emits a diff event, call this tool to approve the change and let the loop
+            re-run the tests.
+          </p>
+          <div class="callout info">
+            <div class="callout-title">Timing</div>
+            <p>Call <code>approve_fix</code> while <code>start_lifecycle_loop</code> is still running (in a separate conversation turn or from another tool call). The loop polls the approval state in memory.</p>
+          </div>
+          <div class="params">
+            <div class="param-row">
+              <span class="param-name">projectDir</span>
+              <span class="param-type">string <span class="param-opt">optional</span></span>
+              <span class="param-desc">Must match the <code>projectDir</code> passed to the running loop.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- get_lifecycle_state -->
+      <div class="tool-block">
+        <div class="tool-header">
+          <span class="tool-name">get_lifecycle_state</span>
+          <span class="tool-badge tool">tool</span>
+        </div>
+        <div class="tool-body">
+          <p>Returns the live <code>bus.json</code> state — current stage, last events, scores. Useful for polling the loop's progress from a second tool call.</p>
+          <div class="params">
+            <div class="param-row">
+              <span class="param-name">projectDir</span>
+              <span class="param-type">string <span class="param-opt">optional</span></span>
+              <span class="param-desc">Project root.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="sub">Example prompts</h3>
+      <pre><span class="cmt">-- Run 3 rotations in auto-heal mode:</span>
+Run the lifecycle loop for 3 rotations in auto fix-mode with up to 5 heal retries.
+
+<span class="cmt">-- Use diff mode and approve a fix interactively:</span>
+Start the lifecycle loop in diff mode. When you show me a diff, I'll tell you to approve it.
+
+<span class="cmt">-- Check what the loop is currently doing:</span>
+What is the current lifecycle state?</pre>
+    </section>
+
+    <!-- ═══ 5 · PAC Tools ════════════════════════════════════════════════ -->
+    <section class="section" id="pac">
+      <div class="section-title"><span class="section-num">5</span> PAC (Power Apps Code App) Tools</div>
+
+      <p>
+        These tools wrap the <code>pac</code> CLI to authenticate, scaffold, and deploy
+        a Power Apps Code App. The typical sequence is:
+        authenticate → initialise → build → push.
+      </p>
+
+      <!-- initialize_code_app -->
+      <div class="tool-block">
+        <div class="tool-header">
+          <span class="tool-name">initialize_code_app</span>
+          <span class="tool-badge tool">tool</span>
+        </div>
+        <div class="tool-body">
+          <p>
+            Runs <code>pac auth</code> (if an environment URL is given) followed by
+            <code>pac code init</code> to scaffold the Power Apps Code App entry point.
+            This is the "quick start" step.
+          </p>
+          <div class="params">
+            <div class="param-row">
+              <span class="param-name">appName</span>
+              <span class="param-type">string <span class="param-opt">optional</span></span>
+              <span class="param-desc">Display name for the Code App. Default: <code>"MyPowerApp"</code></span>
+            </div>
+            <div class="param-row">
+              <span class="param-name">environmentUrl</span>
+              <span class="param-type">string <span class="param-opt">optional</span></span>
+              <span class="param-desc">Power Platform environment URL. If provided, triggers <code>pac auth</code> before init.</span>
+            </div>
+            <div class="param-row">
+              <span class="param-name">outputDir</span>
+              <span class="param-type">string <span class="param-opt">optional</span></span>
+              <span class="param-desc">Where to create the scaffold. Defaults to <code>{projectDir}/src</code></span>
+            </div>
+            <div class="param-row">
+              <span class="param-name">projectDir</span>
+              <span class="param-type">string <span class="param-opt">optional</span></span>
+              <span class="param-desc">Project root. Defaults to <code>POWERCODEX_ROOT</code></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- push_code_app -->
+      <div class="tool-block">
+        <div class="tool-header">
+          <span class="tool-name">push_code_app</span>
+          <span class="tool-badge tool">tool</span>
+        </div>
+        <div class="tool-body">
+          <p>
+            Runs <code>pac code push</code> to deploy the built app bundle to Power Apps.
+            You must run <code>npm run build</code> before calling this tool.
+          </p>
+          <div class="params">
+            <div class="param-row">
+              <span class="param-name">appDir</span>
+              <span class="param-type">string <span class="param-opt">optional</span></span>
+              <span class="param-desc">Directory containing the built app. Defaults to <code>{projectDir}/src</code></span>
+            </div>
+            <div class="param-row">
+              <span class="param-name">projectDir</span>
+              <span class="param-type">string <span class="param-opt">optional</span></span>
+              <span class="param-desc">Project root. Defaults to <code>POWERCODEX_ROOT</code></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- list_pac_auth -->
+      <div class="tool-block">
+        <div class="tool-header">
+          <span class="tool-name">list_pac_auth</span>
+          <span class="tool-badge tool">tool</span>
+        </div>
+        <div class="tool-body">
+          <p>Lists active <code>pac auth</code> profiles so Claude knows which environments are already authenticated. No parameters.</p>
+        </div>
+      </div>
+
+      <h3 class="sub">Example prompts</h3>
+      <pre><span class="cmt">-- Show which environments are authenticated:</span>
+List my pac auth profiles.
+
+<span class="cmt">-- Initialise a Code App and authenticate in one step:</span>
+Initialize a Code App called <span class="str">"SafetyCheck"</span> against
+environment <span class="str">"https://myorg.crm.dynamics.com"</span>.
+
+<span class="cmt">-- Deploy the app after building it:</span>
+Push the Code App to Power Apps.</pre>
+    </section>
+
+    <!-- ═══ 6 · Resources ════════════════════════════════════════════════ -->
+    <section class="section" id="resources">
+      <div class="section-title"><span class="section-num">6</span> MCP Resources</div>
+
+      <p>
+        Resources are readable URIs that the host can fetch at any time without calling a tool.
+        They are useful for giving Claude an up-to-date snapshot of project state.
+      </p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>URI</th>
+            <th>Type</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>powercodex://lifecycle/state</code></td>
+            <td><span class="tag resource">resource</span></td>
+            <td>Live lifecycle bus state — current stage, last events, scores. Returns <code>{"status":"idle"}</code> when no loop has run.</td>
+          </tr>
+          <tr>
+            <td><code>powercodex://plans</code></td>
+            <td><span class="tag resource">resource</span></td>
+            <td>JSON list of all registered plan documents in the project.</td>
+          </tr>
+          <tr>
+            <td><code>powercodex://plans/{id}</code></td>
+            <td><span class="tag resource">resource</span></td>
+            <td>Full HTML content of the plan identified by <code>{id}</code>. Returns a 404-style message if not found.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3 class="sub">Using resources in Claude</h3>
+      <p>In Claude Desktop or Claude Code, resources appear in the "Attach" panel. In API usage, fetch them via the MCP resource read call. You can also ask Claude directly:</p>
+      <pre><span class="cmt">-- Ask Claude to read the live lifecycle state:</span>
+Read the lifecycle state resource and tell me what stage the loop is in.
+
+<span class="cmt">-- Browse available plans:</span>
+List all plans registered in this project.</pre>
+    </section>
+
+    <!-- ═══ 7 · Prompts ══════════════════════════════════════════════════ -->
+    <section class="section" id="prompts">
+      <div class="section-title"><span class="section-num">7</span> OPSX Prompts</div>
+
+      <p>
+        The server automatically discovers every <code>.md</code> file inside
+        <code>.github/prompts/</code> and registers it as a named MCP prompt.
+        These OPSX workflow prompts can be injected into a conversation at the click of
+        a button in supporting hosts (Claude Desktop, Cursor).
+      </p>
+
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-label blue">Naming convention</div>
+        <p>A file named <code>.github/prompts/deploy-to-staging.md</code> becomes the prompt
+        <code>opsx_deploy_to_staging</code>. Non-alphanumeric characters are replaced with
+        underscores and the name is lowercased.</p>
+      </div>
+
+      <h3 class="sub">Adding a new OPSX prompt</h3>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num"></div>
+          <div class="step-body">
+            <h4>Create the file</h4>
+            <p>Add a <code>.md</code> file to <code>.github/prompts/</code> with your workflow instructions.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num"></div>
+          <div class="step-body">
+            <h4>Restart the MCP server</h4>
+            <p>The prompts are discovered at server startup. Restart your AI host or reload the MCP server to pick up new files.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num"></div>
+          <div class="step-body">
+            <h4>Select the prompt in your host</h4>
+            <p>In Claude Desktop, open the prompt picker and search for <code>opsx_</code>. In Claude Code, reference it by name.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ 8 · Workflows ════════════════════════════════════════════════ -->
+    <section class="section" id="workflows">
+      <div class="section-title"><span class="section-num">8</span> Common Workflows</div>
+
+      <h3 class="sub">New project from scratch</h3>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num"></div>
+          <div class="step-body">
+            <h4>Scaffold the project</h4>
+            <p><em>"Scaffold a project called inspection-app in /Users/me/projects"</em> → <code>scaffold_project</code></p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num"></div>
+          <div class="step-body">
+            <h4>Init Dataverse schema</h4>
+            <p><em>"Init the Dataverse schema with a table called Inspection"</em> → <code>dataverse_init_schema</code></p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num"></div>
+          <div class="step-body">
+            <h4>Edit schema, then apply</h4>
+            <p>Edit <code>.powercodex/dataverse-schema.json</code>, then <em>"Apply my Dataverse schema"</em> → <code>dataverse_apply_schema</code></p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num"></div>
+          <div class="step-body">
+            <h4>Initialise Code App</h4>
+            <p><em>"Initialise a Code App called InspectionApp against https://myorg.crm.dynamics.com"</em> → <code>initialize_code_app</code></p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num"></div>
+          <div class="step-body">
+            <h4>Build &amp; push</h4>
+            <p>Run <code>npm run build</code>, then <em>"Push the Code App to Power Apps"</em> → <code>push_code_app</code></p>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="sub">Iterative development with auto-heal</h3>
+      <pre><span class="cmt">-- 1. Describe the goal and kick off a multi-rotation auto-heal loop:</span>
+Run the lifecycle loop for 5 rotations in auto fix-mode.
+The goal is: <span class="str">"Users can submit inspection reports and view them in a gallery."</span>
+
+<span class="cmt">-- 2. After the loop, check Dataverse state to see captured logical names:</span>
+Show me the current Dataverse state.
+
+<span class="cmt">-- 3. Deploy:</span>
+Build and push the Code App.</pre>
+
+      <h3 class="sub">Supervised diff-mode workflow</h3>
+      <pre><span class="cmt">-- Start in diff mode — Claude will pause at each fix and show a diff:</span>
+Start the lifecycle loop in diff fix-mode with 3 rotations.
+
+<span class="cmt">-- When Claude reports a diff event, review it and then:</span>
+Approve the fix.        <span class="cmt">← calls approve_fix, loop continues</span></pre>
+    </section>
+
+    <!-- ═══ 9 · Troubleshoot ══════════════════════════════════════════════ -->
+    <section class="section" id="troubleshoot">
+      <div class="section-title"><span class="section-num">9</span> Troubleshooting</div>
+
+      <table>
+        <thead>
+          <tr><th>Symptom</th><th>Likely cause</th><th>Fix</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>MCP server not appearing in host</td>
+            <td>Wrong path or config JSON syntax error</td>
+            <td>Verify the absolute path to <code>powercodex-mcp.mjs</code> and validate JSON in the config file.</td>
+          </tr>
+          <tr>
+            <td><code>dataverse_apply_schema</code> opens no browser</td>
+            <td>Playwright not installed</td>
+            <td>Run <code>npx playwright install chromium</code> in the repo root.</td>
+          </tr>
+          <tr>
+            <td><code>initialize_code_app</code> fails with "pac not found"</td>
+            <td>pac CLI not on PATH</td>
+            <td>Install from <a href="https://aka.ms/PowerAppsCLI" style="color:var(--accent2);">aka.ms/PowerAppsCLI</a> and ensure it's on your shell PATH.</td>
+          </tr>
+          <tr>
+            <td><code>approve_fix</code> returns "No loop is waiting"</td>
+            <td>Loop already finished or wrong <code>projectDir</code></td>
+            <td>Make sure <code>start_lifecycle_loop</code> is still running and both calls use the same <code>projectDir</code>.</td>
+          </tr>
+          <tr>
+            <td>OPSX prompts not appearing</td>
+            <td>No <code>.github/prompts/</code> directory or server not restarted</td>
+            <td>Create the directory, add <code>.md</code> files, then restart the MCP server / reload the host.</td>
+          </tr>
+          <tr>
+            <td><code>powercodex://lifecycle/state</code> returns <code>{"status":"idle"}</code></td>
+            <td>No loop has run yet in this session</td>
+            <td>Run <code>start_lifecycle_loop</code> first. State persists only for the server's lifetime.</td>
+          </tr>
+          <tr>
+            <td>Loop stops immediately in manual mode</td>
+            <td>Tests are red and fix-mode is <code>manual</code></td>
+            <td>Fix the failing tests manually, or switch to <code>diff</code> or <code>auto</code> fix-mode.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout info">
+        <div class="callout-title">Checking logs</div>
+        <p>Every tool returns a full event log in its text response. If something fails, read the <code>Log:</code> section in the tool output — it contains per-stage messages at <code>[info]</code>, <code>[warn]</code>, and <code>[error]</code> levels.</p>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+</body>
+</html>

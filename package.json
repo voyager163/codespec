@@ -1,16 +1,20 @@
 {
   "name": "@voyager163/powercodex",
-  "version": "0.1.2",
-  "description": "Create a Power Apps Code Apps project prepared for OpenSpec workflows.",
+  "version": "0.2.0",
+  "description": "Create a Power Apps Code Apps project prepared for OpenSpec workflows. Includes a lifecycle engine, Dataverse automation, and an MCP server.",
   "license": "MIT",
   "bin": {
     "powercodex": "bin/create-powercodex.js",
-    "create-powercodex": "bin/create-powercodex.js"
+    "create-powercodex": "bin/create-powercodex.js",
+    "powercodex-mcp": "bin/powercodex-mcp.mjs",
+    "install-powercodex-mcp": "bin/install-plugin.mjs"
   },
   "files": [
     "bin/",
+    "src/",
     "media/",
     "templates/",
+    "tools/",
     "README.md",
     "LICENSE"
   ],
@@ -20,7 +24,16 @@
     "lifecycle:serve": "node tools/lifecycle/bin/powercodex-lifecycle.js serve",
     "lifecycle:selftest": "node tools/lifecycle/bin/powercodex-lifecycle.js selftest",
     "cockpit": "node tools/lifecycle/bin/powercodex-lifecycle.js cockpit",
-    "import": "node tools/lifecycle/bin/powercodex-lifecycle.js import"
+    "import": "node tools/lifecycle/bin/powercodex-lifecycle.js import",
+    "mcp": "node bin/powercodex-mcp.mjs",
+    "install-powercodex-mcp": "node bin/install-plugin.mjs",
+    "dataverse:init": "node tools/lifecycle/bin/powercodex-lifecycle.js dataverse init",
+    "dataverse:apply": "node tools/lifecycle/bin/powercodex-lifecycle.js dataverse apply",
+    "code-init": "node tools/lifecycle/bin/powercodex-lifecycle.js code-init"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.15.0",
+    "zod": "^3.23.0"
   },
   "engines": {
     "node": ">=20.19.0"
