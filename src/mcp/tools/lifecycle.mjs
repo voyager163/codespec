@@ -30,6 +30,17 @@ const noop = async () => {};
 // One background loop session per project root.
 const sessions = new Map(); // root → session
 
+const SESSION_TTL_MS = 30 * 60 * 1000; // keep a settled session's final state readable for 30 min
+
+// Drop settled sessions whose final state has been readable long enough, so a
+// long-lived server doesn't accumulate one entry per project root forever.
+function pruneSessions() {
+  const now = Date.now();
+  for (const [key, s] of sessions) {
+    if (s.settled && s.settledAt && now - s.settledAt > SESSION_TTL_MS) sessions.delete(key);
+  }
+}
+
 function makeCheckpoint() {
   let resolve;
   let done = false;
@@ -74,7 +85,7 @@ export function registerLifecycleTools(server, defaultRoot) {
       fixMode:         z.enum(['manual', 'diff', 'auto']).optional().default('manual')
                         .describe('What to do when tests stay red after self-heal: manual=stop, diff=gate for approval, auto=keep fixing'),
       maxHealRetries:  z.number().int().min(1).max(10).optional().default(3).describe('Max auto-fix attempts per rotation (auto mode only)'),
-      maxDurationMs:   z.number().int().min(1000).optional().default(600000).describe('Wall-clock cap; the loop stops cleanly at the next rotation/approval boundary when exceeded'),
+      maxDurationMs:   z.number().int().min(1).optional().default(600000).describe('Wall-clock cap; the loop stops cleanly at the next rotation/approval boundary when exceeded'),
       real:            z.boolean().optional().default(false).describe('Use real managed Edge browser (needs Playwright)'),
       appUrl:          z.string().optional().describe('Live app URL for real e2e smoke tests'),
       environmentId:   z.string().optional().describe('Power Platform environment GUID'),
@@ -83,6 +94,7 @@ export function registerLifecycleTools(server, defaultRoot) {
     safe(async ({ goal, rotations, fixMode, maxHealRetries, maxDurationMs, real, appUrl, environmentId, projectDir }, extra) => {
       const root = resolveProjectDir(projectDir, defaultRoot, { mustExist: true, label: 'projectDir' });
       const { runLoop } = lib('loop');
+      pruneSessions();
 
       const session = {
         id: `loop-${Date.now().toString(36)}`,
@@ -132,11 +144,13 @@ export function registerLifecycleTools(server, defaultRoot) {
         session.summary = summary;
         session.status = summary.stopped ? 'stopped' : 'complete';
         session.settled = true;
+        session.settledAt = Date.now();
         session.checkpoint.resolve();
       }).catch((err) => {
         session.status = 'error';
         session.error = err?.message || String(err);
         session.settled = true;
+        session.settledAt = Date.now();
         session.checkpoint.resolve();
       });
 

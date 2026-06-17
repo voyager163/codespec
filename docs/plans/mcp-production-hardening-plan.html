@@ -164,7 +164,7 @@
   <h1 class="rise d1">Making the MCP server production-ready</h1>
   <p class="sub rise d2">A grounded, end-to-end plan to close the gaps between the current happy-path MCP prototype and a server safe to expose to Claude Code, Claude Desktop, Cursor, VS Code, and Antigravity. Harden the boundary, don't rewrite the engine.</p>
   <div class="meta rise d3">
-    <span>Status: Proposed</span>
+    <span>Status: Implemented ✓</span>
     <span>Scope: <code class="mono">src/mcp/**</code> + <code class="mono">bin/powercodex-mcp.mjs</code></span>
     <span>Package: 0.2.0 · pre-release</span>
     <span>Priority: real (browser) mode</span>
@@ -173,6 +173,14 @@
 </header>
 
 <div class="wrap">
+
+  <!-- STATUS -->
+  <section class="rise">
+    <div class="callout good">
+      <h3>Implemented ✓</h3>
+      <p>All four phases shipped on branch <code>docs/mcp-production-hardening-plan</code>. 16 automated tests pass (simulate mode, offline) plus the CLI selftest (101/101) with no regression. Real-mode paths are hardened in code and covered by a manual checklist (<a href="../mcp-real-mode-checklist.md">mcp-real-mode-checklist.md</a>) and an env-gated integration smoke. Known limitation: a project that boots with an empty <code>.github/prompts</code> directory won't surface watcher-added prompts until restart (the SDK installs prompt handlers only once a prompt exists).</p>
+    </div>
+  </section>
 
   <!-- DECISIONS -->
   <section class="rise">

@@ -247,7 +247,7 @@
   <div class="hero-meta">
     <span class="badge purple">v0.2.0</span>
     <span class="badge blue">MCP Protocol</span>
-    <span class="badge green">9 Tools</span>
+    <span class="badge green">11 Tools</span>
     <span class="badge green">2 Resources</span>
     <span class="badge">Prompts</span>
   </div>
@@ -557,7 +557,7 @@ Show me the current Dataverse state for this project.</pre>
         <div class="card">
           <div class="card-label blue">diff</div>
           <h4>Diff fix-mode</h4>
-          <p>Loop shows a diff and waits for your approval before re-running tests.</p>
+          <p>Loop pauses at the fix and returns <code>awaiting_approval</code>; call <code>approve_fix</code> or <code>reject_fix</code> to continue.</p>
         </div>
         <div class="card">
           <div class="card-label green">auto</div>
@@ -573,7 +573,16 @@ Show me the current Dataverse state for this project.</pre>
           <span class="tool-badge tool">tool</span>
         </div>
         <div class="tool-body">
-          <p>Starts the lifecycle loop in-process and streams events back as a log. Blocks until all rotations complete (or the loop stops early).</p>
+          <p>
+            Starts the lifecycle loop as a background session and streams events as MCP
+            progress notifications. The call returns at the first <strong>checkpoint</strong> —
+            either when the loop reaches an approval gate (status <code>awaiting_approval</code>,
+            with a <code>resumeToken</code>) or when it completes (<code>complete</code> /
+            <code>stopped</code> / <code>error</code>). It does <em>not</em> block across a human
+            pause, so it stays well within host request timeouts. Drive a paused loop with
+            <code>approve_fix</code> / <code>reject_fix</code>, and follow it with
+            <code>get_lifecycle_state</code>.
+          </p>
           <div class="params">
             <div class="param-row">
               <span class="param-name">goal</span>
@@ -594,6 +603,11 @@ Show me the current Dataverse state for this project.</pre>
               <span class="param-name">maxHealRetries</span>
               <span class="param-type">integer 1–10 <span class="param-opt">optional</span></span>
               <span class="param-desc">Max self-heal attempts per rotation (auto mode only). Default: <code>3</code></span>
+            </div>
+            <div class="param-row">
+              <span class="param-name">maxDurationMs</span>
+              <span class="param-type">integer <span class="param-opt">optional</span></span>
+              <span class="param-desc">Wall-clock cap. The loop stops cleanly at the next rotation/approval boundary when exceeded (browser released). Default: <code>600000</code></span>
             </div>
             <div class="param-row">
               <span class="param-name">real</span>
@@ -627,14 +641,35 @@ Show me the current Dataverse state for this project.</pre>
         </div>
         <div class="tool-body">
           <p>
-            Used exclusively in <strong>diff fix-mode</strong>. When the loop pauses at a fix diff
-            and emits a diff event, call this tool to approve the change and let the loop
-            re-run the tests.
+            Resumes a loop that returned <code>awaiting_approval</code> (build approval or
+            <strong>diff fix-mode</strong>). Approves the pending change; the call returns at the
+            next checkpoint — another gate, or completion.
           </p>
           <div class="callout info">
             <div class="callout-title">Timing</div>
-            <p>Call <code>approve_fix</code> while <code>start_lifecycle_loop</code> is still running (in a separate conversation turn or from another tool call). The loop polls the approval state in memory.</p>
+            <p>Call <code>approve_fix</code> <em>after</em> <code>start_lifecycle_loop</code> returns <code>awaiting_approval</code> — as a separate tool call. Each call is short and never spans the human pause, so host request timeouts are never an issue. The session lives in the server, keyed by <code>projectDir</code>.</p>
           </div>
+          <div class="params">
+            <div class="param-row">
+              <span class="param-name">projectDir</span>
+              <span class="param-type">string <span class="param-opt">optional</span></span>
+              <span class="param-desc">Must match the <code>projectDir</code> passed to the running loop.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- reject_fix -->
+      <div class="tool-block">
+        <div class="tool-header">
+          <span class="tool-name">reject_fix</span>
+          <span class="tool-badge tool">tool</span>
+        </div>
+        <div class="tool-body">
+          <p>
+            The counterpart to <code>approve_fix</code>: declines the pending fix/build so the
+            loop stops cleanly instead of proceeding. Use it when the diff isn't acceptable.
+          </p>
           <div class="params">
             <div class="param-row">
               <span class="param-name">projectDir</span>
@@ -652,7 +687,7 @@ Show me the current Dataverse state for this project.</pre>
           <span class="tool-badge tool">tool</span>
         </div>
         <div class="tool-body">
-          <p>Returns the live <code>bus.json</code> state — current stage, last events, scores. Useful for polling the loop's progress from a second tool call.</p>
+          <p>Reports the current background session — status (<code>running</code> / <code>awaiting_approval</code> / <code>complete</code> / <code>stopped</code> / <code>error</code>) plus any new events since you last looked. When no session is active it falls back to the persisted <code>bus.json</code> on disk. Use it to poll a long real-mode run.</p>
           <div class="params">
             <div class="param-row">
               <span class="param-name">projectDir</span>

@@ -49,6 +49,7 @@
     "mcp": "node bin/powercodex-mcp.mjs",
     "test": "node --test src/mcp/__tests__/*.test.mjs",
     "test:mcp": "node --test src/mcp/__tests__/*.test.mjs",
+    "test:e2e": "node --test src/mcp/__tests__/real-mode.e2e.mjs",
     "install-powercodex-mcp": "node bin/install-plugin.mjs",
     "dataverse:init": "node tools/lifecycle/bin/powercodex-lifecycle.js dataverse init",
     "dataverse:apply": "node tools/lifecycle/bin/powercodex-lifecycle.js dataverse apply",

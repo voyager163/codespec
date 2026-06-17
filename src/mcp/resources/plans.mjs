@@ -11,6 +11,9 @@ import path from 'node:path';
 import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { resolveProjectDir } from '../lib/resolve-root.mjs';
 
+// Query-template values arrive percent-encoded; decode before resolving.
+const decode = (v) => { if (v == null) return v; try { return decodeURIComponent(v); } catch { return v; } };
+
 const require = createRequire(import.meta.url);
 const LIB = path.resolve(fileURLToPath(import.meta.url), '../../../../tools/lifecycle/lib');
 
@@ -23,7 +26,7 @@ export function registerPlansResource(server, defaultRoot) {
     }),
     async (uri, variables) => {
       try {
-        const root = resolveProjectDir(variables?.root, defaultRoot, { label: 'root' });
+        const root = resolveProjectDir(decode(variables?.root), defaultRoot, { label: 'root' });
         const planRegistry = require(path.join(LIB, 'plans'));
         const list = planRegistry.listPlans(root);
         return { contents: [{ uri: uri.href, mimeType: 'application/json', text: JSON.stringify(list, null, 2) }] };
@@ -39,9 +42,9 @@ export function registerPlansResource(server, defaultRoot) {
     new ResourceTemplate('powercodex://plans/{id}{?root}', { list: undefined }),
     async (uri, variables) => {
       try {
-        const root = resolveProjectDir(variables?.root, defaultRoot, { label: 'root' });
+        const root = resolveProjectDir(decode(variables?.root), defaultRoot, { label: 'root' });
         const planRegistry = require(path.join(LIB, 'plans'));
-        const resolved = planRegistry.resolvePlan(root, variables?.id);
+        const resolved = planRegistry.resolvePlan(root, decode(variables?.id));
         if (!resolved || !existsSync(resolved.file)) {
           return { contents: [{ uri: uri.href, mimeType: 'text/plain', text: `Plan "${variables?.id}" not found.` }] };
         }

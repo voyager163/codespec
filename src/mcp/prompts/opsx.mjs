@@ -3,6 +3,12 @@
 // Content is read at REQUEST time (not registration), so editing a prompt file is
 // reflected immediately without a server restart. A best-effort watcher registers
 // prompt files added after startup and notifies the host (Fix 2.2).
+//
+// Known limitation: the MCP SDK only installs the prompts/* request handlers (and
+// advertises the prompts capability) once the first prompt is registered. If a
+// project starts with an EMPTY .github/prompts directory, the watcher can register
+// files added later, but a client that negotiated no prompts capability at connect
+// may not surface them until the next server restart.
 
 import { existsSync, readdirSync, readFileSync, watch } from 'node:fs';
 import path from 'node:path';

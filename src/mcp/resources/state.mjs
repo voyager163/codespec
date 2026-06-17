@@ -12,6 +12,9 @@ import path from 'node:path';
 import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { resolveProjectDir } from '../lib/resolve-root.mjs';
 
+// Query-template values arrive percent-encoded; decode before resolving.
+const decode = (v) => { if (v == null) return v; try { return decodeURIComponent(v); } catch { return v; } };
+
 const require = createRequire(import.meta.url);
 const LIB = path.resolve(fileURLToPath(import.meta.url), '../../../../tools/lifecycle/lib');
 
@@ -23,7 +26,7 @@ export function registerStateResource(server, defaultRoot) {
     }),
     async (uri, variables) => {
       try {
-        const root = resolveProjectDir(variables?.root, defaultRoot, { label: 'root' });
+        const root = resolveProjectDir(decode(variables?.root), defaultRoot, { label: 'root' });
         const { liveDir } = require(path.join(LIB, 'paths'));
         const busFile = path.join(liveDir(root), 'bus.json');
         if (!existsSync(busFile)) {
