@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PowerCodex MCP — Production Hardening Plan</title>
+<style>
+  :root {
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --bg: #0b0d12;
+    --bg-soft: #12151d;
+    --panel: #161a24;
+    --panel-2: #1c2130;
+    --line: #262c3a;
+    --line-2: #313a4d;
+    --text: #e8ecf4;
+    --muted: #99a2b8;
+    --faint: #6b7488;
+    --accent: #6ea8fe;
+    --accent-2: #a78bfa;
+    --good: #5ad19a;
+    --bad: #f08a8a;
+    --warn: #f5c97b;
+    --radius: 16px;
+    --shadow: 0 20px 60px -20px rgba(0,0,0,0.6);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(167,139,250,0.14), transparent 60%),
+      radial-gradient(900px 500px at -10% 10%, rgba(110,168,254,0.12), transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 24px 120px; }
+  .mono { font-family: "SF Mono", "JetBrains Mono", Consolas, Menlo, monospace; }
+
+  .rise { opacity: 0; transform: translateY(14px); animation: rise 600ms var(--ease-out) forwards; }
+  @keyframes rise { to { opacity: 1; transform: translateY(0); } }
+  .d1 { animation-delay: 40ms; } .d2 { animation-delay: 90ms; } .d3 { animation-delay: 140ms; }
+  .d4 { animation-delay: 190ms; } .d5 { animation-delay: 240ms; }
+
+  header.hero { padding: 92px 24px 36px; text-align: center; max-width: 940px; margin: 0 auto; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--accent); background: rgba(110,168,254,0.1);
+    border: 1px solid rgba(110,168,254,0.25);
+    padding: 6px 14px; border-radius: 999px; margin-bottom: 22px;
+  }
+  .eyebrow .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+    box-shadow: 0 0 0 0 rgba(110,168,254,0.6); animation: pulse 2.4s var(--ease-out) infinite; }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(110,168,254,0.5); }
+    70% { box-shadow: 0 0 0 9px rgba(110,168,254,0); }
+    100% { box-shadow: 0 0 0 0 rgba(110,168,254,0); }
+  }
+  h1 {
+    font-size: clamp(34px, 6.4vw, 56px); line-height: 1.06; margin: 0 0 18px; letter-spacing: -0.02em;
+    background: linear-gradient(180deg, #fff, #b9c2d8);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .sub { color: var(--muted); font-size: 18px; max-width: 780px; margin: 0 auto; }
+  .meta { margin-top: 26px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; color: var(--faint); font-size: 13px; }
+  .meta span { border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; }
+
+  section { margin-top: 72px; }
+  .kicker { color: var(--accent-2); font-weight: 600; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; margin: 0 0 10px; }
+  h2 { font-size: 28px; margin: 0 0 14px; letter-spacing: -0.01em; }
+  h3 { font-size: 18px; margin: 0 0 8px; }
+  p.lead { color: var(--muted); font-size: 16px; max-width: 840px; }
+
+  .panel { background: linear-gradient(180deg, var(--panel), var(--bg-soft));
+    border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 820px) { .grid, .grid3 { grid-template-columns: 1fr; } }
+
+  .card { background: var(--panel-2); border: 1px solid var(--line); border-radius: 14px; padding: 20px;
+    transition: transform 200ms var(--ease-out), border-color 200ms var(--ease-out), box-shadow 200ms var(--ease-out); }
+  .card:hover { transform: translateY(-3px); border-color: rgba(110,168,254,0.4); box-shadow: 0 18px 40px -22px rgba(110,168,254,0.5); }
+  .card h3 { display: flex; align-items: center; gap: 10px; font-size: 16px; }
+  .card .ic { width: 30px; height: 30px; flex: none; display: grid; place-items: center; border-radius: 9px; background: rgba(110,168,254,0.12); color: var(--accent); font-size: 15px; }
+  .card p { color: var(--muted); font-size: 14px; margin: 6px 0 0; }
+  .card.pur .ic { background: rgba(167,139,250,0.14); color: var(--accent-2); }
+  .card.good .ic { background: rgba(90,209,154,0.14); color: var(--good); }
+  .card.warn .ic { background: rgba(245,201,123,0.14); color: var(--warn); }
+  .card.bad .ic { background: rgba(240,138,138,0.14); color: var(--bad); }
+
+  .pill { display: inline-block; font-size: 12px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .pill.good { color: var(--good); border-color: rgba(90,209,154,0.35); background: rgba(90,209,154,0.08); }
+  .pill.warn { color: var(--warn); border-color: rgba(245,201,123,0.35); background: rgba(245,201,123,0.08); }
+  .pill.acc { color: var(--accent); border-color: rgba(110,168,254,0.35); background: rgba(110,168,254,0.08); }
+  .pill.pur { color: var(--accent-2); border-color: rgba(167,139,250,0.35); background: rgba(167,139,250,0.08); }
+  .pill.bad { color: var(--bad); border-color: rgba(240,138,138,0.35); background: rgba(240,138,138,0.08); }
+
+  ul.clean { list-style: none; padding: 0; margin: 12px 0 0; }
+  ul.clean li { position: relative; padding-left: 26px; margin: 9px 0; color: var(--muted); font-size: 14.5px; }
+  ul.clean li::before { content: "\2192"; position: absolute; left: 0; color: var(--accent); }
+  ul.clean li b { color: var(--text); font-weight: 600; }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 14px; }
+  th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--faint); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+  td { color: var(--muted); } td b { color: var(--text); }
+  td code, p code, li code { font-family: "SF Mono", Consolas, monospace; font-size: 12.5px; color: var(--accent); background: rgba(110,168,254,0.08); border: 1px solid rgba(110,168,254,0.16); border-radius: 5px; padding: 1px 6px; }
+
+  .callout { border-left: 3px solid var(--warn); background: rgba(245,201,123,0.06); padding: 16px 18px; border-radius: 0 12px 12px 0; margin-top: 16px; }
+  .callout.acc { border-left-color: var(--accent); background: rgba(110,168,254,0.06); }
+  .callout.good { border-left-color: var(--good); background: rgba(90,209,154,0.06); }
+  .callout.bad { border-left-color: var(--bad); background: rgba(240,138,138,0.06); }
+  .callout h3 { margin: 0 0 6px; color: var(--text); font-size: 16px; }
+  .callout p { margin: 0; color: var(--muted); font-size: 14.5px; }
+
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--line), transparent); margin: 8px 0; }
+  a { color: var(--accent); }
+
+  pre.code { background: #0a0c11; border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; overflow-x: auto;
+    font-family: "SF Mono", Consolas, monospace; font-size: 12.5px; line-height: 1.7; color: #cdd6e6; margin-top: 14px; }
+  pre.code .c { color: var(--faint); } pre.code .k { color: var(--accent-2); } pre.code .s { color: var(--good); } pre.code .p { color: var(--accent); }
+
+  .flow { display: flex; flex-direction: column; gap: 0; margin-top: 8px; }
+  .step { display: grid; grid-template-columns: 44px 1fr; gap: 16px; padding: 18px 0; border-bottom: 1px dashed var(--line); }
+  .step:last-child { border-bottom: 0; }
+  .step .nm { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; color: var(--bg); background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+  .step .nm.g { background: linear-gradient(135deg, var(--good), #3fb985); }
+  .step h3 { margin: 4px 0 6px; font-size: 17px; }
+  .step p { color: var(--muted); font-size: 14.5px; margin: 0 0 6px; }
+  .step .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+
+  .phases { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 18px; }
+  @media (max-width: 820px) { .phases { grid-template-columns: 1fr; } }
+  .phase { border: 1px solid var(--line); padding: 18px; position: relative; }
+  .phase:first-child { border-radius: 14px 0 0 14px; }
+  .phase:last-child { border-radius: 0 14px 14px 0; }
+  @media (max-width: 820px) { .phase, .phase:first-child, .phase:last-child { border-radius: 12px; margin-bottom: 10px; } }
+  .phase .pn { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+  .phase h4 { margin: 6px 0 8px; font-size: 15px; }
+  .phase p { margin: 0; font-size: 13px; color: var(--muted); }
+  .phase .pt { display: inline-block; margin-top: 10px; font-size: 11px; color: var(--faint); border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px; }
+
+  .reco { border: 1px solid rgba(110,168,254,0.35); background: linear-gradient(180deg, rgba(110,168,254,0.08), rgba(110,168,254,0.02)); border-radius: 14px; padding: 16px 18px; margin: 16px 0; display: flex; gap: 14px; align-items: flex-start; }
+  .reco .rb { flex: none; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #06203f; background: var(--accent); padding: 6px 12px; border-radius: 999px; }
+  .reco p { margin: 0; color: var(--text); font-size: 14.5px; }
+
+  footer { margin-top: 84px; text-align: center; color: var(--faint); font-size: 13px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rise { animation: none; opacity: 1; transform: none; }
+    .eyebrow .dot { animation: none; }
+    *, *::before, *::after { transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="eyebrow rise"><span class="dot"></span> Engineering Plan · MCP Hardening</div>
+  <h1 class="rise d1">Making the MCP server production-ready</h1>
+  <p class="sub rise d2">A grounded, end-to-end plan to close the gaps between the current happy-path MCP prototype and a server safe to expose to Claude Code, Claude Desktop, Cursor, VS Code, and Antigravity. Harden the boundary, don't rewrite the engine.</p>
+  <div class="meta rise d3">
+    <span>Status: Proposed</span>
+    <span>Scope: <code class="mono">src/mcp/**</code> + <code class="mono">bin/powercodex-mcp.mjs</code></span>
+    <span>Package: 0.2.0 · pre-release</span>
+    <span>Priority: real (browser) mode</span>
+    <span>3 PRs · ~5–6 day pass</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- DECISIONS -->
+  <section class="rise">
+    <p class="kicker">Decisions locked with the maker</p>
+    <h2>Four answers that shaped this plan</h2>
+    <p class="lead">These are product calls, not code calls — recorded here so the rationale travels with the plan.</p>
+    <div class="grid" style="margin-top:18px;">
+      <div class="card good"><h3><span class="ic">1</span> Break freely</h3>
+        <p><b>Pre-release, no external users.</b> Tool return shapes and resource URIs can change cleanly with <b>no compatibility shims</b>. Simpler code, simpler review.</p></div>
+      <div class="card"><h3><span class="ic">2</span> Broad host support</h3>
+        <p>Claude Code, Claude Desktop, Cursor, VS Code, Antigravity. <b>Claude Desktop's ~60s request timeout is the binding constraint</b> — it forces the poll/resume gate redesign.</p></div>
+      <div class="card warn"><h3><span class="ic">3</span> Deny outside workspace</h3>
+        <p>Tools refuse paths outside the workspace root unless <code>POWERCODEX_ALLOWED_ROOTS</code> opts them in. Safest default; multi-repo users get an explicit escape hatch.</p></div>
+      <div class="card pur"><h3><span class="ic">4</span> Plan first</h3>
+        <p>This document lands in <code>docs/plans/</code> as a tracked artifact <b>before any code</b>, so the approach is reviewable and committed.</p></div>
+    </div>
+    <div class="callout bad">
+      <h3>Scope-defining decision: real mode is the priority</h3>
+      <p>"Production-ready" means the <b>real</b> loop — managed Edge/CDP + Playwright + <code>pac</code> auth against a tenant — not just the offline simulate path. This <b>expands Phase 1</b> with browser-lifecycle cleanup (1.4) and pac-auth failure handling (1.5), and splits the test strategy into CI-safe unit/contract tests (simulate) plus <b>manual integration tests</b> that need a browser, Playwright, and a signed-in <code>pac</code> profile and therefore can't run in CI. Effort grows from ~3–4 days to ~5–6.</p>
+    </div>
+  </section>
+
+  <!-- THE GAPS -->
+  <section class="rise">
+    <p class="kicker">What's actually wrong</p>
+    <h2>The gaps, grounded in the code</h2>
+    <p class="lead">The architecture is clean: <code>server.mjs</code> is a pure wiring point and every tool is a thin wrapper over <code>tools/lifecycle/lib/*</code>. The risk is concentrated entirely at the MCP boundary.</p>
+    <div class="grid3" style="margin-top:18px;">
+      <div class="card bad"><h3><span class="ic">!</span> Silent death</h3><p>No <code>try/catch</code> around <code>server.connect</code>, no process error handlers, no graceful shutdown. An unhandled throw closes the pipe with zero diagnostic — and orphans the loop's Edge/CDP browser.</p></div>
+      <div class="card bad"><h3><span class="ic">!</span> Inconsistent errors</h3><p>Most tool handlers <code>await</code> lib calls bare. A throw becomes a JSON-RPC protocol error instead of <code>isError: true</code>, so the model can't see or recover from the failure.</p></div>
+      <div class="card bad"><h3><span class="ic">!</span> Unconfined FS / exec</h3><p>Every tool takes an arbitrary absolute path and reads, <code>mkdirSync</code>-writes, or <code>spawn</code>s a process there. Effectively arbitrary filesystem-write + process-exec.</p></div>
+      <div class="card warn"><h3><span class="ic">~</span> Long runs, no signal</h3><p>The loop runs up to 20 rotations and only returns at the end. The rich <code>emit</code> stream is discarded until completion — and the run blows past host timeouts.</p></div>
+      <div class="card warn"><h3><span class="ic">~</span> Broken approval gate</h3><p>Hosts serialize tool calls and time out long requests, so <code>approve_fix</code> can never reach the server while <code>start_lifecycle_loop</code> is pending. The gate is unreachable in practice.</p></div>
+      <div class="card"><h3><span class="ic">~</span> State & polish</h3><p>Resources ignore per-call root; prompts are read once and frozen; server version is hardcoded; no MCP tests at all.</p></div>
+    </div>
+    <div class="callout acc">
+      <h3>Correction from reading the engine</h3>
+      <p>The approval gate is <b>not</b> an event-loop deadlock. <code>waitForApproval</code> in <code>loop.js</code> polls with <code>await sleep(200)</code>, so it yields continuously. The real failure is one layer up: hosts won't dispatch a second tool call until the first returns, and they kill the first at ~60s. That reframes the fix from "make it thread-safe" to "don't model a human pause as one blocking request."</p>
+    </div>
+  </section>
+
+  <!-- PHASES -->
+  <section class="rise">
+    <p class="kicker">Sequencing</p>
+    <h2>Four phases, shipped in priority order</h2>
+    <p class="lead">Ordered so the server is <b>safe</b> even if we stop after Phase 0. Safety before ergonomics; every fix carries the test that would have caught it.</p>
+    <div class="phases">
+      <div class="phase"><div class="pn">Phase 0 · PR 1</div><h4>Resilience &amp; safety</h4><p>Error boundary, uniform error contract, path confinement. The only issues that are <i>unsafe</i> rather than inconvenient.</p><span class="pt">Blocker</span></div>
+      <div class="phase"><div class="pn">Phase 1 · PR 2</div><h4>Long-running ops</h4><p>Progress notifications, duration caps, and the poll/resume approval-gate redesign.</p><span class="pt">Production use</span></div>
+      <div class="phase"><div class="pn">Phase 2 · PR 3</div><h4>Consistency</h4><p>Per-project resources, live prompts, version from package.json, stdout hygiene.</p><span class="pt">Polish</span></div>
+      <div class="phase"><div class="pn">Phase 3 · PR 3</div><h4>Tests &amp; CI</h4><p>MCP smoke + contract tests mapped 1:1 to each fix; wired into CI.</p><span class="pt">Durability</span></div>
+    </div>
+  </section>
+
+  <!-- PHASE 0 DETAIL -->
+  <section class="rise">
+    <p class="kicker">Phase 0 — Resilience &amp; safety</p>
+    <h2>The three blockers, with justification</h2>
+    <div class="flow">
+      <div class="step">
+        <div class="nm">0.1</div>
+        <div>
+          <h3>Entry-point error boundary &amp; graceful shutdown</h3>
+          <p><b>What:</b> wrap <code>server.connect</code> in <code>try/catch</code> logging to <b>stderr</b>; add <code>uncaughtException</code>, <code>unhandledRejection</code>, and <code>SIGINT</code>/<code>SIGTERM</code> handlers that close the transport and flush before exit.</p>
+          <p><b>Why:</b> On stdio, stdout is the JSON-RPC channel — an unhandled throw kills the process and the host just sees the pipe close. A boundary turns "server vanished" into a logged, debuggable failure, and graceful shutdown runs <code>eng.close()</code> so a mid-flight loop doesn't orphan the browser.</p>
+          <div class="tags"><span class="pill bad">resilience</span><span class="pill mono">bin/powercodex-mcp.mjs</span></div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="nm">0.2</div>
+        <div>
+          <h3>Uniform tool error contract</h3>
+          <p><b>What:</b> one <code>safeTool(handler)</code> helper that catches throws and returns <code>{ isError: true, content: [...] }</code>. Apply to every tool — including the pac tools, whose <code>checkPac()</code> throws.</p>
+          <p><b>Why:</b> A bare throw becomes a transport error the model can't interpret or retry around. <code>isError: true</code> is the MCP convention precisely so the model reads the failure and self-corrects. One helper guarantees consistency instead of per-tool drift (today only two of six tools handle this).</p>
+          <div class="tags"><span class="pill bad">error contract</span><span class="pill mono">src/mcp/tools/*</span></div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="nm">0.3</div>
+        <div>
+          <h3>Path confinement &amp; input validation</h3>
+          <p><b>What:</b> a single <code>resolveProjectDir(input, defaultRoot)</code> that resolves to absolute, rejects paths outside an allow-list (default: workspace root; override: <code>POWERCODEX_ALLOWED_ROOTS</code>), and verifies existence for read tools. Route every path param through it.</p>
+          <p><b>Why:</b> A host exposing these tools to a model otherwise grants arbitrary filesystem-write + process-exec. Confinement is the line between "automates my project" and "automates any path on the machine." Deny-by-default is least-surprise for a project tool; the env var keeps legitimate multi-repo use working.</p>
+          <div class="tags"><span class="pill warn">security</span><span class="pill mono">src/mcp/lib/resolve-root.mjs</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PHASE 1 DETAIL -->
+  <section class="rise">
+    <p class="kicker">Phase 1 — Long-running operations &amp; real mode</p>
+    <h2>From "works in a demo" to "works against a tenant"</h2>
+    <p class="lead">With real mode as the priority, this phase carries the bulk of the effort: progress + timeouts (1.1–1.2), the gate redesign (1.3), and two real-mode hardening steps (1.4–1.5) that the simulate path never exercises.</p>
+    <div class="flow">
+      <div class="step">
+        <div class="nm">1.1</div>
+        <div>
+          <h3>Progress notifications for long tools</h3>
+          <p><b>What:</b> thread the request's <code>progressToken</code> into the existing <code>emit</code> callback so each loop/schema event becomes an MCP <code>notifications/progress</code>.</p>
+          <p><b>Why:</b> The lib already emits a rich event stream we currently throw away until completion. Surfacing it keeps the user informed and keeps the request alive against idle-timeout heuristics. Low effort, high payoff — the seam already exists.</p>
+          <div class="tags"><span class="pill acc">UX</span><span class="pill warn">timeouts</span></div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="nm">1.2</div>
+        <div>
+          <h3>Bound long tools &amp; make timeouts explicit</h3>
+          <p><b>What:</b> a <code>maxDurationMs</code> wall-clock cap on the loop and schema-apply tools; on breach, stop cleanly and return a partial summary marked <code>stopped: true</code>.</p>
+          <p><b>Why:</b> Even with progress, a 20-rotation real loop can exceed any host's tolerance. A documented, returnable cap converts an opaque host-side kill (which skips cleanup) into a clean, reported stop. Predictability over open-ended runs.</p>
+          <div class="tags"><span class="pill warn">guardrail</span></div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="nm g">1.3</div>
+        <div>
+          <h3>Redesign the approval gate: poll/resume, not blocking</h3>
+          <p><b>What:</b> <code>start_lifecycle_loop</code> runs until it finishes <i>or</i> hits the diff gate, then <b>returns</b> <code>{ state: 'awaiting_approval', resumeToken }</code>. <code>get_lifecycle_state</code> reports the pause; new <code>approve_fix</code>/<code>reject_fix</code> set the decision; the loop continues via <code>resumeToken</code>. State lives in the server; no single request spans the human pause.</p>
+          <p><b>Why:</b> This is the corrected diagnosis. The gate isn't broken by event-loop blocking — it's broken because hosts serialize tool calls and time out long requests, so the approval call can never arrive in time. A request/return/resume protocol is the idiomatic MCP way to model human-in-the-loop. <code>reject_fix</code> is added because today you can only approve; the loop already supports the "not approved → stop" path internally.</p>
+          <div class="tags"><span class="pill good">core redesign</span><span class="pill mono">src/mcp/tools/lifecycle.mjs</span></div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="nm">1.4</div>
+        <div>
+          <h3>Real-mode browser lifecycle &amp; cleanup</h3>
+          <p><b>What:</b> guarantee <code>eng.close()</code> (CDP release) runs on every exit path of a real run — normal completion, duration cap, error, and shutdown signal — via a single <code>finally</code> in the tool handler. Detect a dead/unreachable Edge/CDP session and surface it as a clear <code>isError</code> rather than hanging.</p>
+          <p><b>Why:</b> Real mode drives a managed Edge profile over CDP. Today an error or host-timeout between launch and <code>eng.close()</code> (<code>loop.js:316</code>) leaks a browser process and can lock the profile directory, breaking the <i>next</i> run. This is the single most likely real-mode failure and is invisible in simulate.</p>
+          <div class="tags"><span class="pill bad">real mode</span><span class="pill warn">cleanup</span></div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="nm">1.5</div>
+        <div>
+          <h3>pac-auth &amp; profile failure handling</h3>
+          <p><b>What:</b> before a real run or push, verify <code>pac</code> is reachable and an auth profile matches the target environment; on missing/expired auth, return an actionable <code>isError</code> (which <code>pac</code> command to run) instead of letting the deep call throw mid-loop. Validate the browser profile pointer in <code>Approved_rights/</code> exists.</p>
+          <p><b>Why:</b> The pac tools already detect some of this, but the loop's real path can reach a push with stale/absent auth and fail opaquely partway through. Front-loading the check turns a confusing mid-run failure into a precise, recoverable message — the difference between a usable tool and a frustrating one against a live tenant.</p>
+          <div class="tags"><span class="pill bad">real mode</span><span class="pill mono">tools/lifecycle/lib/pac-init.js</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="callout">
+      <h3>Why this is its own PR</h3>
+      <p>1.3 changes the <code>start_lifecycle_loop</code> contract — the largest behavioral change in the plan. Isolating it keeps the Phase 0 safety fixes from being held hostage to its review. Since we're pre-release, no compat shim is needed; the new contract simply replaces the old, documented in <a href="../mcp-user-guide.html">the MCP user guide</a>.</p>
+    </div>
+  </section>
+
+  <!-- PHASE 2 DETAIL -->
+  <section class="rise">
+    <p class="kicker">Phase 2 — Consistency &amp; correctness polish</p>
+    <h2>The papercuts that bite in npx &amp; multi-project</h2>
+    <table>
+      <thead><tr><th style="width:22%">Fix</th><th style="width:39%">Change</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td><b>2.1 Per-project resources</b><br><span class="pill mono">resources/state · plans</span></td>
+            <td>Move from fixed <code>defaultRoot</code> to a <code>ResourceTemplate</code> that accepts the project, resolved through the same root logic as tools.</td>
+            <td>Tools take a per-call <code>projectDir</code> but resources are hardwired. In npx / multi-project sessions the tools operate on project A while resources report project B — a silent mismatch. One root model removes the footgun.</td></tr>
+        <tr><td><b>2.2 Live prompts</b><br><span class="pill mono">prompts/opsx</span></td>
+            <td>Read each prompt file inside the callback (not at registration); rescan the directory per list; emit <code>prompts/list_changed</code> on change.</td>
+            <td>Content is <code>readFileSync</code>'d once at startup and closed over, so editing a workflow prompt has no effect until restart and new files never appear. Lazy reads make prompts reflect the working tree — the whole point of surfacing repo files.</td></tr>
+        <tr><td><b>2.3 Version from package.json</b><br><span class="pill mono">server.mjs</span></td>
+            <td>Import the version instead of the literal <code>'0.2.0'</code>.</td>
+            <td>A hardcoded version silently lies on the next release, and hosts surface server version for diagnostics. Single source of truth.</td></tr>
+        <tr><td><b>2.4 stdout hygiene</b><br><span class="pill mono">whole server</span></td>
+            <td>A startup dev-guard that nothing writes to stdout outside the transport; audit wrapped libs; document the rule.</td>
+            <td>A single stray <code>console.log</code> in any lib corrupts the JSON-RPC stream and breaks the session in a way that's miserable to debug. Cheap insurance for an invisible failure class.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- PHASE 3 DETAIL -->
+  <section class="rise">
+    <p class="kicker">Phase 3 — Tests &amp; CI</p>
+    <h2>The net that keeps Phase 0–2 fixed</h2>
+    <p class="lead">There are currently zero MCP tests — which is exactly why these regressions were invisible. Because real mode is the priority, the strategy splits in two: a fast CI-safe suite (simulate, offline) plus a documented manual integration checklist that needs a browser, Playwright, and a signed-in <code>pac</code> profile.</p>
+    <div class="grid" style="margin-top:18px;">
+      <div class="panel">
+        <h3><span class="pill good">CI</span> Automated · simulate mode</h3>
+        <ul class="clean">
+          <li><b>Boot &amp; discovery:</b> in-memory transport; <code>tools/list</code>, <code>resources/list</code>, <code>prompts/list</code> return expected names.</li>
+          <li><b>Error contract (0.2):</b> a forced throw in each tool yields <code>isError: true</code>, not a protocol error.</li>
+          <li><b>Confinement (0.3):</b> <code>resolveProjectDir</code> rejects out-of-allow-list paths, accepts allow-listed ones.</li>
+          <li><b>Approval gate (1.3):</b> loop returns <code>awaiting_approval</code>; <code>approve_fix</code> + resume completes; <code>reject_fix</code> stops.</li>
+          <li><b>Live prompts (2.2):</b> a prompt edited after boot is reflected in the next read.</li>
+          <li><b>Wired into the existing GitHub workflow via <code>npm test</code> so it can't rot.</b></li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3><span class="pill bad">manual</span> Integration · real mode</h3>
+        <ul class="clean">
+          <li><b>Cleanup (1.4):</b> kill a real run mid-flight (and via duration cap) — confirm no orphaned Edge process and the profile dir unlocks for the next run.</li>
+          <li><b>Auth (1.5):</b> run with <code>pac</code> absent, with no profile, and with an expired profile — each returns an actionable <code>isError</code>, not a mid-loop throw.</li>
+          <li><b>Progress (1.1):</b> a multi-rotation real run streams <code>notifications/progress</code> visibly in the host before returning.</li>
+          <li>Documented as a checklist in the repo (can't run in CI: needs browser + tenant). Run before each release.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ROLLOUT -->
+  <section class="rise">
+    <p class="kicker">Rollout &amp; risk</p>
+    <h2>How it ships safely</h2>
+    <div class="grid">
+      <div class="panel">
+        <h3>PR slicing</h3>
+        <ul class="clean">
+          <li><b>PR 1 — Phase 0.</b> Small, reviewable, independently shippable. The server is <i>safe</i> after it.</li>
+          <li><b>PR 2 — Phase 1.</b> Gate redesign, long-run handling, and real-mode browser/auth hardening; the largest and riskiest change, reviewed alone.</li>
+          <li><b>PR 3 — Phase 2 + 3.</b> Polish plus the test suite that locks everything in.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Risks &amp; mitigations</h3>
+        <ul class="clean">
+          <li><b>Breaking contract changes</b> (1.3 return shape, 2.1 URIs): acceptable — pre-release, documented in the user guide. No shim.</li>
+          <li><b>Host never issues the resume call:</b> the loop's internal timeout still applies, degrading to a clean "not approved → stop," never a hang.</li>
+          <li><b>Confinement breaks multi-repo users:</b> <code>POWERCODEX_ALLOWED_ROOTS</code> is the documented escape hatch.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="reco">
+      <span class="rb">Recommendation</span>
+      <p>Land <b>PR 1 (Phase 0)</b> first — it removes the only <i>unsafe</i> behaviors and is mechanical enough to review quickly. <b>PR 2</b> is the real engineering work: the gate redesign plus real-mode browser/auth hardening, validated against a live tenant. Estimate: ~1 day P0, ~3–4 days P1 (real mode), small P2/P3 — a ~5–6 day pass.</p>
+    </div>
+  </section>
+
+  <footer>
+    PowerCodex · MCP Production Hardening Plan · proposed for review · drafted against the current <code class="mono">src/mcp/**</code> tree
+  </footer>
+
+</div>
+</body>
+</html>
