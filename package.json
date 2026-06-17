@@ -47,6 +47,8 @@
     "cockpit": "node tools/lifecycle/bin/powercodex-lifecycle.js cockpit",
     "import": "node tools/lifecycle/bin/powercodex-lifecycle.js import",
     "mcp": "node bin/powercodex-mcp.mjs",
+    "test": "node --test src/mcp/__tests__/*.test.mjs",
+    "test:mcp": "node --test src/mcp/__tests__/*.test.mjs",
     "install-powercodex-mcp": "node bin/install-plugin.mjs",
     "dataverse:init": "node tools/lifecycle/bin/powercodex-lifecycle.js dataverse init",
     "dataverse:apply": "node tools/lifecycle/bin/powercodex-lifecycle.js dataverse apply",

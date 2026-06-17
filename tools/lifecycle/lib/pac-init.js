@@ -99,6 +99,28 @@ async function ensureAuth(environmentUrl, { emit = async () => {} } = {}) {
   return { authenticated: true, reused: false, output: r.stdout };
 }
 
+// Pre-flight check (Fix 1.5): verify pac is reachable and — when an environment URL
+// is given — that an auth profile already matches it, BEFORE a long operation begins.
+// Turns a confusing mid-run failure into a precise, actionable message up front.
+// Throws on failure; the MCP boundary turns the throw into a structured isError.
+async function preflight({ environmentUrl, emit = async () => {} } = {}) {
+  const version = await checkPac(); // throws an actionable "install pac" message if missing
+  await emit({ level: 'info', message: `pac ${version} reachable` });
+  if (environmentUrl) {
+    const profiles = await listAuthProfiles();
+    const base = environmentUrl.replace(/\/$/, '');
+    const match = profiles.find((p) => p.url && p.url.startsWith(base));
+    if (!match) {
+      throw new Error(
+        `No pac auth profile matches ${environmentUrl}.\n` +
+        `Authenticate first with:\n  pac auth create --environment ${environmentUrl}`,
+      );
+    }
+    await emit({ level: 'good', message: `pac auth profile found for ${environmentUrl}` });
+  }
+  return true;
+}
+
 // Run pac code init to scaffold the Power Apps Code App entry in the given directory.
 // This is the "quick start" — creates the hosted component structure pac expects
 // before you can pac code push.
@@ -147,6 +169,7 @@ async function initCodeApp(root, {
 // Call this after initCodeApp + your build step.
 async function pushCodeApp(root, { appDir, emit = async () => {} } = {}) {
   const dir = appDir || path.join(root, 'src');
+  await checkPac(); // fail fast with an actionable message if pac is missing (Fix 1.5)
   await emit({ level: 'info', message: `pac code push in ${dir}` });
   const r = await pac(['code', 'push'], { cwd: dir });
   if (r.code !== 0) {
@@ -157,4 +180,4 @@ async function pushCodeApp(root, { appDir, emit = async () => {} } = {}) {
   return { pushed: true, output: r.stdout };
 }
 
-module.exports = { checkPac, listAuthProfiles, ensureAuth, initCodeApp, pushCodeApp };
+module.exports = { checkPac, preflight, listAuthProfiles, ensureAuth, initCodeApp, pushCodeApp };

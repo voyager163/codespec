@@ -4,6 +4,9 @@ import { z } from 'zod';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { safe } from '../lib/safe-tool.mjs';
+import { resolveProjectDir } from '../lib/resolve-root.mjs';
+import { makeProgress } from '../lib/progress.mjs';
 
 const require = createRequire(import.meta.url);
 const LIB = path.resolve(fileURLToPath(import.meta.url), '../../../../tools/lifecycle/lib');
@@ -22,16 +25,18 @@ export function registerPacTools(server, defaultRoot) {
       outputDir:      z.string().optional().describe('Where to create the scaffold (absolute path; defaults to {projectDir}/src)'),
       projectDir:     z.string().optional().describe('Project root (defaults to server cwd)'),
     },
-    async ({ appName, environmentUrl, outputDir, projectDir }) => {
-      const root = projectDir || defaultRoot;
+    safe(async ({ appName, environmentUrl, outputDir, projectDir }, extra) => {
+      const root = resolveProjectDir(projectDir, defaultRoot, { mustExist: true, label: 'projectDir' });
+      const out = outputDir ? resolveProjectDir(outputDir, defaultRoot, { label: 'outputDir' }) : undefined;
       const pac = lib('pac-init');
+      const progress = makeProgress(extra);
       const log = [];
-      const result = await pac.initCodeApp(root, {
-        appName,
-        environmentUrl,
-        outputDir,
-        emit: async ({ level, message }) => { log.push(`[${level}] ${message}`); },
-      });
+      const onEmit = async ({ level, message }) => { const l = `[${level}] ${message}`; log.push(l); await progress(l); };
+
+      // Fail fast with an actionable message if pac/auth aren't ready (Fix 1.5).
+      await pac.preflight({ environmentUrl, emit: onEmit });
+
+      const result = await pac.initCodeApp(root, { appName, environmentUrl, outputDir: out, emit: onEmit });
       const text = [
         result.initialised
           ? `✓ Code App "${appName}" initialised at: ${result.appDir}`
@@ -43,8 +48,10 @@ export function registerPacTools(server, defaultRoot) {
           ? '\nNext: build the app (npm run build) then call push_code_app.'
           : '',
       ].join('\n');
-      return { content: [{ type: 'text', text }] };
-    },
+      const res = { content: [{ type: 'text', text }] };
+      if (!result.initialised) res.isError = true;
+      return res;
+    }),
   );
 
   // ── push_code_app ───────────────────────────────────────────────────────────
@@ -55,13 +62,15 @@ export function registerPacTools(server, defaultRoot) {
       appDir:     z.string().optional().describe('Directory containing the built app (defaults to {projectDir}/src)'),
       projectDir: z.string().optional().describe('Project root (defaults to server cwd)'),
     },
-    async ({ appDir, projectDir }) => {
-      const root = projectDir || defaultRoot;
+    safe(async ({ appDir, projectDir }, extra) => {
+      const root = resolveProjectDir(projectDir, defaultRoot, { mustExist: true, label: 'projectDir' });
+      const dir = appDir ? resolveProjectDir(appDir, defaultRoot, { label: 'appDir' }) : undefined;
       const pac = lib('pac-init');
+      const progress = makeProgress(extra);
       const log = [];
       const result = await pac.pushCodeApp(root, {
-        appDir,
-        emit: async ({ level, message }) => { log.push(`[${level}] ${message}`); },
+        appDir: dir,
+        emit: async ({ level, message }) => { const l = `[${level}] ${message}`; log.push(l); await progress(l); },
       });
       const text = [
         result.pushed ? '✓ pac code push succeeded.' : `✗ Push failed: ${result.error}`,
@@ -69,22 +78,24 @@ export function registerPacTools(server, defaultRoot) {
         'Log:',
         ...log,
       ].join('\n');
-      return { content: [{ type: 'text', text }] };
-    },
+      const res = { content: [{ type: 'text', text }] };
+      if (!result.pushed) res.isError = true;
+      return res;
+    }),
   );
 
   // ── list_pac_auth ───────────────────────────────────────────────────────────
-  // Lists active pac auth profiles so Claude knows which environments are ready.
+  // Lists active pac auth profiles so the host knows which environments are ready.
   server.tool(
     'list_pac_auth',
     {},
-    async () => {
+    safe(async () => {
       const pac = lib('pac-init');
       const profiles = await pac.listAuthProfiles();
       const text = profiles.length
         ? profiles.map((p) => `${p.isActive ? '★ active' : '·'} ${p.url || '(no url)'} — ${p.line}`).join('\n')
         : 'No pac auth profiles found. Call initialize_code_app with environmentUrl to authenticate.';
       return { content: [{ type: 'text', text }] };
-    },
+    }),
   );
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // PowerCodex MCP server entry point.
 // Connects the MCP server to stdio transport so any MCP-compatible host
-// (Claude Desktop, VS Code, Cursor, Claude Code) can drive PowerCodex.
+// (Claude Code, Claude Desktop, Cursor, VS Code, Antigravity) can drive PowerCodex.
 //
 // Add to Claude Desktop's claude_desktop_config.json:
 //   "mcpServers": {
@@ -18,8 +18,45 @@
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { createServer } from '../src/mcp/server.mjs';
 
-const projectRoot = process.env.POWERCODEX_ROOT || process.cwd();
-const server = createServer({ projectRoot });
-const transport = new StdioServerTransport();
+// ── stdout hygiene (Fix 2.4) ────────────────────────────────────────────────────
+// On stdio, process.stdout IS the JSON-RPC channel — a stray console.log in any
+// wrapped library would corrupt the stream and break the session. Redirect all
+// console.* to stderr so diagnostics never touch the protocol pipe. The transport
+// writes to process.stdout.write directly, so it is unaffected.
+for (const level of ['log', 'info', 'debug', 'warn', 'error']) {
+  console[level] = (...args) => process.stderr.write(args.map(String).join(' ') + '\n');
+}
 
-await server.connect(transport);
+const log = (msg) => process.stderr.write(`[powercodex-mcp] ${msg}\n`);
+
+const projectRoot = process.env.POWERCODEX_ROOT || process.cwd();
+
+// ── error boundary & graceful shutdown (Fix 0.1) ────────────────────────────────
+let transport;
+
+async function shutdown(reason, code = 0) {
+  log(`shutting down (${reason})`);
+  try { await transport?.close?.(); } catch { /* ignore */ }
+  process.exit(code);
+}
+
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('uncaughtException', (err) => {
+  log(`uncaughtException: ${err?.stack || err}`);
+  shutdown('uncaughtException', 1);
+});
+process.on('unhandledRejection', (err) => {
+  log(`unhandledRejection: ${err?.stack || err}`);
+  shutdown('unhandledRejection', 1);
+});
+
+try {
+  const server = createServer({ projectRoot });
+  transport = new StdioServerTransport();
+  await server.connect(transport);
+  log(`connected · root ${projectRoot}`);
+} catch (err) {
+  log(`failed to start: ${err?.stack || err}`);
+  process.exit(1);
+}

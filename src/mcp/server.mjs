@@ -3,6 +3,7 @@
 // This file is the single wiring point — no business logic lives here.
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { version } from './lib/version.mjs';
 import { registerDataverseTools } from './tools/dataverse.mjs';
 import { registerLifecycleTools } from './tools/lifecycle.mjs';
 import { registerScaffoldTools } from './tools/scaffold.mjs';
@@ -16,7 +17,7 @@ export function createServer({ projectRoot } = {}) {
 
   const server = new McpServer({
     name: 'powercodex',
-    version: '0.2.0',
+    version, // single source of truth: package.json (Fix 2.3)
   });
 
   registerDataverseTools(server, root);

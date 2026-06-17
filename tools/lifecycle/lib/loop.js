@@ -35,6 +35,11 @@ async function runLoop(root, opts = {}) {
   const emit = async (event) => {
     const record = busEmit(root, event);
     if (liveRender) render(root);
+    // Forward every event to the caller's listener (MCP progress, CLI streaming, etc.).
+    // Wrapped in try/catch so a listener error never derails the loop.
+    if (typeof opts.emit === 'function') {
+      try { await opts.emit(record || event); } catch { /* listener errors are non-fatal */ }
+    }
     // Honor a dashboard "pause" between every event.
     if (opts.isPaused) {
       while (opts.isPaused()) await sleep(150);
@@ -59,6 +64,9 @@ async function runLoop(root, opts = {}) {
   const realMode = !!eng.real;
   const summary = { rotations: 0, specsRun: 0, selfHeals: 0, observations: 0, stopped: false, mode: eng.mode, fixMode };
 
+  // Everything from here runs inside try/finally so the real-mode browser (CDP) is
+  // always released — on normal completion, a thrown error, or a duration-cap abort.
+  try {
   // Step 0 — intake + rights gate
   await emit({ rotation: 0, stage: 0, agent: 'intake', level: 'info', message: 'Project start · dashboard opened, intake gate active' });
   const goal = opts.goal || 'Describe what the app should do for its users';
@@ -115,6 +123,15 @@ async function runLoop(root, opts = {}) {
   for (let r = 1; r <= maxRotations; r += 1) {
     summary.rotations = r;
 
+    // Wall-clock guardrail: an MCP duration cap (or any caller) can abort between
+    // rotations so a long real run stops cleanly instead of being killed by a host
+    // timeout (which would skip eng.close() below).
+    if (opts.shouldAbort && opts.shouldAbort()) {
+      await emit({ rotation: r, stage: 0, agent: 'loop', level: 'warn', message: 'Duration cap reached → stopping before next rotation' });
+      summary.stopped = true;
+      break;
+    }
+
     // Step 1 — plan
     await emit({ rotation: r, stage: 1, agent: 'planner', level: 'info', message: 'Authoring HTML spec artifact (Now→After, recommendation, questions)' });
     await emit({ rotation: r, stage: 1, agent: 'planner', level: 'good', message: 'Artifact ready · "I am completely ready, I have no more questions to ask."' });
@@ -123,7 +140,7 @@ async function runLoop(root, opts = {}) {
     // until the maker approves (e.g. presses "Build this"). A bounded wait keeps an
     // unattended run from hanging forever — it escalates instead of building unasked.
     if (opts.isApproved) {
-      const okToBuild = await waitForApproval(opts.isApproved, opts.isPaused, emit, r);
+      const okToBuild = await waitForApproval(opts.isApproved, opts.isPaused, emit, r, { isRejected: opts.isRejected, shouldAbort: opts.shouldAbort });
       if (!okToBuild) {
         await emit({ rotation: r, stage: 2, agent: 'planner', level: 'warn', message: 'No approval within the wait window → stopping before any build' });
         summary.stopped = true;
@@ -234,7 +251,7 @@ async function runLoop(root, opts = {}) {
             data: { fixMode: 'diff', failures: result.failures, needsApproval: true },
           });
           if (opts.isApproved) {
-            const approved = await waitForApproval(opts.isApproved, opts.isPaused, emit, r, { timeoutMs: 300000 });
+            const approved = await waitForApproval(opts.isApproved, opts.isPaused, emit, r, { timeoutMs: 300000, isRejected: opts.isRejected, shouldAbort: opts.shouldAbort });
             if (approved) {
               await emit({ rotation: r, stage: 5, agent: 'e2e-tester', level: 'info', message: 'Diff approved · re-running tests' });
               if (eng.heal) await eng.heal({ emit, rotation: r, failures: result.failures });
@@ -313,7 +330,6 @@ async function runLoop(root, opts = {}) {
     level: summary.stopped ? 'warn' : 'good',
     message: summary.stopped ? 'Loop stopped (guardrail / escalation to you)' : 'Loop complete · green & matches approved MVP',
   });
-  if (eng.close) await eng.close(); // release the CDP connection in real mode (no-op when simulated)
 
   // Fold the real build outcome back into the comprehensive plan document so the saved
   // plan records what was actually created and whether it verified — making it learnable.
@@ -339,8 +355,10 @@ async function runLoop(root, opts = {}) {
       /* re-rendering the plan must never affect the loop's result */
     }
   }
-
-  if (liveRender) render(root);
+  } finally {
+    if (eng.close) await eng.close(); // release the CDP connection in real mode (no-op when simulated)
+    if (liveRender) render(root);
+  }
   return summary;
 }
 
@@ -378,13 +396,16 @@ function resolveTasks(opts, root) {
 }
 
 // Block at the Approve stage until isApproved() returns true, honoring pause and a
-// bounded timeout. Returns true when approved, false if the window elapses. The first
-// poll short-circuits the common case (chat's Build = pre-approved) with no waiting.
-async function waitForApproval(isApproved, isPaused, emit, rotation, { timeoutMs = 600000, pollMs = 200 } = {}) {
+// bounded timeout. Returns true when approved, false if the window elapses, the caller
+// rejects (isRejected), or the run is aborted (shouldAbort). The first poll
+// short-circuits the common case (chat's Build = pre-approved) with no waiting.
+async function waitForApproval(isApproved, isPaused, emit, rotation, { timeoutMs = 600000, pollMs = 200, isRejected, shouldAbort } = {}) {
   if (isApproved()) return true;
   await emit({ rotation, stage: 2, agent: 'planner', level: 'info', message: 'Waiting for your approval to build (press “Build this”)' });
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
+    if (isRejected && isRejected()) return false;
+    if (shouldAbort && shouldAbort()) return false;
     if (isPaused) {
       while (isPaused()) await sleep(150);
     }
