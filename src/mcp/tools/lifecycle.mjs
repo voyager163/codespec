@@ -96,6 +96,14 @@ export function registerLifecycleTools(server, defaultRoot) {
       const { runLoop } = lib('loop');
       pruneSessions();
 
+      // Abort any unsettled session already running for this root so its runLoop
+      // stops at the next rotation boundary and its managed browser is released.
+      const existing = sessions.get(root);
+      if (existing && !existing.settled) {
+        existing.aborted = true;
+        existing.checkpoint.resolve(); // unblock any call waiting on the old session
+      }
+
       const session = {
         id: `loop-${Date.now().toString(36)}`,
         status: 'running',
@@ -103,6 +111,7 @@ export function registerLifecycleTools(server, defaultRoot) {
         cursor: 0,
         approved: false,
         rejected: false,
+        aborted: false,
         settled: false,
         summary: null,
         error: null,
@@ -138,7 +147,7 @@ export function registerLifecycleTools(server, defaultRoot) {
         env: environmentId,
         isApproved: fixMode === 'diff' ? () => session.approved : undefined,
         isRejected: () => session.rejected,
-        shouldAbort: () => Date.now() > session.deadline,
+        shouldAbort: () => session.aborted || Date.now() > session.deadline,
         emit,
       }).then((summary) => {
         session.summary = summary;
@@ -209,6 +218,29 @@ export function registerLifecycleTools(server, defaultRoot) {
       .then(() => snapshot(session))
       .finally(() => { session.progress = noop; });
   }
+
+  // ── stop_lifecycle_loop ─────────────────────────────────────────────────────
+  // Request an orderly abort of a running loop. The loop stops at the next
+  // rotation boundary (or approval gate) so in-flight browser actions finish
+  // cleanly and the managed Edge profile is properly released.
+  server.tool(
+    'stop_lifecycle_loop',
+    {
+      projectDir: z.string().optional().describe('Project root matching the running loop'),
+    },
+    safe(async ({ projectDir }) => {
+      const root = resolveProjectDir(projectDir, defaultRoot, { label: 'projectDir' });
+      const session = sessions.get(root);
+      if (!session) {
+        return { content: [{ type: 'text', text: 'No lifecycle loop is running for this project.' }] };
+      }
+      if (session.settled) return snapshot(session);
+
+      session.aborted = true;
+      session.checkpoint.resolve(); // unblock any call currently awaiting a gate
+      return { content: [{ type: 'text', text: `Stop requested for session ${session.id}. The loop will halt at the next rotation boundary and release any open browser.` }] };
+    }),
+  );
 
   // ── get_lifecycle_state ─────────────────────────────────────────────────────
   server.tool(

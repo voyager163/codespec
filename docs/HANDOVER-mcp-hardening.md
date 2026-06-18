@@ -89,14 +89,13 @@ Live stdio boot (clean JSON-RPC on stdout, diagnostics on stderr) was verified m
 Ordered by priority. Items 1–2 are the recommended next commit; 3 is a known limit.
 
 ### Worth fixing
-1. **Concurrent `start_lifecycle_loop` on the same root orphans the old run.**
-   `start` does `sessions.set(root, newSession)` but never stops the old detached
-   `runLoop` — in real mode that's a **second browser**, with the first parked at an
-   unreachable gate until its internal timeout. Fix: before starting, if an unsettled
-   session exists, refuse OR set an `aborted` flag the old session's `shouldAbort` reads.
-   (~15 lines, in `src/mcp/tools/lifecycle.mjs`.)
-2. **No way to stop a running loop.** `reject_fix` only works at a gate. Add a
-   `stop_lifecycle_loop` tool that sets the same abort flag as #1. (Natural companion to #1.)
+1. ~~**Concurrent `start_lifecycle_loop` on the same root orphans the old run.**~~ **Fixed.**
+   `session.aborted = true` is set on the existing unsettled session before starting a new one;
+   `shouldAbort` now checks `session.aborted || Date.now() > session.deadline`. The old
+   session's checkpoint is also resolved so any waiting call returns immediately.
+2. ~~**No way to stop a running loop.**~~ **Fixed.** `stop_lifecycle_loop` tool added — sets
+   `session.aborted = true` and resolves the checkpoint. Documented in `mcp-user-guide.html`.
+   Tool count updated to 12. Coverage test updated.
 3. **Duration cap is not a hard kill.** `shouldAbort` is only checked at rotation
    boundaries / approval polls, not during an in-flight browser action. A hung CDP call
    won't be bounded by `maxDurationMs`. True hard-kill needs cooperative cancellation

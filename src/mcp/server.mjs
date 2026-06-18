@@ -8,8 +8,11 @@ import { registerDataverseTools } from './tools/dataverse.mjs';
 import { registerLifecycleTools } from './tools/lifecycle.mjs';
 import { registerScaffoldTools } from './tools/scaffold.mjs';
 import { registerPacTools } from './tools/pac.mjs';
+import { registerLearningTool } from './tools/learning.mjs';
 import { registerStateResource } from './resources/state.mjs';
 import { registerPlansResource } from './resources/plans.mjs';
+import { registerSkillsResource } from './resources/skills.mjs';
+import { registerMemoryResource } from './resources/memory.mjs';
 import { registerOpsxPrompts } from './prompts/opsx.mjs';
 
 export function createServer({ projectRoot } = {}) {
@@ -24,8 +27,11 @@ export function createServer({ projectRoot } = {}) {
   registerLifecycleTools(server, root);
   registerScaffoldTools(server, root);
   registerPacTools(server, root);
+  registerLearningTool(server, root);
   registerStateResource(server, root);
   registerPlansResource(server, root);
+  registerSkillsResource(server, root);
+  registerMemoryResource(server, root);
   registerOpsxPrompts(server, root);
 
   return server;

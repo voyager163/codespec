@@ -35,22 +35,191 @@ test('lists all expected tools', async () => {
   try {
     const names = (await client.listTools()).tools.map((t) => t.name).sort();
     for (const expected of [
-      'start_lifecycle_loop', 'approve_fix', 'reject_fix', 'get_lifecycle_state',
+      'start_lifecycle_loop', 'approve_fix', 'reject_fix', 'stop_lifecycle_loop', 'get_lifecycle_state',
       'dataverse_init_schema', 'dataverse_apply_schema', 'dataverse_get_state',
       'scaffold_project', 'initialize_code_app', 'push_code_app', 'list_pac_auth',
+      'log_learning',
     ]) {
       assert.ok(names.includes(expected), `missing tool: ${expected}`);
     }
   } finally { await close(); }
 });
 
-test('lists resources (state + plans)', async () => {
+test('lists resources (state + plans + skills + memory + rules)', async () => {
   const root = tmpProject();
   const { client, close } = await connect(root);
   try {
     const names = (await client.listResources()).resources.map((r) => r.name);
     assert.ok(names.includes('lifecycle-state'));
     assert.ok(names.includes('plans-list'));
+    assert.ok(names.includes('skills-list'));
+    assert.ok(names.includes('memory-index'));
+    assert.ok(names.includes('harness-rules'));
+  } finally { await close(); }
+});
+
+test('skills-list returns empty array when .powerplatform is absent', async () => {
+  const root = tmpProject();
+  const { client, close } = await connect(root);
+  try {
+    const res = await client.readResource({ uri: 'powercodex://skills' });
+    const list = JSON.parse(res.contents[0].text);
+    assert.deepEqual(list, []);
+  } finally { await close(); }
+});
+
+test('skills-list discovers SKILL.md files under .powerplatform', async () => {
+  const root = tmpProject();
+  const skillDir = path.join(root, '.powerplatform', 'my-skill');
+  fs.mkdirSync(skillDir, { recursive: true });
+  fs.writeFileSync(path.join(skillDir, 'SKILL.md'), '# My Skill\nDo the thing.');
+  const { client, close } = await connect(root);
+  try {
+    const res = await client.readResource({ uri: 'powercodex://skills' });
+    const list = JSON.parse(res.contents[0].text);
+    assert.ok(list.some((s) => s.name === 'my-skill'), 'my-skill should appear in skills list');
+    assert.ok(list.some((s) => s.uri === 'powercodex://skills/my-skill'));
+  } finally { await close(); }
+});
+
+test('skill-by-name returns SKILL.md content', async () => {
+  const root = tmpProject();
+  const skillDir = path.join(root, '.powerplatform', 'dataverse-specialist');
+  fs.mkdirSync(skillDir, { recursive: true });
+  fs.writeFileSync(path.join(skillDir, 'SKILL.md'), '# Dataverse Specialist\nManage tables.');
+  const { client, close } = await connect(root);
+  try {
+    const res = await client.readResource({ uri: 'powercodex://skills/dataverse-specialist' });
+    assert.match(res.contents[0].text, /Dataverse Specialist/);
+  } finally { await close(); }
+});
+
+test('skill-by-name returns not-found message for missing skill', async () => {
+  const root = tmpProject();
+  const { client, close } = await connect(root);
+  try {
+    const res = await client.readResource({ uri: 'powercodex://skills/nonexistent' });
+    assert.match(res.contents[0].text, /not found/i);
+  } finally { await close(); }
+});
+
+test('harness-rules returns CLAUDE.md content when present', async () => {
+  const root = tmpProject();
+  fs.writeFileSync(path.join(root, 'CLAUDE.md'), '# PowerCodex Harness Rules\nRule 1: do the thing.');
+  const { client, close } = await connect(root);
+  try {
+    const res = await client.readResource({ uri: 'powercodex://rules' });
+    assert.match(res.contents[0].text, /PowerCodex Harness Rules/);
+  } finally { await close(); }
+});
+
+test('harness-rules returns not-found message when CLAUDE.md is absent', async () => {
+  const root = tmpProject();
+  const { client, close } = await connect(root);
+  try {
+    const res = await client.readResource({ uri: 'powercodex://rules' });
+    assert.match(res.contents[0].text, /No CLAUDE\.md/i);
+  } finally { await close(); }
+});
+
+test('memory-index returns not-found message when memory dir is absent', async () => {
+  const root = tmpProject();
+  const { client, close } = await connect(root);
+  try {
+    const res = await client.readResource({ uri: 'powercodex://memory' });
+    assert.match(res.contents[0].text, /No memory index found/i);
+  } finally { await close(); }
+});
+
+test('memory-by-filename rejects path traversal', async () => {
+  const root = tmpProject();
+  const { client, close } = await connect(root);
+  try {
+    const res = await client.readResource({ uri: 'powercodex://memory/..%2Fsecret.md' });
+    assert.match(res.contents[0].text, /not found|invalid filename/i);
+  } finally { await close(); }
+});
+
+test('learnings-index returns not-found message when Learning_Experience is absent', async () => {
+  const root = tmpProject();
+  const { client, close } = await connect(root);
+  try {
+    const res = await client.readResource({ uri: 'powercodex://learnings' });
+    assert.match(res.contents[0].text, /No Learning_Experience log found/i);
+  } finally { await close(); }
+});
+
+test('learnings-index returns LEARNINGS.md when present', async () => {
+  const root = tmpProject();
+  const leDir = path.join(root, 'Learning_Experience');
+  fs.mkdirSync(leDir, { recursive: true });
+  fs.writeFileSync(path.join(leDir, 'LEARNINGS.md'), '# Learnings Index\n| ID | Severity | Lesson | Rule |\n');
+  const { client, close } = await connect(root);
+  try {
+    const res = await client.readResource({ uri: 'powercodex://learnings' });
+    assert.match(res.contents[0].text, /Learnings Index/);
+  } finally { await close(); }
+});
+
+test('log_learning writes entry file and appends LEARNINGS.md row', async () => {
+  const root = tmpProject();
+  const leDir = path.join(root, 'Learning_Experience');
+  fs.mkdirSync(leDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(leDir, 'LEARNINGS.md'),
+    '# Learnings Index\n\n| ID | Severity | Lesson | Rule in one line |\n| --- | --- | --- | --- |\n\n<!-- Append new rows above this line. Newest at the bottom of the table. -->\n',
+  );
+  const { client, close } = await connect(root);
+  try {
+    const res = await client.callTool({
+      name: 'log_learning',
+      arguments: {
+        title: 'Hallucinated API method name',
+        what: 'Called a method that does not exist on the SDK.',
+        why: 'Did not grep for the method before assuming it existed.',
+        impact: 'Two wasted tool calls and a user correction.',
+        rule: 'Always grep for any method name before calling it.',
+        severity: 'major',
+        area: 'research',
+        projectDir: root,
+      },
+    });
+    const txt = res.content[0].text;
+    assert.match(txt, /L001/);
+    assert.match(txt, /hallucinated-api-method-name/);
+
+    // Entry file must exist.
+    const files = fs.readdirSync(leDir);
+    assert.ok(files.some((f) => f.startsWith('L001-')), 'L001 entry file should exist');
+
+    // LEARNINGS.md must have the new row.
+    const index = fs.readFileSync(path.join(leDir, 'LEARNINGS.md'), 'utf8');
+    assert.match(index, /L001/);
+    assert.match(index, /Hallucinated API method name/);
+  } finally { await close(); }
+});
+
+test('log_learning auto-increments ID on second entry', async () => {
+  const root = tmpProject();
+  const leDir = path.join(root, 'Learning_Experience');
+  fs.mkdirSync(leDir, { recursive: true });
+  fs.writeFileSync(path.join(leDir, 'LEARNINGS.md'), '# Learnings\n| ID | Severity | Lesson | Rule in one line |\n| --- | --- | --- | --- |\n<!-- Append new rows above this line. Newest at the bottom of the table. -->\n');
+
+  const args = (n) => ({
+    title: `Mistake number ${n}`,
+    what: 'Something went wrong.',
+    why: 'A reasoning gap.',
+    impact: 'Minor cost.',
+    rule: 'Do the right thing next time.',
+    severity: 'minor',
+    projectDir: root,
+  });
+
+  const { client, close } = await connect(root);
+  try {
+    await client.callTool({ name: 'log_learning', arguments: args(1) });
+    const res2 = await client.callTool({ name: 'log_learning', arguments: args(2) });
+    assert.match(res2.content[0].text, /L002/);
   } finally { await close(); }
 });
 

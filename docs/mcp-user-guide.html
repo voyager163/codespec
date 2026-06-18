@@ -247,7 +247,7 @@
   <div class="hero-meta">
     <span class="badge purple">v0.2.0</span>
     <span class="badge blue">MCP Protocol</span>
-    <span class="badge green">11 Tools</span>
+    <span class="badge green">12 Tools</span>
     <span class="badge green">2 Resources</span>
     <span class="badge">Prompts</span>
   </div>
@@ -669,6 +669,29 @@ Show me the current Dataverse state for this project.</pre>
           <p>
             The counterpart to <code>approve_fix</code>: declines the pending fix/build so the
             loop stops cleanly instead of proceeding. Use it when the diff isn't acceptable.
+          </p>
+          <div class="params">
+            <div class="param-row">
+              <span class="param-name">projectDir</span>
+              <span class="param-type">string <span class="param-opt">optional</span></span>
+              <span class="param-desc">Must match the <code>projectDir</code> passed to the running loop.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- stop_lifecycle_loop -->
+      <div class="tool-block">
+        <div class="tool-header">
+          <span class="tool-name">stop_lifecycle_loop</span>
+          <span class="tool-badge tool">tool</span>
+        </div>
+        <div class="tool-body">
+          <p>
+            Requests an orderly abort of a running loop. The loop halts at the next rotation
+            boundary so any in-flight browser action finishes cleanly and the managed Edge
+            profile is properly released. If no session is active, returns a "not running"
+            message. If the session has already settled, returns its final snapshot.
           </p>
           <div class="params">
             <div class="param-row">
