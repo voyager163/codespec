@@ -6,7 +6,7 @@ This change ships that discipline **into every connected agent automatically**, 
 
 ## What Changes
 
-- Add a self-contained **harness** module (`tools/lifecycle/lib/harness.js`, zero-dependency) that composes a compact, provider-agnostic system preamble from two blocks: a **godmode mode router** and a **codeapps skill router**. Both are distilled to behavioural rules that reference no external skills, so a connected agent needs nothing pre-installed.
+- Add a self-contained **harness** module (`tools/lifecycle/lib/harness.js`, zero-dependency) that composes a compact, provider-agnostic system preamble as a **de-duplicated blend of five sources**: an always-on **process spine** (superpowers + ponytail) and **mode router** (godmode, which already wraps gstack + ponytail), plus conditional routers for **codeapps** (Power Platform), **impeccable** (UI craft), **gstack** (end-to-end verification), and **openspec** (change workflow). Every block is distilled to behavioural rules that reference no external skill, so a connected agent needs nothing pre-installed; each block also points the agent at its full source file to load when readable in the workspace.
 - Inject the composed harness at every provider send-site (`chat.js`, `agent.js`, `cockpit.js`, `codegen.js`, `stories.js`) — prepended as a clearly-labelled block, on substantive turns only (greetings/chit-chat are skipped for token thrift).
 - Add light deterministic detectors: `detectMode(taskText)` maps the existing intent taxonomy onto godmode modes, and a Power-Platform detector picks the single matching codeapps skill whose condensed guidance is appended. The model may self-route from the injected menu; detectors only bias.
 - Tell the agent to load the full `.powerplatform/<skill>/SKILL.md` when it is readable in the workspace (graceful full fidelity), otherwise apply the condensed guidance — the seam into P2.
@@ -32,3 +32,4 @@ This change ships that discipline **into every connected agent automatically**, 
 - Updates `lib/selftest.js` with harness assertions.
 - Ships into `templates/starter/tools/lifecycle/` so generated projects inherit it (matching the `add-lifecycle-loop` precedent).
 - Does **not** write or overwrite any `CLAUDE.md` or file in the user's workspace — that is P2 and a godmode guardrail. P1 is prompt-injection only.
+- P1 distils each source's **principles** into PowerCodex's own words (no third-party files shipped). Redistributing the actual plugin/skill files for full fidelity is deferred to **P2** and requires a per-source licence check (godmode/gstack terms, superpowers, impeccable Apache-2.0, ponytail, codeapps MIT).
