@@ -12,6 +12,8 @@
 // It talks to the same provider bridge the cockpit uses, so it inherits Claude Code /
 // Copilot when their CLIs are present and the simulated brain otherwise — always answering.
 const providers = require('./providers');
+const harness = require('./harness');
+const rightsGate = require('./rights');
 
 // The plan-authoring brain — used only when the turn is classified as a build request.
 const PLAN_SYSTEM = [
@@ -98,8 +100,13 @@ function classifyIntent(message, history) {
   return 'plan';
 }
 
-function buildPrompt({ system, message, history, memory } = {}) {
-  const lines = [system || OPEN_SYSTEM, ''];
+function buildPrompt({ system, message, history, memory, rights, intent } = {}) {
+  const lines = [];
+  // Prepend the self-contained engineering harness (godmode + codeapps + craft/verify)
+  // ahead of the app's own system prompt. Empty on greetings or when consent is off.
+  const h = harness.compose({ taskText: message, intent, rights });
+  if (h) lines.push(h, '');
+  lines.push(system || OPEN_SYSTEM, '');
   const mem = String(memory || '').trim();
   if (mem) {
     lines.push('What you already know about this project (use it; do not repeat it back verbatim):');
@@ -180,10 +187,16 @@ async function respond(root, { message, history, providerId, memory } = {}) {
   const intent = classifyIntent(message, history);
   const wantsPlan = intent === 'plan';
   const system = wantsPlan ? PLAN_SYSTEM : OPEN_SYSTEM;
+  let rights = null;
+  try {
+    rights = rightsGate.load(root);
+  } catch {
+    /* default-on / fail-open in compose */
+  }
 
   let text = '';
   try {
-    const res = await adapter.send({ prompt: buildPrompt({ system, message, history, memory }), history, timeoutMs: 45000 });
+    const res = await adapter.send({ prompt: buildPrompt({ system, message, history, memory, rights, intent }), history, timeoutMs: 45000 });
     text = (res && res.text) || '';
   } catch {
     text = '';

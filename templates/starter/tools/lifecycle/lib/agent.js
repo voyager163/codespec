@@ -17,6 +17,8 @@ const providers = require('./providers');
 const { classifyIntent } = require('./chat');
 const artifacts = require('./artifacts');
 const memory = require('./memory');
+const harness = require('./harness');
+const rightsGate = require('./rights');
 
 function oneLine(s) {
   return String(s == null ? '' : s).replace(/\s+/g, ' ').trim();
@@ -32,8 +34,13 @@ const AGENT_SYSTEM = [
   '- If you produce a standalone HTML deliverable, wrap it in a ```html fenced block so it can be previewed.',
 ].join('\n');
 
-function buildAgentPrompt({ message, history, memory: mem } = {}) {
-  const lines = [AGENT_SYSTEM, ''];
+function buildAgentPrompt({ message, history, memory: mem, rights } = {}) {
+  const lines = [];
+  // Agent mode is always a substantive turn — prepend the engineering harness (unless
+  // the consent flag is off). Intent 'act' since the agent executes against the repo.
+  const h = harness.compose({ taskText: message, intent: 'act', rights });
+  if (h) lines.push(h, '');
+  lines.push(AGENT_SYSTEM, '');
   const m = oneLine(mem);
   if (m) {
     lines.push('What you already know about this project:');
@@ -102,10 +109,24 @@ async function run(root, { message, history, provider, emit, memory: mem } = {})
   }
 
   // 3) act / answer → drive the provider inside the workspace.
+  let rights = null;
+  try {
+    rights = rightsGate.load(root);
+  } catch {
+    /* default-on / fail-open in compose */
+  }
+  // Observability: post the harness routing decision to the bus (best-effort).
+  try {
+    if (harness.compose({ taskText: message, intent: 'act', rights })) {
+      say('info', harness.statusLine(harness.route(message, 'act')));
+    }
+  } catch {
+    /* the bus must never break the agent */
+  }
   let text = '';
   try {
     const res = await adapter.send({
-      prompt: buildAgentPrompt({ message, history, memory: mem }),
+      prompt: buildAgentPrompt({ message, history, memory: mem, rights }),
       history,
       cwd: root,
       timeoutMs: 120000,
