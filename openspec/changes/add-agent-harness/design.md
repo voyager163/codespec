@@ -36,8 +36,8 @@ turns, with light deterministic detectors that append only the relevant slice.
                          Approved_rights/harness (flag, default on)
                                         │ gate
 tools/lifecycle/lib/harness.js ── compose() ──► chat.js · agent.js · cockpit.js
-   (single source of truth)                     codegen.js · stories.js
-        │                                        (each prepends the labelled block)
+   (single source of truth)                     (the three agent-facing entry points
+        │                                         each prepend the labelled block)
         └── synced by scripts/sync-lifecycle.js ──► desktop/vendor/lifecycle/
 ```
 
@@ -152,10 +152,16 @@ is false, or on any internal error. Otherwise it returns:
 POWERCODEX HARNESS>>>
 ```
 
-Each send-site keeps its existing system string and **prepends** the block:
-- `chat.js buildPrompt` — for plan / answer / act (skip chat).
-- `agent.js buildAgentPrompt` — always (agent mode is substantive).
-- `cockpit.js`, `codegen.js`, `stories.js` — at their provider-send points.
+The harness is prepended at the three **agent-facing** entry points, each keeping its
+existing system string:
+- `chat.js buildPrompt` — for plan / answer / act turns (skip chat/greeting).
+- `agent.js buildAgentPrompt` — always (agent mode is substantive); `agent.run` also
+  emits the routing status line to the bus.
+- `cockpit.js handle` — classifies intent, prepends to the user's line.
+
+**Deliberately excluded:** `codegen.js aiAuthor` and `stories.js` are tightly-constrained
+internal generators (e.g. "return ONLY the .tsx file contents — no commentary"). Injecting
+the harness there would break their output contract, so they are left untouched.
 
 The labelled delimiter keeps the injection visible and trivially removable.
 

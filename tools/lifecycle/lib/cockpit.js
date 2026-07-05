@@ -5,6 +5,8 @@ const plans = require('./plans');
 const { load: loadRights, ensureRights, save: saveRights, approvalFile } = require('./rights');
 const { deriveState } = require('./state');
 const { reset } = require('./bus');
+const harness = require('./harness');
+const { classifyIntent } = require('./chat');
 
 // ── ANSI (best-effort; disabled when not a TTY or NO_COLOR) ──────────────────
 function paint(enabled) {
@@ -169,8 +171,16 @@ function createSession(root, opts = {}) {
 
     transcript.push({ role: 'user', text: line });
     let tool = null;
+    // Prepend the engineering harness to the user's line (empty on greetings / when off).
+    let rights = null;
+    try {
+      rights = loadRights(root);
+    } catch {
+      /* default-on / fail-open in compose */
+    }
+    const h = harness.compose({ taskText: line, intent: classifyIntent(line, transcript), rights });
     const res = await provider.send({
-      prompt: line,
+      prompt: h ? `${h}\n\n${line}` : line,
       history: transcript,
       onToken: io.onToken,
       onTool: (t) => {

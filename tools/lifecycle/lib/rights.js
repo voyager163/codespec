@@ -21,6 +21,10 @@ const DEFAULTS = {
   allowPush: false,
   allowAutoRespec: false,
   allowAutoApplyDefects: true,
+  // The agent harness (godmode + codeapps discipline injected into the connected
+  // agent) is on by default — the whole point is discipline without invoking a skill.
+  // Set false to fully disable injection; the agent then behaves as it did before.
+  allowHarness: true,
   grantedBy: 'user',
   grantedAt: null,
 };

@@ -408,6 +408,34 @@ async function selftest() {
       fs.rmSync(cgRoot, { recursive: true, force: true });
     }
 
+    // ── agent harness (P1) · godmode + codeapps + craft/verify/change blend ────
+    const harness = require('./harness');
+    check('harness routes a build request to build mode', harness.route('build a screen to track tasks', 'plan').mode === 'build');
+    check('harness routes a bug report to fix mode', harness.route('the save button is broken', 'act').mode === 'fix');
+    check('harness routes Dataverse work to the dataverse specialist', harness.route('add a Dataverse table for invoices', 'plan').codeapps === 'dataverse-specialist');
+    check('harness routes a connector task to the connector specialist', harness.route('add a SharePoint connector data source to the code app', 'plan').codeapps === 'connector-integrator');
+    check('harness flags UI work for the craft router', harness.route('polish the landing page layout and typography', 'act').ui === true);
+    check('harness flags a runnable surface for verification', harness.route('build a login form screen', 'plan').verify === true);
+    check('harness leaves a plain question unrouted', harness.route('what is the capital of France', 'answer').mode === 'plain');
+    const hOn = { allowHarness: true };
+    check('harness composes a non-empty block on a substantive turn', harness.compose({ taskText: 'build a tasks screen', intent: 'plan', rights: hOn }).includes('POWERCODEX HARNESS'));
+    check('harness skips greetings (chat intent)', harness.compose({ taskText: 'hi there', intent: 'chat', rights: hOn }) === '');
+    check('harness injects nothing when the consent flag is off', harness.compose({ taskText: 'build a tasks screen', intent: 'plan', rights: { allowHarness: false } }) === '');
+    check('harness fails open when rights are missing (default on)', harness.compose({ taskText: 'build a tasks screen', intent: 'plan', rights: null }).includes('POWERCODEX HARNESS'));
+    check('harness always carries the ponytail core + guardrails', /leanest|laziest/i.test(harness.compose({ taskText: 'build x', intent: 'plan', rights: hOn })) && /CLAUDE\.md/.test(harness.compose({ taskText: 'build x', intent: 'plan', rights: hOn })));
+    check('harness appends the codeapps essence for Power Platform tasks', /dataverse/i.test(harness.compose({ taskText: 'add a Dataverse table', intent: 'plan', rights: hOn })));
+    check('harness omits the codeapps block for non-Power-Platform tasks', !/CODEAPPS\//.test(harness.compose({ taskText: 'answer a general question about history', intent: 'answer', rights: hOn })));
+    check('harness never throws — always returns a string', typeof harness.compose({}) === 'string' && harness.compose({ taskText: null, intent: undefined }) !== undefined);
+    check('harness status line names the mode + codeapps skill', /Harness · build/.test(harness.statusLine(harness.route('build a Dataverse app', 'plan'))));
+    // Wiring: the prompt builders prepend the composed harness at the three agent-facing sites.
+    const agentMod = require('./agent');
+    check('agent-mode prompt includes the harness block', /POWERCODEX HARNESS/.test(agentMod.buildAgentPrompt({ message: 'build a tasks screen', rights: hOn })));
+    check('agent-mode prompt omits the harness when disabled', !/POWERCODEX HARNESS/.test(agentMod.buildAgentPrompt({ message: 'build a tasks screen', rights: { allowHarness: false } })));
+    const chatMod = require('./chat');
+    check('chat prompt includes the harness on a plan turn', /POWERCODEX HARNESS/.test(chatMod.buildPrompt({ system: 'x', message: 'build a tasks screen', intent: 'plan', rights: hOn })));
+    check('chat prompt has no harness on a greeting', !/POWERCODEX HARNESS/.test(chatMod.buildPrompt({ system: 'x', message: 'hello', intent: 'chat', rights: hOn })));
+    check('harness flag defaults to on in the consent gate', require('./rights').DEFAULTS.allowHarness === true);
+
     const passed = checks.filter(Boolean).length;
     const ok = checks.every(Boolean);
     console.log(`\n${ok ? 'PASS' : 'FAIL'} · ${passed}/${checks.length} checks · summary ${JSON.stringify(summary)}`);
