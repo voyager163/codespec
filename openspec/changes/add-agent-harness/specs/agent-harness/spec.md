@@ -1,123 +1,120 @@
 ## ADDED Requirements
 
-### Requirement: Self-Contained Harness Preamble
+### Requirement: Automatic Engineering Discipline
 
-PowerCodex SHALL compose a self-contained system preamble that encodes its
-engineering discipline and prepend it to the prompt sent to the connected agent, so
-the agent applies that discipline without the end user invoking a skill and without
-any skill being installed on the user's machine.
+On a *substantive request* — one that asks the connected agent to plan, build, act on,
+or answer about work, as opposed to a greeting or acknowledgement — PowerCodex SHALL
+convey its engineering discipline to that agent without the end user invoking any
+skill, and without relying on any skill being installed on the user's machine.
 
-#### Scenario: Harness composes on a substantive turn
+#### Scenario: Discipline is applied without invoking a skill
 
-- **WHEN** the harness is enabled and a substantive request (plan, act, answer, agent, or build) is processed
-- **THEN** `compose` SHALL return a non-empty block delimited by a `POWERCODEX HARNESS` marker
-- **AND** the block SHALL be prepended to the existing system prompt rather than replacing it.
+- **WHEN** a substantive request is handled while the harness is enabled
+- **THEN** the connected agent SHALL receive PowerCodex's engineering discipline as part of its working context
+- **AND** the end user SHALL NOT have had to invoke a skill to get it.
 
-#### Scenario: Non-substantive turns are skipped
+#### Scenario: No dependency on installed skills
 
-- **WHEN** the turn is a greeting or acknowledgement (intent `chat`)
-- **THEN** `compose` SHALL return an empty string
-- **AND** no harness block SHALL be added to the prompt.
+- **WHEN** the connected agent runs in a workspace where no PowerCodex skills are present
+- **THEN** the full engineering discipline SHALL still be conveyed from content PowerCodex carries itself.
 
-#### Scenario: Harness requires nothing installed
+#### Scenario: Greetings and acknowledgements are not augmented
 
-- **WHEN** the connected agent runs in a workspace with no PowerCodex skills present
-- **THEN** the composed block SHALL still contain the full mode-router guidance as inline rules
-- **AND** it SHALL NOT depend on any external skill file being loadable for its core behaviour.
+- **WHEN** the request is a greeting or acknowledgement rather than a substantive request
+- **THEN** no engineering discipline SHALL be added
+- **AND** the request SHALL be handled exactly as it is today.
 
-### Requirement: Godmode Mode Routing
+### Requirement: Mode Routing
 
-The harness SHALL instruct the agent to select exactly one engineering mode — build,
-fix, audit, ux-map, or sec-ops (or none for a plain task) — and apply that mode's
-discipline, including the principle that the leanest solution which still preserves
-validation, error handling, security, and accessibility is the finished one.
+PowerCodex SHALL bias the connected agent toward exactly one engineering mode —
+build, fix, audit, ux-map, sec-ops, or a plain task when none applies — chosen from
+the request, and SHALL convey that mode's discipline. That discipline SHALL express
+the principle that the leanest solution which still preserves validation, error
+handling, security, and accessibility is the finished one. Acceptance verifies that
+the relevant mode discipline is *conveyed*, not that the agent's output provably
+achieves any outcome.
 
-#### Scenario: A build request biases to build mode
+#### Scenario: A build request conveys build discipline
 
-- **WHEN** the task text describes building a new capability
-- **THEN** `detectMode` SHALL return `build`
-- **AND** the composed block SHALL include the build-mode discipline (honest MVP, lean, tests green).
+- **WHEN** the request describes building a new capability
+- **THEN** build-mode discipline SHALL be conveyed (cut to an honest MVP, stay lean, keep tests green).
 
-#### Scenario: A bug report biases to fix mode
+#### Scenario: A bug report conveys fix discipline
 
-- **WHEN** the task text reports something broken
-- **THEN** `detectMode` SHALL return `fix`
-- **AND** the composed block SHALL require a failing reproduction test before the fix is claimed done.
+- **WHEN** the request reports something broken
+- **THEN** fix-mode discipline SHALL be conveyed, including writing a failing reproduction before a fix is treated as done.
 
-#### Scenario: Guardrails are always present
+#### Scenario: An unmatched request stays a plain task
 
-- **WHEN** any harness block is composed
-- **THEN** it SHALL forbid overwriting the user's `CLAUDE.md`, cloning-as-setup, file-hiding, and prompt-logging telemetry.
+- **WHEN** the request matches no engineering mode
+- **THEN** no mode SHALL be forced
+- **AND** only the always-present discipline and guardrails SHALL be conveyed.
 
 ### Requirement: Codeapps Skill Routing
 
-When the task involves Power Platform code apps, the harness SHALL append routing
-guidance selecting the single matching codeapps specialist and SHALL direct the agent
-to load the full skill file when it is present in the workspace.
+When a request concerns Power Platform code apps, PowerCodex SHALL select the single
+matching codeapps specialist and convey its guidance, preferring the workspace's full
+skill file when that file is readable.
 
-#### Scenario: A Dataverse task routes to the dataverse specialist
+#### Scenario: Dataverse work routes to the Dataverse specialist
 
-- **WHEN** the task text concerns Dataverse tables, CRUD, or queries
-- **THEN** `pickCodeappsSkill` SHALL return `dataverse-specialist`
-- **AND** the composed block SHALL include that skill's condensed guidance.
+- **WHEN** the request concerns Dataverse tables, CRUD, or queries
+- **THEN** the Dataverse specialist's guidance SHALL be the one conveyed.
 
-#### Scenario: A non-Dataverse connector routes to the connector integrator
+#### Scenario: A non-Dataverse connector routes to the connector specialist
 
-- **WHEN** the task text concerns an Office 365, SQL, or SharePoint connector
-- **THEN** `pickCodeappsSkill` SHALL return `connector-integrator`.
+- **WHEN** the request concerns an Office 365, SQL, or SharePoint connector
+- **THEN** the connector specialist's guidance SHALL be the one conveyed.
 
 #### Scenario: Full skill file is preferred when present
 
-- **WHEN** a codeapps skill is selected
-- **THEN** the block SHALL instruct the agent to load `.powerplatform/<skill>/SKILL.md` for full fidelity when it is readable
-- **AND** to fall back to the condensed guidance when it is not.
+- **WHEN** a codeapps specialist is selected
+- **THEN** the agent SHALL be directed to load the full `.powerplatform/<skill>/SKILL.md` when it is readable in the workspace
+- **AND** to use the specialist's condensed guidance when it is not.
 
-#### Scenario: Non-Power-Platform tasks omit the codeapps block
+#### Scenario: Non-Power-Platform requests get no codeapps guidance
 
-- **WHEN** the task text has no Power Platform intent
-- **THEN** `detectCodeapps` SHALL return false
-- **AND** no codeapps block SHALL be appended.
+- **WHEN** the request has no Power Platform intent
+- **THEN** no codeapps specialist guidance SHALL be conveyed.
 
-### Requirement: Consent-Gated Injection
+### Requirement: Policy Guardrails
 
-The harness SHALL be governed by an `Approved_rights/harness` flag that defaults to
-on, and SHALL inject nothing when the flag is off.
+The conveyed discipline SHALL, in every mode, forbid a fixed set of unsafe actions.
+
+#### Scenario: Guardrails are always present
+
+- **WHEN** engineering discipline is conveyed for any substantive request
+- **THEN** it SHALL forbid overwriting the user's agent-instruction file (for example `CLAUDE.md`), cloning a repository as setup, hiding files to feign cleanliness, and recording the user's prompts to an external log.
+
+### Requirement: Consent Gate
+
+The harness SHALL be governed by a consent flag that defaults to enabled, and SHALL
+convey nothing when the flag is disabled.
 
 #### Scenario: Enabled by default
 
 - **WHEN** a project has no explicit harness setting
-- **THEN** the `harness` right SHALL default to true
-- **AND** substantive turns SHALL receive the harness block.
+- **THEN** the harness SHALL default to enabled
+- **AND** substantive requests SHALL receive the engineering discipline.
 
-#### Scenario: Disabling stops injection
+#### Scenario: Disabling restores prior behaviour exactly
 
-- **WHEN** `Approved_rights/harness` is false
-- **THEN** `compose` SHALL return an empty string for every turn
+- **WHEN** the harness flag is disabled
+- **THEN** no engineering discipline SHALL be conveyed for any request
 - **AND** the connected agent SHALL behave exactly as it did before this change.
-
-### Requirement: Injection Across Provider Sites
-
-Every place that assembles a provider prompt SHALL prepend the composed harness so
-behaviour is consistent regardless of entry point (chat, agent, cockpit, code
-generation, story derivation).
-
-#### Scenario: Chat, agent, and cockpit prompts include the harness
-
-- **WHEN** a substantive request is handled through chat, agent, or the cockpit with the harness enabled
-- **THEN** the prompt passed to the provider adapter SHALL contain the harness block.
 
 ### Requirement: Safe Degradation and Observability
 
-Harness composition SHALL never break the agent, and SHALL report its routing
-decision to the status bus.
+Conveying the discipline SHALL never prevent the agent from answering, and the
+routing decision SHALL be observable.
 
-#### Scenario: Composition failure degrades silently
+#### Scenario: Internal failure degrades to the original request
 
-- **WHEN** harness composition throws internally
-- **THEN** `compose` SHALL return an empty string
-- **AND** the turn SHALL proceed with the unmodified prompt.
+- **WHEN** PowerCodex cannot determine or convey the discipline for a request
+- **THEN** the request SHALL proceed unmodified
+- **AND** the agent SHALL still answer.
 
-#### Scenario: Routing decision is emitted
+#### Scenario: Routing decision is recorded
 
-- **WHEN** the harness is composed for a substantive turn
-- **THEN** a single status line naming the selected mode and codeapps skill SHALL be appended to the status bus.
+- **WHEN** engineering discipline is conveyed for a substantive request
+- **THEN** a single entry naming the selected mode and codeapps specialist (if any) SHALL be recorded to the existing append-only status bus (`.powercodex/live/status.json`).

@@ -5,5 +5,6 @@ One line per lesson. Read this at session start; treat each "How to apply" as a 
 | ID | Severity | Lesson | Rule in one line |
 | --- | --- | --- | --- |
 | [L001](./L001-verify-source-access-before-planning.md) | major | Planned against a private reference repo before confirming read access | Verify a source is reachable before designing on it; label inferred content as inferred. |
+| [L002](./L002-keep-openspec-requirements-behavioral.md) | minor | Leaked internal function names / mechanism into an OpenSpec requirements delta | Keep OpenSpec requirements behavioural + mechanism-agnostic; put function names, markers, and mechanism in design.md. |
 
 <!-- Append new rows above this line. Newest at the bottom of the table. -->
