@@ -267,7 +267,14 @@ async function selftest() {
     });
     check('scaffoldNewProject reports scaffolded:true on a clean exit', scOk.scaffolded === true);
     check('scaffoldNewProject resolves projectDir to targetDir/name', scOk.projectDir === path.join(scParent, 'demo-app'));
+    const scTraversal = await scaffoldCli.scaffoldNewProject(scParent, {
+      name: '../../etc',
+      emit: async () => {},
+      _binPath: fakeCliPath,
+    });
+    check('scaffoldNewProject sanitizes a path-traversal-shaped name before building projectDir', !scTraversal.projectDir || !scTraversal.projectDir.includes('..'));
     check('scaffoldNewProject relays [ok] lines as good-level progress', scLog.some((l) => l.startsWith('[good]') && l.includes('Copy starter template')));
+    check('create-powercodex.js is resolvable for the scaffold-cli (repo checkout)', !!scaffoldCli.binPath());
     const scMissing = await scaffoldCli.scaffoldNewProject(scParent, { name: 'x', emit: async () => {}, _binPath: null });
     check('scaffoldNewProject degrades honestly when the CLI is not available', scMissing.scaffolded === false && /not available/i.test(scMissing.error || ''));
     fs.rmSync(scParent, { recursive: true, force: true });

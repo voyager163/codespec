@@ -26,16 +26,17 @@ const LEVEL = { run: 'info', ok: 'good', skip: 'info', fail: 'bad' };
 // `_binPath` injects the CLI script path for deterministic tests (defaults to binPath()).
 function scaffoldNewProject(targetDir, { name, emit = async () => {}, _binPath } = {}) {
   return new Promise((resolve) => {
+    const cleanName = name ? String(name).replace(/[^a-zA-Z0-9 _-]/g, '').trim() : '';
     const cli = _binPath !== undefined ? _binPath : binPath();
     if (!cli) {
       resolve({ scaffolded: false, output: '', error: 'Full project scaffolding is not available here — the PowerCodex CLI isn\'t bundled with this build.' });
       return;
     }
-    if (!name) {
+    if (!cleanName) {
       resolve({ scaffolded: false, output: '', error: 'A project name is required.' });
       return;
     }
-    const child = spawn(process.execPath, [cli, name], { cwd: targetDir });
+    const child = spawn(process.execPath, [cli, cleanName], { cwd: targetDir });
     let out = '';
     let err = '';
     const onLine = (line) => {
@@ -55,7 +56,7 @@ function scaffoldNewProject(targetDir, { name, emit = async () => {}, _binPath }
         resolve({ scaffolded: false, output: out, error: err.trim() || `create-powercodex exited with code ${code}` });
         return;
       }
-      resolve({ scaffolded: true, projectDir: path.join(targetDir, name), output: out });
+      resolve({ scaffolded: true, projectDir: path.join(targetDir, cleanName), output: out });
     });
   });
 }
