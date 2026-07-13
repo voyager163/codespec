@@ -231,7 +231,14 @@ async function selftest() {
     check('live server serves the user guide at /guide', planServerChecks.guideOk);
 
     // ── scaffold-project: /api/action creates a new project + re-points the workspace ──
+    // The real bin/create-powercodex.js is NOT spawned in this fast selftest — we ensure this
+    // by passing a non-existent targetDir, which causes scaffoldProject()'s own fs.statSync
+    // check to fail fast (before it ever reaches scaffoldCli.scaffoldNewProject) with
+    // "That folder no longer exists." This guard gates the spawn, so the test is deterministic,
+    // network-free, and never mutates global npm state. The happy path (real CLI, real spawn,
+    // real scaffold) is covered by Task 3's unit test (fake CLI injection) and end-to-end runs.
     const scaffoldParent = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-scaffold-parent-'));
+    fs.rmSync(scaffoldParent, { recursive: true, force: true }); // deleted on purpose: forces scaffoldProject()'s own fs.statSync check to fail fast, before it ever reaches scaffoldCli.scaffoldNewProject()
     const scaffoldSrv = serve(root, { port: 0 });
     const scaffoldServerChecks = await new Promise((resolve) => {
       scaffoldSrv.on('listening', async () => {
@@ -244,13 +251,7 @@ async function selftest() {
         }
       });
     });
-    // The real bin/create-powercodex.js isn't spawned against a throwaway dir in this
-    // fast selftest (it needs npm/git and takes real seconds); assert the route exists
-    // and degrades honestly (never crashes, never fabricates success) when scaffolding
-    // can't complete in this sandbox — the true happy path is covered by Task 3's unit
-    // test (fake CLI) and Task 9's manual end-to-end run.
-    check('scaffold-project route exists and returns a well-formed response', scaffoldServerChecks.result && 'ok' in scaffoldServerChecks.result.json);
-    fs.rmSync(scaffoldParent, { recursive: true, force: true });
+    check('scaffold-project route fails fast on missing target folder without spawning real CLI', scaffoldServerChecks.result && scaffoldServerChecks.result.json.ok === false && /no longer exists/i.test(scaffoldServerChecks.result.json.error || ''));
 
     // ── /api/dataverse-state: read-only table list for the Add-datasource picker ──
     const dvStateRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-dvstate-'));
