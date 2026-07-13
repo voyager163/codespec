@@ -16,18 +16,6 @@ import { resolveProjectDir } from '../lib/resolve-root.mjs';
 
 const SEVERITY = ['minor', 'major', 'critical'];
 
-// Derive the next ID by scanning existing L-prefixed files.
-function nextId(learningsDir) {
-  if (!existsSync(learningsDir)) return 'L001';
-  const nums = require('node:fs').readdirSync(learningsDir)
-    .map((f) => f.match(/^L(\d+)-/))
-    .filter(Boolean)
-    .map((m) => parseInt(m[1], 10));
-  if (!nums.length) return 'L001';
-  const next = Math.max(...nums) + 1;
-  return `L${String(next).padStart(3, '0')}`;
-}
-
 export function registerLearningTool(server, defaultRoot) {
   server.tool(
     'log_learning',
