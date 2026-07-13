@@ -77,7 +77,7 @@ function classifyIntent(message, history) {
   if (/\b(add|wire up|connect|hook up)\b.*\b(data ?source|dataverse table|connector)\b/.test(g)) {
     return 'add-datasource';
   }
-  if (/\bpush (my changes|this|it)\b|\bdeploy (this|it)\b|\bpublish( (this|it))? to\b/.test(g)) {
+  if (/\bpush (my changes|this|it)\b|\bdeploy (this|it)\b|\bpublish (this|it)\b|\bpublish to\b/.test(g)) {
     return 'push';
   }
 
