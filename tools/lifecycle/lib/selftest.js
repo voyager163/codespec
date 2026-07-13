@@ -94,6 +94,7 @@ async function selftest() {
           const mvpAct = await req(port, 'POST', '/api/action', { type: 'propose-mvp', goal: 'track projects' });
           const reflectAct = await req(port, 'POST', '/api/action', { type: 'reflect', title: 'server lesson' });
           const pushBlocked = await req(port, 'POST', '/api/action', { type: 'push' });
+          const dsBlocked = await req(port, 'POST', '/api/action', { type: 'add-datasource', api: 'dataverse', table: 'cr_demo' });
           await req(port, 'POST', '/api/action', { type: 'rights', flag: 'allowPush', value: true });
           const dsBlockedThenAllowed = await req(port, 'POST', '/api/action', { type: 'add-datasource', api: 'dataverse', table: 'cr_demo' });
           const after = await req(port, 'GET', '/api/state');
@@ -105,6 +106,7 @@ async function selftest() {
               complianceComputed: after.json.intake.complianceDetail && after.json.intake.compliance >= 60,
               rightApplied: right.json.ok && after.json.intake.rights.allowBuild === true,
               pushGatedWhenOff: pushBlocked.json.ok === false && /allowPush|Publish/i.test(pushBlocked.json.error || ''),
+              addDatasourceGatedWhenOff: dsBlocked.json.ok === false && /allowPush|Publish/i.test(dsBlocked.json.error || ''),
               addDatasourceReachable: 'ok' in dsBlockedThenAllowed.json,
               emitShown: emitted.json.ok && after.json.feed.some((e) => e.agent === 'claude'),
               mvpAct: mvpAct.json.ok && !!mvpAct.json.path,
@@ -127,6 +129,7 @@ async function selftest() {
     check('POST /api/action reflect logs a lesson', serverChecks.reflectAct);
     check('state exposes computed insights', serverChecks.hasInsights);
     check('push is refused while allowPush is off', serverChecks.pushGatedWhenOff);
+    check('add-datasource is refused while allowPush is off', serverChecks.addDatasourceGatedWhenOff);
     check('add-datasource action is reachable via /api/action', serverChecks.addDatasourceReachable);
 
     // Pure-function + module checks for the refinement features.
