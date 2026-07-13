@@ -485,6 +485,12 @@ async function selftest() {
     check('addDataSource omits -t for a non-Dataverse connector with no table', !dsFakeRuns[1].includes('-t'));
     const dsMissingApi = await datasourceMod.addDataSource(dsRoot, { emit: async () => {}, _pac: dsFakePac });
     check('addDataSource refuses when no api/connector id is given', dsMissingApi.added === false && /api|connector/i.test(dsMissingApi.error || ''));
+    const dsPacUnreachable = { checkPac: async () => { throw new Error('pac CLI not found or not executable.'); }, runPac: async () => ({ code: 0, stdout: '', stderr: '' }) };
+    const dsCheckFail = await datasourceMod.addDataSource(dsRoot, { api: 'dataverse', table: 'cr_invoice', emit: async () => {}, _pac: dsPacUnreachable });
+    check('addDataSource returns an error (not a rejection) when pac is unreachable', dsCheckFail.added === false && /pac CLI not found/.test(dsCheckFail.error || ''));
+    const dsRejects = { checkPac: async () => '1.46', runPac: async () => ({ code: 1, stdout: '', stderr: 'Table logical name not found: cr_bad' }) };
+    const dsRunFail = await datasourceMod.addDataSource(dsRoot, { api: 'dataverse', table: 'cr_bad', emit: async () => {}, _pac: dsRejects });
+    check('addDataSource reports the CLI error when pac rejects the request', dsRunFail.added === false && /cr_bad/.test(dsRunFail.error || ''));
     fs.rmSync(dsRoot, { recursive: true, force: true });
 
     // ── Phase 1: live preview (preview.js) — honest-start / honest-degrade ─────
