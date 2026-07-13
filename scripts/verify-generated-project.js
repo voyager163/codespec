@@ -33,8 +33,12 @@ try {
   const promptCount = fs.readdirSync(promptsDir).filter((entry) => entry.endsWith('.prompt.md')).length;
   const skillCount = countDirectories(path.join(projectPath, '.github', 'skills'));
 
-  if (promptCount !== 12) {
-    throw new Error(`Expected 12 OPSX prompt files, found ${promptCount}.`);
+  const sourcePromptsDir = path.join(repoRoot, 'templates', 'github', 'prompts');
+  const expectedPromptCount = fs.readdirSync(sourcePromptsDir).filter((entry) => entry.endsWith('.prompt.md')).length;
+  const expectedSkillCount = countDirectories(path.join(repoRoot, 'templates', 'github', 'skills'));
+
+  if (promptCount !== expectedPromptCount) {
+    throw new Error(`Expected ${expectedPromptCount} OPSX prompt files (per templates/github/prompts), found ${promptCount}.`);
   }
 
   assertFile(path.join(promptsDir, '_html-artifact.md'));
@@ -48,8 +52,8 @@ try {
   assertDirectory(path.join(projectPath, 'automation', 'build-executor'));
   assertDirectory(path.join(projectPath, 'automation', 'e2e-suite'));
 
-  if (skillCount !== 11) {
-    throw new Error(`Expected 11 OpenSpec skill folders, found ${skillCount}.`);
+  if (skillCount !== expectedSkillCount) {
+    throw new Error(`Expected ${expectedSkillCount} OpenSpec skill folders (per templates/github/skills), found ${skillCount}.`);
   }
 
   const expectedConfig = fs.readFileSync(path.join(repoRoot, 'templates', 'openspec', 'config.yaml'), 'utf8');
