@@ -23,19 +23,30 @@ fs.cpSync(src, dst, {
 
 console.log('synced lifecycle →', path.relative(process.cwd(), dst));
 
-// The published starter is the canonical scaffold for desktop "Create a new app"
-// (decision D5). Vendor it beside the engine so desktop-born projects get the full
-// harness / e2e / data layout; scaffold.js resolves it at vendor/templates/starter.
-const tplSrc = path.resolve(__dirname, '..', '..', 'templates', 'starter');
-const tplDst = path.resolve(__dirname, '..', 'vendor', 'templates', 'starter');
-if (fs.existsSync(tplSrc)) {
-  fs.rmSync(tplDst, { recursive: true, force: true });
-  fs.mkdirSync(path.dirname(tplDst), { recursive: true });
-  fs.cpSync(tplSrc, tplDst, {
-    recursive: true,
-    filter: (s) => !SKIP.test(s),
-  });
-  console.log('synced starter →', path.relative(process.cwd(), tplDst));
+// Vendor the whole templates/ tree (starter + github OPSX prompts/skills + the fixed
+// openspec/config.yaml) and bin/create-powercodex.js, so "✨ New project" inside the
+// packaged app can spawn the exact same full scaffold the `powercodex` CLI produces
+// (one CLI, two entry points — decision D5, extended). scaffold-cli.js resolves the
+// vendored bin at vendor/bin/create-powercodex.js, which in turn resolves its own
+// template root at vendor/templates/ relative to itself — no path changes needed
+// inside create-powercodex.js itself.
+const templatesSrc = path.resolve(__dirname, '..', '..', 'templates');
+const templatesDst = path.resolve(__dirname, '..', 'vendor', 'templates');
+if (fs.existsSync(templatesSrc)) {
+  fs.rmSync(templatesDst, { recursive: true, force: true });
+  fs.mkdirSync(path.dirname(templatesDst), { recursive: true });
+  fs.cpSync(templatesSrc, templatesDst, { recursive: true, filter: (s) => !SKIP.test(s) });
+  console.log('synced templates →', path.relative(process.cwd(), templatesDst));
 } else {
-  console.warn('starter template not found at', tplSrc, '— desktop scaffold will fall back to the generic template');
+  console.warn('templates/ not found at', templatesSrc, '— desktop scaffold will fall back to the generic template, and "New project" will be unavailable');
+}
+
+const binSrc = path.resolve(__dirname, '..', '..', 'bin', 'create-powercodex.js');
+const binDst = path.resolve(__dirname, '..', 'vendor', 'bin', 'create-powercodex.js');
+if (fs.existsSync(binSrc)) {
+  fs.mkdirSync(path.dirname(binDst), { recursive: true });
+  fs.copyFileSync(binSrc, binDst);
+  console.log('synced create-powercodex.js →', path.relative(process.cwd(), binDst));
+} else {
+  console.warn('bin/create-powercodex.js not found — "New project" will be unavailable in this build');
 }
