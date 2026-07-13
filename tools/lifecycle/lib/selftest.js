@@ -819,6 +819,10 @@ async function selftest() {
       check(`canvas preview tab has a device-width toggle + open-in-browser (${label})`, /id="cvOpenBrowser"/.test(html) && /class="dev"/.test(html));
       check(`canvas has a preview loader separate from showUrlInCanvas, wired to the preview routes (${label})`, /function setPreviewFrame/.test(html) && /api\/preview\/start/.test(html) && /api\/preview\/status/.test(html));
       check(`preview loader keeps a localhost-only URL guard (rejects javascript:/data:) (${label})`, /function safePreviewUrl/.test(html) && html.includes('localhost):'));
+      check(`toolbar has a Push button gated on allowPush (${label})`, /id="pushBtn"/.test(html) && html.includes("rights.allowPush"));
+      check(`toolbar has an Add datasource button (${label})`, /id="datasourceBtn"/.test(html));
+      check(`Add-datasource panel lists Dataverse tables from /api/dataverse-state (${label})`, /api\/dataverse-state/.test(html) && /id="dsPanel"/.test(html));
+      check(`there is a Create new project entry point calling scaffold-project (${label})`, /id="newProjectBtn"/.test(html) && html.includes("'scaffold-project'"));
     }
 
     const passed = checks.filter(Boolean).length;

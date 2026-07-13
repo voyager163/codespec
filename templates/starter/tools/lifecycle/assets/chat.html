@@ -288,6 +288,9 @@
       <button class="iconbtn" id="openVSCodeBtn" title="Open this project in VS Code">⧉ VS Code</button>
       <button class="provchip" id="provChip" title="Which AI is answering — click to switch"><span class="br">🧠</span><span class="nm" id="provName">…</span><span style="color:var(--faint)">▾</span></button>
       <button class="iconbtn" id="canvasToggle" title="Show the canvas">🖼️ Canvas</button>
+      <button class="iconbtn" id="newProjectBtn" title="Create a brand-new PowerCodex project">✨ New project</button>
+      <button class="iconbtn" id="datasourceBtn" title="Wire up a Dataverse table or connector">🧩 Add datasource</button>
+      <button class="iconbtn" id="pushBtn" title="npm run build && pac code push" disabled>🚀 Push</button>
       <button class="statusbtn" id="statusBtn"><span class="d"></span><span class="stg" id="stStage">Starting…</span><span class="cv" id="stHint">status ▾</span></button>
     </div>
   </header>
@@ -374,6 +377,16 @@
       <div class="crumb" id="fpPath">…</div>
       <div class="fplist" id="fpList"></div>
       <div class="mf"><span class="hint">Browse below or paste a path. Pick the folder your app lives in — I’ll read it, then we chat.</span><button type="button" class="btn go" id="fpOpen" disabled>Open this folder</button></div>
+    </div>
+  </div>
+
+  <!-- add datasource -->
+  <div class="overlay" id="dsOverlay">
+    <div class="modal" id="dsPanel">
+      <div class="mh"><span>🧩</span><span class="t">Add a data source</span><button type="button" class="x" id="dsClose">✕</button></div>
+      <div class="fpbar"><select id="dsTableSelect"><option value="">— pick a Dataverse table —</option></select></div>
+      <div class="fpbar"><input id="dsConnectorInput" type="text" placeholder="…or a connector id, e.g. shared_sharepointonline" /></div>
+      <div class="mf"><span class="hint">Dataverse tables come from what's already been created via the browser flow. Other connectors need to exist in make.powerapps.com first.</span><button type="button" class="btn go" id="dsGo">Add data source</button></div>
     </div>
   </div>
 
@@ -640,6 +653,9 @@
     $('spCoverage').textContent = state.test && state.test.coverage!=null ? state.test.coverage+'%' : (state.intake && state.intake.compliance!=null ? state.intake.compliance+'%' : '—');
     $('spIssues').textContent = state.stopped ? 'needs you' : String((state.notifications||[]).filter(n=>n.kind==='approval').length);
     $('spLast').textContent = (state.feed && state.feed[0] && state.feed[0].message) ? state.feed[0].message.slice(0,42) : '—';
+    const rights = (state.intake && state.intake.rights) || {};
+    $('pushBtn').disabled = rights.allowPush !== true;
+    $('datasourceBtn').title = rights.allowPush === true ? 'Wire up a Dataverse table or connector' : 'Turn on "Publish to my environment" first';
   }
 
   // ---------- canvas ----------
@@ -995,6 +1011,54 @@
   $('treeRefresh').onclick = ()=> loadTree();
   makeSplit($('splitTree'),'left'); makeSplit($('splitCanvas'),'right');
   $('openVSCodeBtn').onclick = openInVSCode;
+
+  // ---------- Push ----------
+  $('pushBtn').onclick = async () => {
+    $('pushBtn').disabled = true;
+    bubble('me', 'Push 🚀');
+    const r = await api('push', {});
+    bubble('ai', r.ok ? '✅ Pushed to your environment.' : '⚠️ ' + esc(r.error || 'Push failed'));
+    if(app.treeRoot) loadTree();
+  };
+
+  // ---------- Add datasource ----------
+  async function openDatasourcePanel(){
+    $('dsOverlay').classList.add('open');
+    const sel = $('dsTableSelect');
+    sel.innerHTML = '<option value="">— pick a Dataverse table —</option>';
+    try {
+      const state = await (await fetch('/api/dataverse-state', {cache:'no-store'})).json();
+      (state.tables||[]).forEach(t => { if(t.logicalName){ const o=document.createElement('option'); o.value=t.logicalName; o.textContent=t.displayName+' ('+t.logicalName+')'; sel.appendChild(o); } });
+    } catch { /* picker still usable via the free-text connector field */ }
+  }
+  $('datasourceBtn').onclick = openDatasourcePanel;
+  $('dsClose').onclick = () => $('dsOverlay').classList.remove('open');
+  $('dsOverlay').onclick = (e) => { if(e.target===$('dsOverlay')) $('dsOverlay').classList.remove('open'); };
+  $('dsGo').onclick = async () => {
+    const table = $('dsTableSelect').value;
+    const connector = $('dsConnectorInput').value.trim();
+    $('dsOverlay').classList.remove('open');
+    bubble('me', table ? 'Add datasource: '+table : (connector ? 'Add datasource: '+connector : 'Add datasource'));
+    const r = await api('add-datasource', table ? {api:'dataverse', table} : {api: connector});
+    bubble('ai', r.ok ? '✅ Data source added.' : '⚠️ ' + esc(r.error || 'Could not add that data source'));
+  };
+
+  // ---------- Create new project ----------
+  $('newProjectBtn').onclick = async () => {
+    const name = prompt('Project name:');
+    if(!name) return;
+    let targetDir = null;
+    if(window.pcDesktop && window.pcDesktop.pickFolder) targetDir = await window.pcDesktop.pickFolder();
+    if(!targetDir) targetDir = prompt('Folder to create it in (absolute path):');
+    if(!targetDir) return;
+    bubble('me', 'New project: '+name);
+    const typing = showTyping();
+    const r = await api('scaffold-project', {targetDir, name});
+    typing.remove();
+    bubble('ai', r.ok ? '✅ Created "'+esc(name)+'" and switched to it. It's ready to build.' : '⚠️ ' + esc(r.error || 'Could not create the project'));
+    if(r.ok){ loadTree(); }
+  };
+
   $('setupRecheck').onclick = recheckSetup;
   $('setupSkip').onclick = ()=>{ app.skippedSetup=true; closeSetup(); };
   $('setupOverlay').onclick = (e)=>{ if(e.target===$('setupOverlay')){ app.skippedSetup=true; closeSetup(); } };
