@@ -18,13 +18,17 @@ Generated apps get a **data adapter layer** — the single most important new co
 ```
 src/data/
   types.ts          # entity types the agent derives from the user's idea
-  local.ts          # LocalDataSource: reads src/data/seed.json (mock data, per-entity)
+  local.ts          # LocalDataSource: a real local DB in the browser — seeds from
+                    #   src/data/seed.json on first run, then full CRUD persisted in
+                    #   localStorage per entity (each preview port is its own origin,
+                    #   so every app gets an isolated store for free)
   dataverse.ts      # DataverseDataSource: @microsoft/power-apps generated service classes
   index.ts          # export const data: DataSource =
                     #   import.meta.env.VITE_POWERCODEX_LIVE === '1' ? dataverse : local
 ```
 
-- **Preview** (always): vite dev server, `VITE_POWERCODEX_LIVE` unset → local seed data. Never touches Dataverse. The agent generates `seed.json` rows that match the user's domain (not the generic id/title/owner/due/status table).
+- **Preview** (always): vite dev server, `VITE_POWERCODEX_LIVE` unset → the local DB. Never touches Dataverse. The agent generates `seed.json` rows that match the user's domain (not the generic id/title/owner/due/status table).
+- **The preview must be interactive, not a read-only template** (Manfred, 2026-07-13, D13): the user exercises real workflows in the running app — create, update, delete — and the changes persist across reloads, so they can *see how the app works* before publishing. `LocalDataSource` therefore implements the full `DataSource` CRUD interface against the persisted store, and the Preview tab gets a small **"Reset sample data"** affordance that clears the store back to `seed.json`.
 - **Publish**: build runs with `VITE_POWERCODEX_LIVE=1` → Dataverse source. Table creation follows repo Rule 1 (browser UI + logical names registered via the dataverse-specialist skill); logical names land in `dataverse.json` and are injected into `dataverse.ts`.
 - Screens import only from `src/data` — they are identical in both modes. This is behaviorally what Lovable does with Supabase, translated to Dataverse.
 
@@ -69,7 +73,7 @@ New module `tools/lifecycle/lib/preview.js` — the only new engine file:
 
 **Phase 1 — Live preview.** `preview.js` + server endpoints + Preview/Code toggle + starter-template scaffold unification. *Exit: prompt → app visibly running on localhost with mock data; agent edit → HMR refresh.*
 
-**Phase 2 — Data seam.** Data-adapter pattern into starter + codegen; domain-shaped seed data from the plan; screens consume the adapter. *Exit: generated app renders user-domain data locally; switching the env flag compiles against the Dataverse source.*
+**Phase 2 — Data seam.** Data-adapter pattern into starter + codegen; domain-shaped seed data from the plan; screens consume the adapter; `LocalDataSource` is a persisted writable store (local DB), not read-only mocks. *Exit: generated app renders user-domain data locally; a row created/edited/deleted in the preview survives a reload; "Reset sample data" restores seed.json; switching the env flag compiles against the Dataverse source.*
 
 **Phase 3 — Real publish.** Publish button + preflight + register + push + live URL card; Dataverse Rule 1 flow for live-data apps; e2e-green gate. *Exit: one click from preview to a real Power Apps URL on a test environment.*
 

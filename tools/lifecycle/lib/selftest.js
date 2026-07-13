@@ -420,6 +420,17 @@ async function selftest() {
         tasks: [{ type: 'code.screen', name: 'My Screen!!', componentName: 'MyScreen', route: '/my', goal: 'x' }],
       });
       check('a normal screen name still writes inside src/pages/', safe[0] && safe[0].created === true && fs.existsSync(path.join(cgRoot, 'src', 'pages', 'my-screen.tsx')));
+
+      // Data seam: generated screens run on `@/data` (a real local db) so the preview is
+      // interactive and persists across reloads — not a static sample table. Building a
+      // screen must also materialize the seam so the `@/data` import resolves.
+      const scr = fs.readFileSync(path.join(cgRoot, 'src', 'pages', 'my-screen.tsx'), 'utf8');
+      check('generated screen imports the data seam (@/data), not an inline SAMPLE array', scr.includes('from "@/data"') && !/const SAMPLE/.test(scr));
+      check('generated screen is interactive (create/delete/reset against the seam)', /data\.create\(/.test(scr) && /data\.remove\(/.test(scr) && /data\.reset\(/.test(scr));
+      const seamIdx = path.join(cgRoot, 'src', 'data', 'index.ts');
+      check('data seam is materialized (src/data) so @/data resolves and the preview has a local db', fs.existsSync(seamIdx) && fs.existsSync(path.join(cgRoot, 'src', 'data', 'seed.json')));
+      const seedRows = JSON.parse(fs.readFileSync(path.join(cgRoot, 'src', 'data', 'seed.json'), 'utf8'));
+      check('seed.json holds valid Item rows for the local db', Array.isArray(seedRows) && seedRows.length > 0 && seedRows.every((r) => typeof r.id === 'number' && typeof r.title === 'string' && (r.status === 'Open' || r.status === 'Done')));
     } finally {
       fs.rmSync(cgRoot, { recursive: true, force: true });
     }

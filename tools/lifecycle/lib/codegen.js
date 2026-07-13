@@ -59,11 +59,16 @@ function isWithin(dir, target) {
 
 // ---- the deterministic screen generator ---------------------------------------
 
-// Produce a strict-TypeScript React screen implementing the capability flags against
-// inline sample data. Only the lines whose flags are on are emitted, so there are no
-// unused locals (the starter compiles with strict + noUnusedLocals).
+// Produce a strict-TypeScript React screen that runs against the app's data seam
+// (`@/data`). The screen is INTERACTIVE: it lists rows from the local preview store and
+// can add, edit (toggle status), delete, and reset them — every change persists across
+// reloads because the local source writes to localStorage. Capability flags only add
+// refinements (search, overdue highlight, per-user filter). Only the lines whose flags
+// are on are emitted, so there are no unused locals (the starter compiles with strict +
+// noUnusedLocals + noUnusedParameters).
 function generateScreen({ componentName, displayName, goal, capabilities = {}, items = [] }) {
   const c = capabilities;
+  const entity = entityFrom(goal, displayName);
   const L = []; // lines
   const p = (s = '') => L.push(s);
 
@@ -73,24 +78,11 @@ function generateScreen({ componentName, displayName, goal, capabilities = {}, i
     p('// Approved capabilities:');
     for (const it of items.slice(0, 8)) p('//   • ' + stripTags(it).replace(/\n/g, ' ').slice(0, 90));
   }
-  p('import { useMemo, useState } from "react"');
-  p('');
-  p('type Item = {');
-  p('  id: number');
-  p('  title: string');
-  p('  owner: string');
-  p('  due: string');
-  p('  status: "Open" | "Done"');
-  p('}');
+  p('import { useEffect, useMemo, useState } from "react"');
+  p('import { data, type Item, type NewItem } from "@/data"');
   p('');
   if (c.filterByUser) p('const CURRENT_USER = "you"');
-  p('const SAMPLE: Item[] = [');
-  p('  { id: 1, title: "First item", owner: "you", due: "2026-06-01", status: "Open" },');
-  p('  { id: 2, title: "Second item", owner: "alex", due: "2026-06-10", status: "Open" },');
-  p('  { id: 3, title: "Third item", owner: "you", due: "2026-05-20", status: "Done" },');
-  p('  { id: 4, title: "Fourth item", owner: "you", due: "2026-07-02", status: "Open" },');
-  p('  { id: 5, title: "Fifth item", owner: "sam", due: "2026-06-18", status: "Open" },');
-  p(']');
+  p('const EMPTY: NewItem = { title: "", owner: "you", due: "", status: "Open" }');
   p('');
   if (c.highlight) {
     p('function isOverdue(item: Item): boolean {');
@@ -99,39 +91,104 @@ function generateScreen({ componentName, displayName, goal, capabilities = {}, i
     p('');
   }
   p(`export default function ${componentName}() {`);
-  p('  const [items, setItems] = useState<Item[]>(SAMPLE)');
-  p('  const [query, setQuery] = useState("")');
+  p('  const [items, setItems] = useState<Item[]>([])');
+  p('  const [draft, setDraft] = useState<NewItem>(EMPTY)');
+  if (c.search) p('  const [query, setQuery] = useState("")');
+  p('');
+  p('  // Load the local db on mount; every mutation below keeps React state and the');
+  p('  // persisted store in sync, so a reload shows exactly what you left behind.');
+  p('  useEffect(() => {');
+  p('    data.list().then(setItems)');
+  p('  }, [])');
   p('');
   p('  const visible = useMemo(() => {');
   p('    let rows = items');
   if (c.filterByUser) p('    rows = rows.filter((r) => r.owner === CURRENT_USER)');
-  p('    if (query.trim()) {');
-  p('      const q = query.toLowerCase()');
-  p('      rows = rows.filter((r) => r.title.toLowerCase().includes(q))');
-  p('    }');
-  p('    rows = [...rows].sort((a, b) => a.due.localeCompare(b.due))');
-  p('    return rows');
-  p('  }, [items, query])');
-  p('');
-  if (c.rowAction) {
-    p('  function toggle(id: number) {');
-    p('    setItems((prev) =>');
-    p('      prev.map((r) => (r.id === id ? { ...r, status: r.status === "Done" ? "Open" : "Done" } : r)),');
-    p('    )');
-    p('  }');
-    p('');
+  if (c.search) {
+    p('    if (query.trim()) {');
+    p('      const q = query.toLowerCase()');
+    p('      rows = rows.filter((r) => r.title.toLowerCase().includes(q))');
+    p('    }');
   }
+  p('    return [...rows].sort((a, b) => a.due.localeCompare(b.due))');
+  p(c.search ? '  }, [items, query])' : '  }, [items])');
+  p('');
+  p('  async function add() {');
+  p('    if (!draft.title.trim()) return');
+  p('    const created = await data.create(draft)');
+  p('    setItems((prev) => [...prev, created])');
+  p('    setDraft(EMPTY)');
+  p('  }');
+  p('');
+  p('  async function toggle(id: number) {');
+  p('    const current = items.find((r) => r.id === id)');
+  p('    if (!current) return');
+  p('    const updated = await data.update(id, {');
+  p('      status: current.status === "Done" ? "Open" : "Done",');
+  p('    })');
+  p('    if (updated) {');
+  p('      const u = updated');
+  p('      setItems((prev) => prev.map((r) => (r.id === id ? u : r)))');
+  p('    }');
+  p('  }');
+  p('');
+  p('  async function remove(id: number) {');
+  p('    await data.remove(id)');
+  p('    setItems((prev) => prev.filter((r) => r.id !== id))');
+  p('  }');
+  p('');
+  p('  async function resetData() {');
+  p('    setItems(await data.reset())');
+  p('  }');
+  p('');
   // JSX
   p('  return (');
   p('    <div className="p-6 max-w-3xl mx-auto">');
   p(`      <h1 className="text-2xl font-semibold mb-1">${esc(displayName || componentName)}</h1>`);
   p(`      <p className="text-sm text-muted-foreground mb-4">${esc(oneLine(goal) || 'Your screen')}</p>`);
-  p('      <input');
-  p('        value={query}');
-  p('        onChange={(e) => setQuery(e.target.value)}');
-  p('        placeholder="Search…"');
-  p('        className="w-full mb-4 rounded-md border px-3 py-2 text-sm"');
-  p('      />');
+  p('');
+  p('      <div className="flex flex-wrap items-center gap-2 mb-4">');
+  p('        <input');
+  p('          value={draft.title}');
+  p('          onChange={(e) => setDraft({ ...draft, title: e.target.value })}');
+  p(`          placeholder="New ${entity}…"`);
+  p('          className="flex-1 min-w-40 rounded-md border px-3 py-2 text-sm"');
+  p('        />');
+  p('        <input');
+  p('          value={draft.owner}');
+  p('          onChange={(e) => setDraft({ ...draft, owner: e.target.value })}');
+  p('          placeholder="Owner"');
+  p('          className="w-32 rounded-md border px-3 py-2 text-sm"');
+  p('        />');
+  p('        <input');
+  p('          type="date"');
+  p('          value={draft.due}');
+  p('          onChange={(e) => setDraft({ ...draft, due: e.target.value })}');
+  p('          className="rounded-md border px-3 py-2 text-sm"');
+  p('        />');
+  p('        <button');
+  p('          onClick={add}');
+  p('          className="rounded-md border bg-primary text-primary-foreground px-3 py-2 text-sm hover:opacity-90"');
+  p('        >');
+  p(`          Add ${entity}`);
+  p('        </button>');
+  p('        <button');
+  p('          onClick={resetData}');
+  p('          className="ml-auto rounded-md border px-3 py-2 text-xs text-muted-foreground hover:bg-muted"');
+  p('        >');
+  p('          Reset sample data');
+  p('        </button>');
+  p('      </div>');
+  p('');
+  if (c.search) {
+    p('      <input');
+    p('        value={query}');
+    p('        onChange={(e) => setQuery(e.target.value)}');
+    p('        placeholder="Search…"');
+    p('        className="w-full mb-4 rounded-md border px-3 py-2 text-sm"');
+    p('      />');
+    p('');
+  }
   p('      <table className="w-full text-sm border-collapse">');
   p('        <thead>');
   p('          <tr className="text-left border-b">');
@@ -139,7 +196,7 @@ function generateScreen({ componentName, displayName, goal, capabilities = {}, i
   p('            <th className="py-2 pr-4">Owner</th>');
   p('            <th className="py-2 pr-4">Due</th>');
   p('            <th className="py-2 pr-4">Status</th>');
-  if (c.rowAction) p('            <th className="py-2 pr-4"></th>');
+  p('            <th className="py-2 pr-4"></th>');
   p('          </tr>');
   p('        </thead>');
   p('        <tbody>');
@@ -153,22 +210,26 @@ function generateScreen({ componentName, displayName, goal, capabilities = {}, i
   p('              <td className="py-2 pr-4">{r.owner}</td>');
   p('              <td className="py-2 pr-4">{r.due}</td>');
   p('              <td className="py-2 pr-4">{r.status}</td>');
-  if (c.rowAction) {
-    p('              <td className="py-2 pr-4">');
-    p('                <button');
-    p('                  onClick={() => toggle(r.id)}');
-    p('                  className="rounded-md border px-2 py-1 text-xs hover:bg-muted"');
-    p('                >');
-    p('                  {r.status === "Done" ? "Reopen" : "Mark done"}');
-    p('                </button>');
-    p('              </td>');
-  }
+  p('              <td className="py-2 pr-4 whitespace-nowrap">');
+  p('                <button');
+  p('                  onClick={() => toggle(r.id)}');
+  p('                  className="rounded-md border px-2 py-1 text-xs hover:bg-muted"');
+  p('                >');
+  p('                  {r.status === "Done" ? "Reopen" : "Mark done"}');
+  p('                </button>');
+  p('                <button');
+  p('                  onClick={() => remove(r.id)}');
+  p('                  className="ml-2 rounded-md border px-2 py-1 text-xs text-red-600 hover:bg-muted"');
+  p('                >');
+  p('                  Delete');
+  p('                </button>');
+  p('              </td>');
   p('            </tr>');
   p('          ))}');
   p('          {visible.length === 0 && (');
   p('            <tr>');
-  p(`              <td colSpan={${c.rowAction ? 5 : 4}} className="py-6 text-center text-muted-foreground">`);
-  p('                Nothing to show yet.');
+  p('              <td colSpan={5} className="py-6 text-center text-muted-foreground">');
+  p(`                No ${entity}s yet — add one above.`);
   p('              </td>');
   p('            </tr>');
   p('          )}');
@@ -180,6 +241,117 @@ function generateScreen({ componentName, displayName, goal, capabilities = {}, i
   p('');
   return L.join('\n');
 }
+
+// A short, safe singular noun for UI labels ("Add task", "No tasks yet"), derived from
+// the goal/title. Falls back to "item" so labels always read cleanly.
+function entityFrom(goal, displayName) {
+  const src = oneLine(displayName || goal || '').replace(/^plan:\s*/i, '');
+  const words = src.replace(/[^a-zA-Z0-9 ]/g, ' ').split(/\s+/).filter(Boolean);
+  let w = (words.length ? words[words.length - 1] : 'item').toLowerCase();
+  if (w.length > 3 && w.endsWith('s')) w = w.slice(0, -1); // rough singularize
+  return /^[a-z][a-z0-9]*$/.test(w) ? w : 'item';
+}
+
+// ---- the data seam --------------------------------------------------------------
+
+// Ensure the project has a `src/data` seam so generated screens' `@/data` import
+// resolves and the preview runs on a real local db. Starter-scaffolded projects already
+// ship the full seam (templates/starter/src/data) — there we only refresh seed.json to
+// domain-flavored rows. Generic/brownfield projects that lack the seam get an
+// API-compatible fallback written here so the screen still compiles and persists.
+function ensureDataSeam(srcDir, { entity = 'item' } = {}) {
+  const dataDir = path.join(srcDir, 'data');
+  fs.mkdirSync(dataDir, { recursive: true });
+  const seed = seedFor(entity);
+  fs.writeFileSync(path.join(dataDir, 'seed.json'), JSON.stringify(seed, null, 2) + '\n');
+  if (fs.existsSync(path.join(dataDir, 'index.ts'))) return { wrote: false, seededOnly: true };
+
+  fs.writeFileSync(path.join(dataDir, 'types.ts'), FALLBACK_SEAM.types);
+  fs.writeFileSync(path.join(dataDir, 'local.ts'), FALLBACK_SEAM.local);
+  fs.writeFileSync(path.join(dataDir, 'dataverse.ts'), FALLBACK_SEAM.dataverse);
+  fs.writeFileSync(path.join(dataDir, 'index.ts'), FALLBACK_SEAM.index);
+  return { wrote: true, seededOnly: false };
+}
+
+// Domain-flavored seed rows (same Item shape; the noun makes the preview read as the
+// user's app rather than a generic table).
+function seedFor(entity) {
+  const cap = entity.charAt(0).toUpperCase() + entity.slice(1);
+  const owners = ['you', 'alex', 'you', 'you', 'sam'];
+  const dues = ['2026-06-01', '2026-06-10', '2026-05-20', '2026-07-02', '2026-06-18'];
+  const statuses = ['Open', 'Open', 'Done', 'Open', 'Open'];
+  return owners.map((owner, i) => ({
+    id: i + 1,
+    title: `${cap} ${i + 1}`,
+    owner,
+    due: dues[i],
+    status: statuses[i],
+  }));
+}
+
+// API-compatible fallback seam for projects that don't have the starter's src/data.
+// Kept intentionally minimal; the starter (templates/starter/src/data) is the canonical
+// version with full comments and a unit test.
+const FALLBACK_SEAM = {
+  types: [
+    'export type ItemStatus = "Open" | "Done"',
+    'export type Item = { id: number; title: string; owner: string; due: string; status: ItemStatus }',
+    'export type NewItem = Omit<Item, "id">',
+    'export interface DataSource {',
+    '  list(): Promise<Item[]>',
+    '  create(input: NewItem): Promise<Item>',
+    '  update(id: number, patch: Partial<NewItem>): Promise<Item | null>',
+    '  remove(id: number): Promise<void>',
+    '  reset(): Promise<Item[]>',
+    '}',
+    '',
+  ].join('\n'),
+  local: [
+    'import type { DataSource, Item, NewItem } from "./types"',
+    'import seed from "./seed.json"',
+    '',
+    'const KEY = "powercodex.items"',
+    'function seedRows(): Item[] { return (seed as Item[]).map((r) => ({ ...r })) }',
+    'function load(): Item[] {',
+    '  const raw = localStorage.getItem(KEY)',
+    '  if (raw == null) { const rows = seedRows(); localStorage.setItem(KEY, JSON.stringify(rows)); return rows }',
+    '  try { const p = JSON.parse(raw); return Array.isArray(p) ? (p as Item[]) : [] }',
+    '  catch { const rows = seedRows(); localStorage.setItem(KEY, JSON.stringify(rows)); return rows }',
+    '}',
+    'function save(rows: Item[]): void { localStorage.setItem(KEY, JSON.stringify(rows)) }',
+    'function nextId(rows: Item[]): number { return rows.reduce((m, r) => (r.id > m ? r.id : m), 0) + 1 }',
+    '',
+    'export const local: DataSource = {',
+    '  async list() { return load() },',
+    '  async create(input: NewItem) { const rows = load(); const row: Item = { ...input, id: nextId(rows) }; save([...rows, row]); return row },',
+    '  async update(id: number, patch: Partial<NewItem>) {',
+    '    const rows = load(); let updated: Item | null = null',
+    '    const next = rows.map((r) => { if (r.id !== id) return r; updated = { ...r, ...patch }; return updated })',
+    '    if (updated) save(next); return updated',
+    '  },',
+    '  async remove(id: number) { save(load().filter((r) => r.id !== id)) },',
+    '  async reset() { const rows = seedRows(); save(rows); return rows },',
+    '}',
+    '',
+  ].join('\n'),
+  dataverse: [
+    'import type { DataSource } from "./types"',
+    'function notWired(): never {',
+    '  throw new Error("This app\'s Dataverse data source isn\'t connected yet. Publish it to Power Platform to wire the tables up.")',
+    '}',
+    'export const dataverse: DataSource = { list: notWired, create: notWired, update: notWired, remove: notWired, reset: notWired }',
+    '',
+  ].join('\n'),
+  index: [
+    'import type { DataSource } from "./types"',
+    'import { local } from "./local"',
+    'import { dataverse } from "./dataverse"',
+    'export type { Item, NewItem, ItemStatus, DataSource } from "./types"',
+    'export const data: DataSource =',
+    '  import.meta.env.VITE_POWERCODEX_LIVE === "1" ? dataverse : local',
+    '',
+  ].join('\n'),
+};
 
 function esc(s) {
   return String(s == null ? '' : s).replace(/[{}<>]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -239,11 +411,17 @@ async function aiAuthor(provider, task) {
   const prompt = [
     'Write ONE self-contained React + TypeScript screen component.',
     'Hard rules:',
-    '- Use ONLY `react` imports (useState/useMemo). No other imports, no UI libraries.',
-    '- TypeScript strict, no unused variables, no `any`.',
+    '- Import ONLY from `react` (useState/useMemo/useEffect) and from `@/data`.',
+    '  No other imports, no UI libraries.',
+    '- Read and WRITE data through the data seam so changes persist across reloads:',
+    '    import { data, type Item, type NewItem } from "@/data"',
+    '  Use data.list()/create()/update(id, patch)/remove(id)/reset() (all async, awaited).',
+    '  Load rows in a useEffect on mount; never hardcode an inline data array.',
+    '- The screen must be INTERACTIVE: the user can add, edit, and delete records, and',
+    '  each change is persisted via the data seam (not just React state).',
+    '- TypeScript strict, no unused variables/parameters, no `any`.',
     `- Default export named ${task.componentName}.`,
     '- Style with Tailwind className strings only.',
-    '- Use inline sample data (no network).',
     `Build this screen: ${oneLine(task.goal)}`,
     caps ? `Capabilities to implement: ${caps}` : '',
     'Return ONLY the .tsx file contents — no markdown fences, no commentary.',
@@ -265,10 +443,11 @@ function validateTsx(text, componentName) {
   if (fence) code = fence[1].trim();
   if (!code) return null;
   const hasDefault = new RegExp(`export\\s+default\\s+function\\s+${componentName}\\b`).test(code) || /export\s+default\s+/.test(code);
-  const importsReactOnly = !/^\s*import\s+.*from\s+["'](?!react["'])/m.test(code);
+  // Only `react` and the data seam `@/data` may be imported — nothing else can slip in.
+  const importsAllowed = !/^\s*import\s+.*from\s+["'](?!react["']|@\/data["'])/m.test(code);
   const balanced = balancedBraces(code);
   const looksTsx = /return\s*\(/.test(code) && /</.test(code);
-  if (hasDefault && importsReactOnly && balanced && looksTsx && code.length > 120) return code;
+  if (hasDefault && importsAllowed && balanced && looksTsx && code.length > 120) return code;
   return null;
 }
 
@@ -293,6 +472,19 @@ function balancedBraces(code) {
 async function buildCodeTasks({ root, tasks, emit, rotation = 1, provider } = {}) {
   const srcDir = findSrc(root);
   fs.mkdirSync(path.join(srcDir, 'pages'), { recursive: true });
+
+  // Ensure the data seam exists so every generated screen's `@/data` import resolves and
+  // the preview runs on a real local db. Derive the entity noun from the first screen so
+  // the seed data reads as the user's domain.
+  const firstScreen = tasks.find((t) => t.type === 'code.screen');
+  if (firstScreen) {
+    try {
+      ensureDataSeam(srcDir, { entity: entityFrom(firstScreen.goal, firstScreen.displayName) });
+    } catch (e) {
+      await emitSafe(emit, { rotation, stage: 3, agent: 'build-executor', level: 'warn', message: `Could not set up the local data layer: ${e.message}` });
+    }
+  }
+
   const results = [];
 
   for (const task of tasks) {
@@ -393,7 +585,7 @@ function extractErrors(out) {
   return [...new Set(errs.map((l) => l.trim()))].slice(0, 12);
 }
 
-module.exports = { buildCodeTasks, verifyBuild, generateScreen, findSrc, isCodeApp, wireRouter, validateTsx };
+module.exports = { buildCodeTasks, verifyBuild, generateScreen, ensureDataSeam, entityFrom, findSrc, isCodeApp, wireRouter, validateTsx };
 
 async function emitSafe(emit, evt) {
   try {

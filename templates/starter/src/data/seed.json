@@ -1,0 +1,7 @@
+[
+  { "id": 1, "title": "First item", "owner": "you", "due": "2026-06-01", "status": "Open" },
+  { "id": 2, "title": "Second item", "owner": "alex", "due": "2026-06-10", "status": "Open" },
+  { "id": 3, "title": "Third item", "owner": "you", "due": "2026-05-20", "status": "Done" },
+  { "id": 4, "title": "Fourth item", "owner": "you", "due": "2026-07-02", "status": "Open" },
+  { "id": 5, "title": "Fifth item", "owner": "sam", "due": "2026-06-18", "status": "Open" }
+]

@@ -5,7 +5,7 @@ Grounded in a full-codebase exploration (desktop shell, lifecycle engine, templa
 
 ## The one-paragraph brief
 
-PowerCodex is "Lovable for Power Platform": a desktop agentic vibe-coding tool where a citizen developer describes an app in plain language, watches it come alive in a **live localhost preview with local mock data**, and clicks **Publish** to push it to Power Platform as a real Code App (`pac code push`). Today the harness, CLI, and MCP layers are production-grade; the desktop product is a polished chat shell whose two defining features — live preview and real publish — are not yet wired. Closing that gap, honestly and without demo theater, is the work described here.
+PowerCodex is "Lovable for Power Platform": a desktop agentic vibe-coding tool where a citizen developer describes an app in plain language, watches it come alive in a **live localhost preview with local mock data**, and clicks **Publish** to push it to Power Platform as a real Code App (`pac code push`). Today the harness, CLI, and MCP layers are production-grade; the desktop product is a polished chat shell whose two defining features — live preview and real publish — were not yet wired when this package was written. **Re-baseline 2026-07-13 PM:** live preview is now wired (G1 closed) and publish is committed but not one-click (G2 partial); bespoke codegen + the data seam (G3/G4) are the top blockers — see the re-baseline note in [01-design-brief.md](01-design-brief.md). Closing the remaining gap, honestly and without demo theater, is the work described here.
 
 ## Reading order (the 4-part reflection)
 

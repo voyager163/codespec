@@ -26,7 +26,7 @@ Each task is sized for **one focused session by one executor model**. Model rout
 
 | ID | Task | Model | Depends on |
 | --- | --- | --- | --- |
-| 2.1 | Add `src/data/` adapter pattern (types/local/dataverse/index + `seed.json`) to `templates/starter/`; unit tests for the local source; `VITE_POWERCODEX_LIVE` switch. Dataverse source compiles without a live tenant (typed stubs until logical names are injected). | Opus | 1.5 |
+| 2.1 | Add `src/data/` adapter pattern (types/local/dataverse/index + `seed.json`) to `templates/starter/`; `LocalDataSource` is a persisted writable store (D13): seeds from `seed.json` on first run, full CRUD out of localStorage per entity, plus a "Reset sample data" hook the Preview tab can call; unit tests for seed + CRUD + reset; `VITE_POWERCODEX_LIVE` switch. Dataverse source compiles without a live tenant (typed stubs until logical names are injected). | Opus | 1.5 |
 | 2.2 | Codegen: derive entity types + domain-shaped `seed.json` from the approved plan/goal (planner already extracts capabilities); generated screens import from `src/data` instead of inline `SAMPLE` arrays. Harness preamble gains the two bias rules (data-seam + spec-per-screen), phrased behaviorally (L002). | Opus | 2.1 |
 | 2.3 | Dataverse injection: when `dataverse.json` logical names exist, generate the typed Dataverse source (service-class pattern from the Code Apps SDK docs); selftest with a fixture `dataverse.json`. | Opus | 2.1 |
 
