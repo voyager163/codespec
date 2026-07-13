@@ -130,7 +130,7 @@ async function run(root, { message, history, provider, emit, memory: mem, _pushF
     if (!rights || rights.allowPush !== true) {
       return { kind: 'add-datasource', intent, ok: false, reply: 'Adding a data source is off — turn on "Publish to my environment" in the rights panel first.', provider: adapter.id, simulated };
     }
-    const tableMatch = message.match(/\bfor (?:the )?[""]?([a-z0-9 _-]+?)[""]?\s*(?:table|entity)?\s*$/i);
+    const tableMatch = message.match(/\bfor (?:the )?["“]?([a-z0-9 _-]+?)["”]?\s*(?:table|entity)?\s*$/i);
     const table = tableMatch ? tableMatch[1].trim() : undefined;
     const addFn = _addDataSourceFn || addDataSource;
     const result = await addFn(root, { api: 'dataverse', table, emit: (e) => say(e.level, `Datasource · ${e.message}`) });
@@ -141,7 +141,7 @@ async function run(root, { message, history, provider, emit, memory: mem, _pushF
   // 2d) A scaffold-project request → classify + extract a name; the server does the
   //     real work (Task 7) because it must re-point the active workspace afterward.
   if (intent === 'scaffold-project') {
-    const nameMatch = message.match(/\b(?:called|named)\s+[""]?([a-z0-9][a-z0-9 _-]{1,60}?)[""]?\s*$/i);
+    const nameMatch = message.match(/\b(?:called|named)\s+["“]?([a-z0-9][a-z0-9 _-]{1,60}?)["”]?\s*$/i);
     const name = nameMatch ? nameMatch[1].trim() : null;
     if (!name) {
       return { kind: 'answer', intent, reply: 'What name should the new project have?', provider: adapter.id, simulated };

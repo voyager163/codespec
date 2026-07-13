@@ -748,8 +748,17 @@ async function selftest() {
       _addDataSourceFn: async () => ({ added: true, output: 'ok' }),
     });
     check('agent add-datasource intent executes inline and reports kind:add-datasource', agentDsResult.kind === 'add-datasource' && agentDsResult.ok === true);
+    let agentDsQuotedTable;
+    const agentDsQuotedResult = await agentMod.run(agentRunRoot, {
+      message: 'add a datasource for "Orders" table',
+      emit: () => {},
+      _addDataSourceFn: async (root, opts) => { agentDsQuotedTable = opts.table; return { added: true, output: 'ok' }; },
+    });
+    check('agent add-datasource intent extracts a table name from straight-quoted phrasing', agentDsQuotedTable === 'Orders');
     const agentScaffoldResult = await agentMod.run(agentRunRoot, { message: 'start a new project called Inspections', emit: () => {} });
     check('agent scaffold-project intent defers to the server with the extracted name', agentScaffoldResult.kind === 'scaffold-project' && agentScaffoldResult.name === 'Inspections');
+    const agentScaffoldQuoted = await agentMod.run(agentRunRoot, { message: 'start a new project called "Inspections"', emit: () => {} });
+    check('agent scaffold-project intent extracts a name from straight-quoted phrasing', agentScaffoldQuoted.kind === 'scaffold-project' && agentScaffoldQuoted.name === 'Inspections');
     const agentScaffoldNoName = await agentMod.run(agentRunRoot, { message: 'start a new project', emit: () => {} });
     check('agent scaffold-project asks for a name when none is given', agentScaffoldNoName.kind === 'answer' && /name/i.test(agentScaffoldNoName.reply || ''));
     fs.rmSync(agentRunRoot, { recursive: true, force: true });
