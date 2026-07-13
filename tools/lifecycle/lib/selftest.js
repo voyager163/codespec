@@ -459,8 +459,16 @@ async function selftest() {
     fs.writeFileSync(path.join(noBuildRoot, 'package.json'), JSON.stringify({ name: 'x' }));
     const bpNoBuild = await pacInit.buildAndPush(noBuildRoot, { emit: async () => {}, _push: async () => bpPacFake });
     check('buildAndPush skips the build step when no build script exists', bpNoBuild.built === false && bpNoBuild.pushed === true);
+    const bpThrowRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-buildpush-throw-'));
+    fs.writeFileSync(path.join(bpThrowRoot, 'package.json'), JSON.stringify({ name: 'x' }));
+    const bpThrown = await pacInit.buildAndPush(bpThrowRoot, {
+      emit: async () => {},
+      _push: async () => { throw new Error('pac CLI not found or not executable.'); },
+    });
+    check('buildAndPush never rejects — a thrown push error becomes a returned error', bpThrown.pushed === false && /pac CLI not found/.test(bpThrown.error || ''));
     fs.rmSync(buildPushRoot, { recursive: true, force: true });
     fs.rmSync(noBuildRoot, { recursive: true, force: true });
+    fs.rmSync(bpThrowRoot, { recursive: true, force: true });
 
     // ── Phase 1: live preview (preview.js) — honest-start / honest-degrade ─────
     // start() must run a REAL dev server or degrade honestly — never fabricate a URL.

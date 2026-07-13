@@ -253,8 +253,12 @@ async function buildAndPush(root, { appDir, emit = async () => {}, _push } = {})
   } else {
     await emit({ level: 'info', message: 'no "build" script in package.json — skipping build, pushing as-is' });
   }
-  const result = await push(root, { appDir, emit });
-  return Object.assign({ built }, result);
+  try {
+    const result = await push(root, { appDir, emit });
+    return Object.assign({ built }, result);
+  } catch (e) {
+    return { pushed: false, built, output: '', error: e.message };
+  }
 }
 
 module.exports = { checkPac, preflight, listAuthProfiles, ensureAuth, initCodeApp, pushCodeApp, registerCodeApp, buildAndPush, runPac: pac };
