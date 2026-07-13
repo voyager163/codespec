@@ -63,3 +63,4 @@ Approved_rights/
 **/.profiles/
 # PowerCodex local build/compile scratch dirs
 .tmp-*
+.superpowers/
