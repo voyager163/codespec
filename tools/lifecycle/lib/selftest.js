@@ -272,7 +272,7 @@ async function selftest() {
       emit: async () => {},
       _binPath: fakeCliPath,
     });
-    check('scaffoldNewProject sanitizes a path-traversal-shaped name before building projectDir', !scTraversal.projectDir || !scTraversal.projectDir.includes('..'));
+    check('scaffoldNewProject sanitizes a path-traversal-shaped name before building projectDir', !scTraversal.projectDir || scTraversal.projectDir.startsWith(scParent + path.sep));
     check('scaffoldNewProject relays [ok] lines as good-level progress', scLog.some((l) => l.startsWith('[good]') && l.includes('Copy starter template')));
     check('create-powercodex.js is resolvable for the scaffold-cli (repo checkout)', !!scaffoldCli.binPath());
     const scMissing = await scaffoldCli.scaffoldNewProject(scParent, { name: 'x', emit: async () => {}, _binPath: null });
