@@ -93,6 +93,9 @@ async function selftest() {
           const emitted = await req(port, 'POST', '/api/emit', { agent: 'claude', message: 'self-test progress ping', level: 'good' });
           const mvpAct = await req(port, 'POST', '/api/action', { type: 'propose-mvp', goal: 'track projects' });
           const reflectAct = await req(port, 'POST', '/api/action', { type: 'reflect', title: 'server lesson' });
+          const pushBlocked = await req(port, 'POST', '/api/action', { type: 'push' });
+          await req(port, 'POST', '/api/action', { type: 'rights', flag: 'allowPush', value: true });
+          const dsBlockedThenAllowed = await req(port, 'POST', '/api/action', { type: 'add-datasource', api: 'dataverse', table: 'cr_demo' });
           const after = await req(port, 'GET', '/api/state');
           srv.close(() =>
             resolve({
@@ -101,6 +104,8 @@ async function selftest() {
               intakeApplied: intake.json.ok && after.json.intake.goal === 'track projects and tasks',
               complianceComputed: after.json.intake.complianceDetail && after.json.intake.compliance >= 60,
               rightApplied: right.json.ok && after.json.intake.rights.allowBuild === true,
+              pushGatedWhenOff: pushBlocked.json.ok === false && /allowPush|Publish/i.test(pushBlocked.json.error || ''),
+              addDatasourceReachable: 'ok' in dsBlockedThenAllowed.json,
               emitShown: emitted.json.ok && after.json.feed.some((e) => e.agent === 'claude'),
               mvpAct: mvpAct.json.ok && !!mvpAct.json.path,
               reflectAct: reflectAct.json.ok && !!reflectAct.json.lesson,
@@ -121,6 +126,8 @@ async function selftest() {
     check('POST /api/action propose-mvp generates an MVP', serverChecks.mvpAct);
     check('POST /api/action reflect logs a lesson', serverChecks.reflectAct);
     check('state exposes computed insights', serverChecks.hasInsights);
+    check('push is refused while allowPush is off', serverChecks.pushGatedWhenOff);
+    check('add-datasource action is reachable via /api/action', serverChecks.addDatasourceReachable);
 
     // Pure-function + module checks for the refinement features.
     check('compliance scores alignment', scoreCompliance('track projects and tasks', 'grid to track projects and tasks').aligned === true);

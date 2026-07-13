@@ -9,6 +9,8 @@ const freeze = require('./freeze');
 const { buildStories, saveStories, refineStories, readStories } = require('./stories');
 const { readDigest } = require('./digest');
 const providers = require('./providers');
+const pacInit = require('./pac-init');
+const { addDataSource } = require('./datasource');
 
 // Server-side controller: turns dashboard actions into real effects on the
 // status bus, the rights gate, and a running loop. Held in memory by `serve`.
@@ -129,6 +131,24 @@ class Controller {
         emit(this.root, { rotation: 0, stage: 1, agent: 'intake', level: 'warn', message: `Unlocked the ${artifact} for a major change · it can be refined or regenerated again` });
         render(this.root);
         return { ok: true, artifact, status: 'draft' };
+      }
+      case 'push': {
+        const rights = loadRights(this.root);
+        if (!rights || rights.allowPush !== true) {
+          return { ok: false, error: 'Push is off — turn on "Publish to my environment" in the rights panel first' };
+        }
+        const boundEmit = async ({ level, message }) => { emit(this.root, { rotation: 0, stage: 4, agent: 'runner', level, message }); render(this.root); };
+        const result = await pacInit.buildAndPush(this.root, { appDir: body.appDir, emit: boundEmit });
+        return Object.assign({ ok: result.pushed }, result);
+      }
+      case 'add-datasource': {
+        const rights = loadRights(this.root);
+        if (!rights || rights.allowPush !== true) {
+          return { ok: false, error: 'Add datasource is off — turn on "Publish to my environment" in the rights panel first' };
+        }
+        const boundEmit = async ({ level, message }) => { emit(this.root, { rotation: 0, stage: 4, agent: 'runner', level, message }); render(this.root); };
+        const result = await addDataSource(this.root, { api: body.api, table: body.table, appDir: body.appDir, emit: boundEmit });
+        return Object.assign({ ok: result.added }, result);
       }
       case 'reflect': {
         const lesson = reflect(this.root, { title: body.title || 'Lesson from this session', severity: body.severity, what: body.what, how: body.how });
