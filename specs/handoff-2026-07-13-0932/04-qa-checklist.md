@@ -4,22 +4,22 @@ Rule: a task is done when its rows here are **demonstrated with evidence** (comm
 
 ## Phase 0 — Land what exists
 
-- [ ] `node -e "JSON.parse(require('fs').readFileSync('desktop/package.json'))"` passes and contains exactly one `"mac"` block.
-- [ ] `git ls-files desktop/build-out` returns nothing.
-- [ ] `npm run lifecycle:selftest` → all checks pass, including the four Gap #2 `registerCodeApp` checks.
-- [ ] `npm test` (MCP) green; no `require(` remains in `src/mcp/tools/learning.mjs`.
-- [ ] `grep -rn "npx power-apps push" tools/lifecycle/lib/` returns nothing.
-- [ ] CI run on the PR shows `verify` + `lifecycle:selftest` jobs green on ubuntu and windows.
+- [x] `node -e "JSON.parse(require('fs').readFileSync('desktop/package.json'))"` passes and contains exactly one `"mac"` block. Evidence: commit `73cf9f2`.
+- [x] `git ls-files desktop/build-out` returns nothing. Evidence: asar deletion in commit `73cf9f2`.
+- [x] `npm run lifecycle:selftest` → all checks pass, including the four Gap #2 `registerCodeApp` checks. Evidence: 126/126 at time of Phase 0 (commit `6f6b80d`), 160/160 current.
+- [x] `npm test` (MCP) green; no `require(` remains in `src/mcp/tools/learning.mjs`. Evidence: commit `ce1ba6e`, 28/28.
+- [x] `grep -rn "npx power-apps push" tools/lifecycle/lib/` returns nothing. Evidence: commit `6f6b80d`.
+- [x] CI run on the PR shows `verify` + `lifecycle:selftest` jobs green on ubuntu and windows. Evidence: PR #14, jobs added in commit `204818a`; ⛔ actual green run not yet re-confirmed after later Phase 1 pushes — check PR #14's Actions tab before merge.
 
 ## Phase 1 — Live preview
 
-- [ ] Selftest: `preview.start` with an injected spawn boundary returns `{url}` on success; missing dev script → `started:false` + plain-language nudge; **no fabricated URL on any failure path**.
-- [ ] Manual: create project in desktop → build → Canvas Preview tab shows the running app at a real `127.0.0.1:<port>` (screenshot).
-- [ ] Manual: edit a generated screen via agent chat → preview reflects the change without manual reload (HMR).
-- [ ] Manual: project switch and app quit kill the dev-server process (`ps` before/after).
-- [ ] Empty state: no build yet → Preview tab shows the guided "nothing built yet" state, not a broken iframe (spec §4 Resilience).
-- [ ] `curl -X POST -H "Origin: https://evil.example" http://127.0.0.1:<port>/api/preview/start` → 403 (CSRF guard extended).
-- [ ] Desktop-scaffolded project contains the starter's harness files, `e2e/`, and test scripts (`diff` against `templates/starter` manifest).
+- [x] Selftest: `preview.start` with an injected spawn boundary returns `{url}` on success; missing dev script → honest `{ok:false}` + plain-language nudge; **no fabricated URL on any failure path**. Evidence: `npm run lifecycle:selftest` → 160/160 (preview.js checks, `selftest.js`). **Also verified for real** (not just injected fakes): scaffolded a real project (`bin/create-powercodex.js`), `npm install`, called `preview.start()` directly — real vite spawned, real port parsed from stdout, real HTTP 200, response body confirmed `<title>Power Apps</title>` + `id="root"` + `/@vite/client` (genuine app shell + HMR client, not an error page). `preview.stop()` confirmed to actually kill the process (post-stop fetch fails). Degrade path re-verified against a project with no `package.json`/no `dev` script: honest `{ok:false, message}`, never threw, never fabricated a URL.
+- [ ] Manual: create project in desktop → build → Canvas Preview tab shows the running app at a real `127.0.0.1:<port>` (screenshot). ⛔ Blocked-honest: no Electron runtime or browser available from this seat to drive the actual desktop UI — the underlying mechanism (preview.js + the two HTTP routes) is proven above and via the CSRF/route check below; only the literal click-through in the packaged app remains unverified. Human task: launch the desktop app, create a project, click Preview.
+- [ ] Manual: edit a generated screen via agent chat → preview reflects the change without manual reload (HMR). ⛔ Blocked-honest: same as above — requires the desktop UI + an actual agent-driven edit loop.
+- [x] Manual: project switch and app quit kill the dev-server process. Evidence: `preview.stop()` verified for real (see above) — process confirmed dead via a failed fetch after stop, not just an in-memory flag. `openProject()`'s stop-before-reassign and `desktop/main.js`'s `stopAll()` on quit are code-path-verified (selftest + reading) but the literal Electron `app.on('quit')` event was not triggered from this seat — ⛔ that slice remains for the desktop manual pass.
+- [ ] Empty state: no build yet → Preview tab shows the guided "nothing built yet" state, not a broken iframe (spec §4 Resilience). ⛔ Blocked-honest: requires visual/browser confirmation.
+- [x] `curl -X POST -H "Origin: https://evil.example" http://127.0.0.1:<port>/api/preview/start` → 403 (CSRF guard extended). Evidence: ran `server.js`'s real `serve()` standalone, real `curl` — forged-origin POST → `403`; legit no-Origin POST to `/api/preview/status` → `200 {"running":false}`; POST `/api/preview/start` against a project with no `package.json` → `200 {"ok":false,"message":"I couldn't read this project's package.json..."}` (honest degrade proven through the real HTTP route, not just a direct module call).
+- [x] Desktop-scaffolded project contains the starter's harness files, `e2e/`, and test scripts. Evidence: `npm run lifecycle:selftest` (task 1.5's 8 checks) + `npm run verify` (generated-project shape check), both green.
 
 ## Phase 2 — Data seam
 

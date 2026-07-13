@@ -414,11 +414,13 @@ function serve(root, opts = {}) {
       // .json sibling, and any captured screenshots under shots/. Path-traversal guarded —
       // only files inside .powercodex/plans/ are served.
       if (/\.powercodex\/(plans|artifacts)\//.test(req.url) && /\.(html|json|png)$/.test(req.url.split('?')[0])) {
-        const rel = decodeURIComponent(req.url.split('?')[0].replace(/^\/+/, ''));
+        const rawRel = decodeURIComponent(req.url.split('?')[0].replace(/^\/+/, ''));
+        // Strip any leading ".." traversal segments before joining — the documented
+        // CodeQL js/path-injection remediation pattern — then re-confirm with a
+        // path-separator-bounded check (mirrors src/mcp/lib/resolve-root.mjs) so a
+        // sibling like ".powercodex/plans-evil/x" still can't escape ".powercodex/plans".
+        const rel = rawRel.replace(/(^|[/\\])\.\.([/\\]|$)/g, '$1');
         const abs = path.resolve(activeRoot, rel);
-        // Confine to the allowed dirs with a path-separator boundary (mirrors
-        // src/mcp/lib/resolve-root.mjs) — a bare startsWith() would let a sibling
-        // like ".powercodex/plans-evil/x" escape a ".powercodex/plans" prefix.
         const within = (base) => { const r = path.relative(base, abs); return r === '' || (!r.startsWith('..') && !path.isAbsolute(r)); };
         const okBase = within(path.resolve(plansDir(activeRoot))) || within(path.resolve(artifacts.artifactsDir(activeRoot)));
         if (okBase && fs.existsSync(abs)) {

@@ -635,7 +635,7 @@
     }
     $('spStage').textContent = FRIENDLY[state.currentStage] || (state.done?'Done':'—');
     $('spStageLabel').textContent = 'Lifecycle stage · '+Math.min(state.currentStage+1,7)+' of 7';
-    $('spStrip').innerHTML = (state.stages||[]).map(s=>'<div class="sg '+(s.status==='active'?'active':s.status)+'"><div class="l">'+s.label+'</div></div>').join('');
+    $('spStrip').innerHTML = (state.stages||[]).map(s=>'<div class="sg '+esc(s.status==='active'?'active':s.status)+'"><div class="l">'+esc(s.label)+'</div></div>').join('');
     $('spGoal').textContent = (state.intake && state.intake.goal) || 'Not set yet';
     $('spCoverage').textContent = state.test && state.test.coverage!=null ? state.test.coverage+'%' : (state.intake && state.intake.compliance!=null ? state.intake.compliance+'%' : '—');
     $('spIssues').textContent = state.stopped ? 'needs you' : String((state.notifications||[]).filter(n=>n.kind==='approval').length);
