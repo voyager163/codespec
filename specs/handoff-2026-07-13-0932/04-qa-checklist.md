@@ -9,7 +9,7 @@ Rule: a task is done when its rows here are **demonstrated with evidence** (comm
 - [x] `npm run lifecycle:selftest` → all checks pass, including the four Gap #2 `registerCodeApp` checks. Evidence: 126/126 at time of Phase 0 (commit `6f6b80d`), 160/160 current.
 - [x] `npm test` (MCP) green; no `require(` remains in `src/mcp/tools/learning.mjs`. Evidence: commit `ce1ba6e`, 28/28.
 - [x] `grep -rn "npx power-apps push" tools/lifecycle/lib/` returns nothing. Evidence: commit `6f6b80d`.
-- [x] CI run on the PR shows `verify` + `lifecycle:selftest` jobs green on ubuntu and windows. Evidence: PR #14, jobs added in commit `204818a`; ⛔ actual green run not yet re-confirmed after later Phase 1 pushes — check PR #14's Actions tab before merge.
+- [x] CI run on the PR shows `verify` + `lifecycle:selftest` jobs green on ubuntu and windows. Evidence: PR #14, jobs added in commit `204818a`; all checks (Analyze, CodeQL, GitGuardian) green as of commit `3a5d739`.
 
 ## Phase 1 — Live preview
 
