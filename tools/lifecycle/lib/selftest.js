@@ -443,6 +443,25 @@ async function selftest() {
     check('code-app registration is a no-op once power.config.json exists', regSkip.skipped === true);
     fs.rmSync(pacRoot, { recursive: true, force: true });
 
+    // ── buildAndPush: runs npm run build first when a build script exists, then push ──
+    const buildPushRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-buildpush-'));
+    fs.writeFileSync(path.join(buildPushRoot, 'package.json'), JSON.stringify({ name: 'x', scripts: { build: 'node -e "require(\'fs\').writeFileSync(\'built.txt\',\'ok\')"' } }));
+    const bpLog = [];
+    const bpPacFake = { pushed: true, output: 'push ok' };
+    const bpResult = await pacInit.buildAndPush(buildPushRoot, {
+      emit: async ({ level, message }) => bpLog.push(`[${level}] ${message}`),
+      _push: async () => bpPacFake,
+    });
+    check('buildAndPush runs the build script when present', fs.existsSync(path.join(buildPushRoot, 'built.txt')));
+    check('buildAndPush reports built:true after a successful build', bpResult.built === true);
+    check('buildAndPush calls through to push and returns its result', bpResult.pushed === true);
+    const noBuildRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-buildpush-nobuild-'));
+    fs.writeFileSync(path.join(noBuildRoot, 'package.json'), JSON.stringify({ name: 'x' }));
+    const bpNoBuild = await pacInit.buildAndPush(noBuildRoot, { emit: async () => {}, _push: async () => bpPacFake });
+    check('buildAndPush skips the build step when no build script exists', bpNoBuild.built === false && bpNoBuild.pushed === true);
+    fs.rmSync(buildPushRoot, { recursive: true, force: true });
+    fs.rmSync(noBuildRoot, { recursive: true, force: true });
+
     // ── Phase 1: live preview (preview.js) — honest-start / honest-degrade ─────
     // start() must run a REAL dev server or degrade honestly — never fabricate a URL.
     // Inject the spawn + probe boundaries (the `_pac` pattern) so this is deterministic

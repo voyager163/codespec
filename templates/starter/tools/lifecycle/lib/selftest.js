@@ -64,7 +64,7 @@ async function selftest() {
     check('Approved_rights/approval.json created', fs.existsSync(approvalFile(root)));
     check('all 7 lifecycle stages emitted (0..6)', [0, 1, 2, 3, 4, 5, 6].every((s) => stages.has(s)));
     check('build executor produced assets', events.some((e) => e.agent === 'build-executor' && e.level === 'good'));
-    check('run step honored push-vs-dev rule', events.some((e) => e.agent === 'runner' && /power-apps push|npm run dev/.test(e.message)));
+    check('run step honored push-vs-dev rule', events.some((e) => e.agent === 'runner' && /pac code push|npm run dev/.test(e.message)));
     check('self-heal triggered at least once', summary.selfHeals >= 1);
     check('observer authored a spec from observation', summary.observations >= 1);
     check('loop finished without false stop', summary.stopped === false);
@@ -232,6 +232,22 @@ async function selftest() {
     check('import configures the chosen providers', Array.isArray(imp.config.providers) && imp.config.providers.length >= 1);
     fs.rmSync(impRoot, { recursive: true, force: true });
 
+    // ── desktop "Create a new app" lands the full starter, not the generic template ──
+    // (decision D5): harness, e2e suite, and lifecycle tooling from birth. Assertions
+    // mirror scripts/verify-generated-project.js so the CLI and desktop scaffolds agree.
+    const { scaffoldFromStarter, starterDir } = require('./scaffold');
+    check('starter template is resolvable for the desktop scaffold', !!starterDir());
+    const newAppRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-newapp-'));
+    const scaf = scaffoldFromStarter(newAppRoot, { name: 'Field Reports' });
+    check('desktop scaffold copies the starter (not the generic template)', !!scaf && scaf.source === 'starter' && scaf.created === true);
+    check('scaffolded app ships the agent harness (tools/lifecycle)', fs.existsSync(path.join(newAppRoot, 'tools', 'lifecycle', 'bin', 'powercodex-lifecycle.js')));
+    check('scaffolded app ships the e2e suite (e2e/home.spec.ts)', fs.existsSync(path.join(newAppRoot, 'e2e', 'home.spec.ts')));
+    check('scaffolded app ships telemetry + playwright config', fs.existsSync(path.join(newAppRoot, 'src', 'telemetry', 'app-telemetry.ts')) && fs.existsSync(path.join(newAppRoot, 'playwright.config.ts')));
+    const newPkg = JSON.parse(fs.readFileSync(path.join(newAppRoot, 'package.json'), 'utf8'));
+    check('scaffolded package.json carries the starter scripts (e2e/lint/test/lifecycle:selftest)', ['e2e', 'lint', 'test', 'lifecycle:selftest'].every((s) => newPkg.scripts && newPkg.scripts[s]));
+    check('scaffolded package.json is renamed from the template to the project', newPkg.name === 'field-reports');
+    fs.rmSync(newAppRoot, { recursive: true, force: true });
+
     // ── brownfield ingestion · code-grounded intake · freeze ─────────────────
     const { buildDigest, writeDigest, readDigest } = require('./digest');
     const { buildStories, readStories, refineStories } = require('./stories');
@@ -361,7 +377,7 @@ async function selftest() {
     check('a maker recipe falls back to the portal home without an env', /^https:\/\/make\.powerapps\.com$/.test(tableRecipe.url(null)));
     check('the Power Automate recipe targets make.powerautomate.com', /make\.powerautomate\.com/.test(recipeFor('powerautomate.flow.create').url('ENV123')));
     check('table.create now has real DOM automation (build fn)', tableRecipe.automated === true && typeof tableRecipe.build === 'function');
-    check('recipes without DOM automation yet stay honest (column.add)', recipeFor('dataverse.column.add').automated === false && typeof recipeFor('dataverse.column.add').todo === 'string');
+    check('column.add now has real DOM automation (build fn)', recipeFor('dataverse.column.add').automated === true && typeof recipeFor('dataverse.column.add').build === 'function');
 
     // Edge profile picker — discover from a Local State file, resolve a selection, persist it.
     const edgeProfiles = require('./edge-profiles');
@@ -406,6 +422,244 @@ async function selftest() {
       check('a normal screen name still writes inside src/pages/', safe[0] && safe[0].created === true && fs.existsSync(path.join(cgRoot, 'src', 'pages', 'my-screen.tsx')));
     } finally {
       fs.rmSync(cgRoot, { recursive: true, force: true });
+    }
+
+    // ── Gap #2: real Code App registration (pac) — degrade contract ───────────
+    // The build stage turns a plain React app into a compliant Power Apps Code App by
+    // running `pac code init` (writes power.config.json). It must degrade honestly when
+    // pac is absent/unauthed: a plain-language nudge, never a crash, never a fabricated
+    // marker. Inject the pac boundary so this is deterministic regardless of whether pac
+    // happens to be installed on the machine running the test.
+    const pacInit = require('./pac-init');
+    const pacRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-pac-'));
+    const pacAbsent = { checkPac: async () => { throw new Error('pac CLI not found'); } };
+    const regDegraded = await pacInit.registerCodeApp(pacRoot, { appName: 'demo', _pac: pacAbsent });
+    check('code-app registration degrades to a plain-language nudge when pac is absent', regDegraded.registered === false && /finish Power Platform setup/i.test(regDegraded.message || ''));
+    check('code-app registration never fabricates power.config.json without pac', !fs.existsSync(path.join(pacRoot, 'power.config.json')));
+    const pacFake = { checkPac: async () => '1.0', initCodeApp: async (r) => { fs.writeFileSync(path.join(r, 'power.config.json'), '{}'); return { initialised: true, appDir: r }; } };
+    const regOk = await pacInit.registerCodeApp(pacRoot, { appName: 'demo', _pac: pacFake });
+    check('code-app registration runs pac code init when pac is reachable', regOk.registered === true && fs.existsSync(path.join(pacRoot, 'power.config.json')));
+    const regSkip = await pacInit.registerCodeApp(pacRoot, { appName: 'demo', _pac: pacFake });
+    check('code-app registration is a no-op once power.config.json exists', regSkip.skipped === true);
+    fs.rmSync(pacRoot, { recursive: true, force: true });
+
+    // ── buildAndPush: runs npm run build first when a build script exists, then push ──
+    const buildPushRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-buildpush-'));
+    fs.writeFileSync(path.join(buildPushRoot, 'package.json'), JSON.stringify({ name: 'x', scripts: { build: 'node -e "require(\'fs\').writeFileSync(\'built.txt\',\'ok\')"' } }));
+    const bpLog = [];
+    const bpPacFake = { pushed: true, output: 'push ok' };
+    const bpResult = await pacInit.buildAndPush(buildPushRoot, {
+      emit: async ({ level, message }) => bpLog.push(`[${level}] ${message}`),
+      _push: async () => bpPacFake,
+    });
+    check('buildAndPush runs the build script when present', fs.existsSync(path.join(buildPushRoot, 'built.txt')));
+    check('buildAndPush reports built:true after a successful build', bpResult.built === true);
+    check('buildAndPush calls through to push and returns its result', bpResult.pushed === true);
+    const noBuildRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-buildpush-nobuild-'));
+    fs.writeFileSync(path.join(noBuildRoot, 'package.json'), JSON.stringify({ name: 'x' }));
+    const bpNoBuild = await pacInit.buildAndPush(noBuildRoot, { emit: async () => {}, _push: async () => bpPacFake });
+    check('buildAndPush skips the build step when no build script exists', bpNoBuild.built === false && bpNoBuild.pushed === true);
+    fs.rmSync(buildPushRoot, { recursive: true, force: true });
+    fs.rmSync(noBuildRoot, { recursive: true, force: true });
+
+    // ── Phase 1: live preview (preview.js) — honest-start / honest-degrade ─────
+    // start() must run a REAL dev server or degrade honestly — never fabricate a URL.
+    // Inject the spawn + probe boundaries (the `_pac` pattern) so this is deterministic
+    // and never spawns a real npm/vite process or touches a real port.
+    const { EventEmitter } = require('node:events');
+    const preview = require('./preview');
+    // A fake vite process: prints the "Local:" line on the next tick, supports kill().
+    const fakeVite = (port) => () => {
+      const proc = new EventEmitter();
+      proc.pid = 4242;
+      proc.stdout = new EventEmitter();
+      proc.stderr = new EventEmitter();
+      proc.kill = () => { proc.killed = true; proc.emit('exit', 0); };
+      setImmediate(() => proc.stdout.emit('data', Buffer.from(`  ➜  Local:   http://localhost:${port}/\n`)));
+      return proc;
+    };
+    const okProbe = async () => true; // resolves ready without touching a real port
+
+    // (a) missing dev script → honest nudge, nothing spawned.
+    const pvNoDev = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-preview-nodev-'));
+    fs.mkdirSync(path.join(pvNoDev, 'node_modules'), { recursive: true });
+    fs.writeFileSync(path.join(pvNoDev, 'package.json'), JSON.stringify({ scripts: { build: 'vite build' } }));
+    let spawnedNoDev = false;
+    const noDevRes = await preview.start(pvNoDev, { _spawn: () => { spawnedNoDev = true; throw new Error('should not spawn'); }, _probe: okProbe });
+    check('preview degrades to a plain-language nudge when no dev script exists', noDevRes.ok === false && /dev.*script/i.test(noDevRes.message || ''));
+    check('preview never spawns a process when it degrades on a missing dev script', spawnedNoDev === false);
+    fs.rmSync(pvNoDev, { recursive: true, force: true });
+
+    // (b) successful start via injected fake spawn — parses the port, never fabricates it.
+    const pvOk = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-preview-ok-'));
+    fs.mkdirSync(path.join(pvOk, 'node_modules'), { recursive: true });
+    fs.writeFileSync(path.join(pvOk, 'package.json'), JSON.stringify({ scripts: { dev: 'vite' } }));
+    let spawnCount = 0;
+    const countingVite = (port) => { const mk = fakeVite(port); return (...a) => { spawnCount += 1; return mk(...a); }; };
+    const startRes = await preview.start(pvOk, { _spawn: countingVite(6123), _probe: okProbe });
+    check('preview start returns the port parsed from vite stdout (not hardcoded)', startRes.url === 'http://localhost:6123' && startRes.pid === 4242);
+    check('preview status reflects the running server', preview.status(pvOk).running === true && preview.status(pvOk).url === 'http://localhost:6123');
+
+    // (c) idempotent: a second start() for the same root reuses the server, no new spawn.
+    const startAgain = await preview.start(pvOk, { _spawn: countingVite(9999), _probe: okProbe });
+    check('preview start is idempotent for the same root (reuses, no second spawn)', startAgain.url === 'http://localhost:6123' && spawnCount === 1);
+
+    // (d) stop()/status() reflect reality.
+    check('preview stop() kills the tracked server', preview.stop(pvOk).stopped === true);
+    check('preview status is not-running after stop()', preview.status(pvOk).running === false);
+    check('preview stop() on an unknown root is a safe no-op', preview.stop(pvOk).stopped === false);
+    fs.rmSync(pvOk, { recursive: true, force: true });
+
+    // ── Phase 1: live preview — server routes call through to preview.js ──────
+    // Exercise the real HTTP routes (not the module functions directly) so this
+    // proves the server wiring, not just preview.js's own contract (already
+    // covered above). The degrade path needs no injected _spawn/_probe (nothing
+    // is spawned); the running-state path seeds the module's shared registry via
+    // a direct preview.start() call with a fake process, then reads it back
+    // through the HTTP status/stop routes — this is the same shared singleton
+    // server.js's require('./preview') resolves to, so it's a faithful check.
+    const pvRouteNoDev = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-preview-route-nodev-'));
+    fs.mkdirSync(path.join(pvRouteNoDev, 'node_modules'), { recursive: true });
+    fs.writeFileSync(path.join(pvRouteNoDev, 'package.json'), JSON.stringify({ scripts: { build: 'vite build' } }));
+    const pvRoute = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-preview-route-ok-'));
+    fs.mkdirSync(path.join(pvRoute, 'node_modules'), { recursive: true });
+    fs.writeFileSync(path.join(pvRoute, 'package.json'), JSON.stringify({ scripts: { dev: 'vite' } }));
+    await preview.start(pvRoute, { _spawn: countingVite(7654), _probe: okProbe });
+    check('preview module has a running server for pvRoute before hitting routes', preview.status(pvRoute).running === true);
+
+    const routeChecks = await new Promise((resolve) => {
+      const srv = serve(pvRouteNoDev, { port: 0 });
+      srv.on('listening', async () => {
+        const port = srv.address().port;
+        try {
+          const startDegraded = await req(port, 'POST', '/api/preview/start', {});
+          srv.close(() => resolve({ startDegraded }));
+        } catch {
+          srv.close(() => resolve({}));
+        }
+      });
+    });
+    check('POST /api/preview/start calls through to preview.start() (honest degrade, no dev script)', routeChecks.startDegraded && routeChecks.startDegraded.json.ok === false && /dev.*script/i.test(routeChecks.startDegraded.json.message || ''));
+
+    const routeChecks2 = await new Promise((resolve) => {
+      const srv = serve(pvRoute, { port: 0 });
+      srv.on('listening', async () => {
+        const port = srv.address().port;
+        try {
+          const status1 = await req(port, 'GET', '/api/preview/status');
+          const stopped = await req(port, 'POST', '/api/preview/stop', {});
+          const status2 = await req(port, 'GET', '/api/preview/status');
+          srv.close(() => resolve({ status1, stopped, status2 }));
+        } catch {
+          srv.close(() => resolve({}));
+        }
+      });
+    });
+    check('GET /api/preview/status calls through to preview.status() (reflects the running server)', routeChecks2.status1 && routeChecks2.status1.json.running === true && routeChecks2.status1.json.url === 'http://localhost:7654');
+    check('POST /api/preview/stop calls through to preview.stop()', routeChecks2.stopped && routeChecks2.stopped.json.stopped === true);
+    check('status route reflects the stop (not running afterward)', routeChecks2.status2 && routeChecks2.status2.json.running === false);
+    fs.rmSync(pvRouteNoDev, { recursive: true, force: true });
+    fs.rmSync(pvRoute, { recursive: true, force: true });
+
+    // ── openProject() stops the outgoing project's preview on switch ──────────
+    // A preview left running for the project being closed must not survive a
+    // project switch — assert directly against preview.status() (module-level,
+    // the same registry server.js's openProject() mutates) rather than through
+    // an HTTP round trip, since the status route only ever reports activeRoot.
+    const pvA = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-preview-switch-a-'));
+    const pvB = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-preview-switch-b-'));
+    fs.mkdirSync(path.join(pvA, 'node_modules'), { recursive: true });
+    fs.writeFileSync(path.join(pvA, 'package.json'), JSON.stringify({ scripts: { dev: 'vite' } }));
+    await preview.start(pvA, { _spawn: countingVite(7655), _probe: okProbe });
+    check('preview module has a running server for project A before switching', preview.status(pvA).running === true);
+    const switchChecks = await new Promise((resolve) => {
+      const srv = serve(pvA, { port: 0 });
+      srv.on('listening', async () => {
+        const port = srv.address().port;
+        try {
+          const opened = await req(port, 'POST', '/api/action', { type: 'open-project', path: pvB });
+          srv.close(() => resolve({ opened }));
+        } catch {
+          srv.close(() => resolve({}));
+        }
+      });
+    });
+    check('opening project B while A has a live preview succeeds', switchChecks.opened && switchChecks.opened.json.ok === true);
+    check('switching projects via openProject() stops the outgoing project\'s preview', preview.status(pvA).running === false);
+    preview.stop(pvB); // safety net in case a future change starts a preview during open-project
+    fs.rmSync(pvA, { recursive: true, force: true });
+    fs.rmSync(pvB, { recursive: true, force: true });
+
+    // ── Phase 1: on-device preview wiring (loop.js → preview.js) — honest baseUrl ────
+    // loop.js's real-mode on-device branch (stage 4, the `!dataverse` path) must call
+    // preview.start() for a genuine dev-server URL and never fabricate one on failure.
+    // Tested via the extracted resolveOnDeviceBaseUrl() directly — mirrors how
+    // pacInit.registerCodeApp is tested directly above (`_pac`) rather than through the
+    // full loop — so this never spawns a real npm/vite process or touches a real port.
+    const { resolveOnDeviceBaseUrl } = require('./loop');
+    const previewOkEvents = [];
+    const previewOkUrl = await resolveOnDeviceBaseUrl(root, {
+      rotation: 1,
+      emit: async (e) => previewOkEvents.push(e),
+      _previewStart: async () => ({ url: 'http://localhost:6123', pid: 4242 }),
+    });
+    check('real-mode on-device build calls preview.start and uses its URL as baseUrl', previewOkUrl === 'http://localhost:6123');
+
+    const previewDegradeEvents = [];
+    const previewDegradedUrl = await resolveOnDeviceBaseUrl(root, {
+      rotation: 1,
+      emit: async (e) => previewDegradeEvents.push(e),
+      _previewStart: async () => ({ ok: false, message: 'no dev script, so no live preview' }),
+    });
+    check('honest preview degrade leaves baseUrl empty (never fabricated)', previewDegradedUrl === '');
+    check('honest preview degrade emits the plain-language message (not swallowed)', previewDegradeEvents.some((e) => e.level === 'warn' && e.message === 'no dev script, so no live preview'));
+
+    // ── agent harness (P1) · godmode + codeapps + craft/verify/change blend ────
+    const harness = require('./harness');
+    check('harness routes a build request to build mode', harness.route('build a screen to track tasks', 'plan').mode === 'build');
+    check('harness routes a bug report to fix mode', harness.route('the save button is broken', 'act').mode === 'fix');
+    check('harness routes Dataverse work to the dataverse specialist', harness.route('add a Dataverse table for invoices', 'plan').codeapps === 'dataverse-specialist');
+    check('harness routes a connector task to the connector specialist', harness.route('add a SharePoint connector data source to the code app', 'plan').codeapps === 'connector-integrator');
+    check('harness flags UI work for the craft router', harness.route('polish the landing page layout and typography', 'act').ui === true);
+    check('harness flags a runnable surface for verification', harness.route('build a login form screen', 'plan').verify === true);
+    check('harness leaves a plain question unrouted', harness.route('what is the capital of France', 'answer').mode === 'plain');
+    const hOn = { allowHarness: true };
+    check('harness composes a non-empty block on a substantive turn', harness.compose({ taskText: 'build a tasks screen', intent: 'plan', rights: hOn }).includes('POWERCODEX HARNESS'));
+    check('harness skips greetings (chat intent)', harness.compose({ taskText: 'hi there', intent: 'chat', rights: hOn }) === '');
+    check('harness injects nothing when the consent flag is off', harness.compose({ taskText: 'build a tasks screen', intent: 'plan', rights: { allowHarness: false } }) === '');
+    check('harness fails open when rights are missing (default on)', harness.compose({ taskText: 'build a tasks screen', intent: 'plan', rights: null }).includes('POWERCODEX HARNESS'));
+    check('harness always carries the ponytail core + guardrails', /leanest|laziest/i.test(harness.compose({ taskText: 'build x', intent: 'plan', rights: hOn })) && /CLAUDE\.md/.test(harness.compose({ taskText: 'build x', intent: 'plan', rights: hOn })));
+    check('harness appends the codeapps essence for Power Platform tasks', /dataverse/i.test(harness.compose({ taskText: 'add a Dataverse table', intent: 'plan', rights: hOn })));
+    check('harness omits the codeapps block for non-Power-Platform tasks', !/CODEAPPS\//.test(harness.compose({ taskText: 'answer a general question about history', intent: 'answer', rights: hOn })));
+    check('harness never throws — always returns a string', typeof harness.compose({}) === 'string' && harness.compose({ taskText: null, intent: undefined }) !== undefined);
+    check('harness status line names the mode + codeapps skill', /Harness · build/.test(harness.statusLine(harness.route('build a Dataverse app', 'plan'))));
+    // Wiring: the prompt builders prepend the composed harness at the three agent-facing sites.
+    const agentMod = require('./agent');
+    check('agent-mode prompt includes the harness block', /POWERCODEX HARNESS/.test(agentMod.buildAgentPrompt({ message: 'build a tasks screen', rights: hOn })));
+    check('agent-mode prompt omits the harness when disabled', !/POWERCODEX HARNESS/.test(agentMod.buildAgentPrompt({ message: 'build a tasks screen', rights: { allowHarness: false } })));
+    const chatMod = require('./chat');
+    check('chat prompt includes the harness on a plan turn', /POWERCODEX HARNESS/.test(chatMod.buildPrompt({ system: 'x', message: 'build a tasks screen', intent: 'plan', rights: hOn })));
+    check('chat prompt has no harness on a greeting', !/POWERCODEX HARNESS/.test(chatMod.buildPrompt({ system: 'x', message: 'hello', intent: 'chat', rights: hOn })));
+    check('harness flag defaults to on in the consent gate', require('./rights').DEFAULTS.allowHarness === true);
+
+    // ── Phase 1: live preview — Canvas UI (chat.html) carries the Preview|Code toggle ──
+    // UI-only assets can't be driven headless from here (that is task 1.6's real-browser
+    // smoke test); assert the toggle markup + the preview-specific loader exist, and that
+    // the vendored starter copy (which ships in every generated project) stays in lockstep
+    // with the engine copy. The starter path only resolves in the engine repo, so skip it
+    // when running from inside a generated project.
+    const chatHtmlPaths = [
+      path.join(__dirname, '..', 'assets', 'chat.html'),
+      path.join(__dirname, '..', '..', '..', 'templates', 'starter', 'tools', 'lifecycle', 'assets', 'chat.html'),
+    ];
+    for (const [i, p] of chatHtmlPaths.entries()) {
+      if (i === 1 && !fs.existsSync(p)) continue; // vendored starter only exists in the engine repo
+      const label = i === 0 ? 'engine' : 'vendored starter';
+      const html = fs.readFileSync(p, 'utf8');
+      check(`canvas has a Preview|Code toggle (${label})`, /id="cvPreview"/.test(html) && /id="cvCode"/.test(html));
+      check(`canvas preview tab has a device-width toggle + open-in-browser (${label})`, /id="cvOpenBrowser"/.test(html) && /class="dev"/.test(html));
+      check(`canvas has a preview loader separate from showUrlInCanvas, wired to the preview routes (${label})`, /function setPreviewFrame/.test(html) && /api\/preview\/start/.test(html) && /api\/preview\/status/.test(html));
+      check(`preview loader keeps a localhost-only URL guard (rejects javascript:/data:) (${label})`, /function safePreviewUrl/.test(html) && html.includes('localhost):'));
     }
 
     const passed = checks.filter(Boolean).length;
