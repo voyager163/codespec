@@ -765,6 +765,9 @@ async function selftest() {
     check('classifyIntent recognizes "wire up a data source"', classifyIntent('wire up a data source') === 'add-datasource');
     check('classifyIntent recognizes "start a new project called Inspections"', classifyIntent('start a new project called Inspections') === 'scaffold-project');
     check('classifyIntent recognizes "create a new powercodex project"', classifyIntent('create a new powercodex project') === 'scaffold-project');
+    check('classifyIntent does not misroute "create a dashboard for the project" as scaffold-project', classifyIntent('create a dashboard for the project') !== 'scaffold-project');
+    check('classifyIntent does not misroute "make a chart of project progress" as scaffold-project', classifyIntent('make a chart of project progress') !== 'scaffold-project');
+    check('classifyIntent does not misroute "set up a status screen for this project" as scaffold-project', classifyIntent('set up a status screen for this project') !== 'scaffold-project');
     check('classifyIntent leaves an unrelated build ask as plan', classifyIntent('build a screen to track tasks') === 'plan');
     check('classifyIntent leaves "fix it" as act', classifyIntent('fix it') === 'act');
 

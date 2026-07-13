@@ -71,7 +71,7 @@ function classifyIntent(message, history) {
   // the generic 'act' catch-all so they run the actual pac command, not a free-form
   // AI guess. Order matters: scaffold-project before add-datasource ("create a new
   // project" must not be read as "add a data source").
-  if (/\b(start|create|make|set up|scaffold)\b.*\b(new )?(powercodex )?project\b/.test(g) || /\bnew powercodex project\b/.test(g)) {
+  if (/\b(start|create|make|set up|scaffold)\s+(a\s+|an\s+)?new (powercodex )?project\b/.test(g) || /\bnew powercodex project\b/.test(g)) {
     return 'scaffold-project';
   }
   if (/\b(add|wire up|connect|hook up)\b.*\b(data ?source|dataverse table|connector)\b/.test(g)) {
