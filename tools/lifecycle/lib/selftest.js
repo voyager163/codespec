@@ -470,6 +470,23 @@ async function selftest() {
     fs.rmSync(noBuildRoot, { recursive: true, force: true });
     fs.rmSync(bpThrowRoot, { recursive: true, force: true });
 
+    // ── datasource.js: pac code add-data-source wrapper ────────────────────────
+    const datasourceMod = require('./datasource');
+    const dsRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-datasource-'));
+    const dsFakeRuns = [];
+    const dsFakePac = {
+      checkPac: async () => '1.46',
+      runPac: async (args) => { dsFakeRuns.push(args); return { code: 0, stdout: 'added', stderr: '' }; },
+    };
+    const dsOk = await datasourceMod.addDataSource(dsRoot, { api: 'dataverse', table: 'cr_invoice', emit: async () => {}, _pac: dsFakePac });
+    check('addDataSource succeeds and reports added:true', dsOk.added === true);
+    check('addDataSource builds -a and -t flags for a Dataverse table', dsFakeRuns[0].join(' ') === ['code', 'add-data-source', '-a', 'dataverse', '-t', 'cr_invoice'].join(' '));
+    const dsNoTable = await datasourceMod.addDataSource(dsRoot, { api: 'shared_sharepointonline', emit: async () => {}, _pac: dsFakePac });
+    check('addDataSource omits -t for a non-Dataverse connector with no table', !dsFakeRuns[1].includes('-t'));
+    const dsMissingApi = await datasourceMod.addDataSource(dsRoot, { emit: async () => {}, _pac: dsFakePac });
+    check('addDataSource refuses when no api/connector id is given', dsMissingApi.added === false && /api|connector/i.test(dsMissingApi.error || ''));
+    fs.rmSync(dsRoot, { recursive: true, force: true });
+
     // ── Phase 1: live preview (preview.js) — honest-start / honest-degrade ─────
     // start() must run a REAL dev server or degrade honestly — never fabricate a URL.
     // Inject the spawn + probe boundaries (the `_pac` pattern) so this is deterministic
