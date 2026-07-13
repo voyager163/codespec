@@ -17,6 +17,8 @@ const mcp = require('./mcp');
 const browse = require('./browse');
 const { importInto } = require('./import');
 const { scaffold, scaffoldFromStarter, installDeps, isScaffolded } = require('./scaffold');
+const scaffoldCli = require('./scaffold-cli');
+const dataverseSchema = require('./dataverse-schema');
 const preview = require('./preview');
 
 const CLIENT = path.join(__dirname, '..', 'assets', 'dashboard.html');
@@ -149,6 +151,26 @@ function serve(root, opts = {}) {
     });
     render(activeRoot);
     return { ok: true, name: result.name, scaffolded: result.created, installing: true };
+  }
+
+  // Create a brand-new, fully-scaffolded PowerCodex project (starter + OpenSpec + all
+  // OPSX prompts/skills + git init — the same output as `powercodex <name>` on the
+  // command line) inside a folder the maker picked, then switch the live workspace to
+  // it — same "re-point activeRoot" mechanism openProject() already uses.
+  async function scaffoldProject(body = {}) {
+    const targetDir = body.targetDir;
+    if (!targetDir) return { ok: false, error: 'No target folder was selected' };
+    let st;
+    try { st = fs.statSync(targetDir); } catch { return { ok: false, error: 'That folder no longer exists: ' + targetDir }; }
+    if (!st.isDirectory()) return { ok: false, error: 'That path is not a folder: ' + targetDir };
+    const boundEmit = async ({ level, message }) => {
+      emit(activeRoot, { rotation: 0, stage: 0, agent: 'intake', level, message: 'New project · ' + message });
+      render(activeRoot);
+    };
+    const result = await scaffoldCli.scaffoldNewProject(targetDir, { name: body.name, emit: boundEmit });
+    if (!result.scaffolded) return { ok: false, error: result.error || 'Could not scaffold the project' };
+    const opened = openProject(result.projectDir);
+    return Object.assign({ ok: opened.ok !== false, projectDir: result.projectDir }, opened);
   }
 
   // Lightweight project identity for the chat header.
@@ -314,6 +336,18 @@ function serve(root, opts = {}) {
             result.buildError = e.message;
           }
         }
+        if (result.kind === 'scaffold-project' && result.name) {
+          // Chat-driven scaffold has no folder picker (that's an Electron-only native
+          // capability); default to a sibling of the current workspace, same as typing
+          // a name with no location — matches the "usable immediately" goal without
+          // requiring a UI round-trip.
+          const parent = path.dirname(activeRoot);
+          const scaffolded = await scaffoldProject({ targetDir: parent, name: result.name });
+          result.ok = scaffolded.ok;
+          result.reply = scaffolded.ok
+            ? `Created "${result.name}" and switched to it. It's ready to build.`
+            : `Couldn't create "${result.name}": ${scaffolded.error || 'see activity log'}`;
+        }
         return json(res, 200, result);
       }
       if (req.method === 'POST' && req.url.startsWith('/api/action')) {
@@ -322,6 +356,7 @@ function serve(root, opts = {}) {
         // app into the active workspace; everything else is loop control.
         if (body.type === 'open-project') return json(res, 200, openProject(body.path));
         if (body.type === 'create-project') return json(res, 200, createProject(body));
+        if (body.type === 'scaffold-project') return json(res, 200, await scaffoldProject(body));
         // Open the whole project in VS Code, or launch a provider sign-in in a terminal.
         if (body.type === 'open-in-vscode') return json(res, 200, require('./setup').openInVSCode(activeRoot));
         if (body.type === 'provider-signin') return json(res, 200, require('./setup').signIn(body.provider));
@@ -430,6 +465,9 @@ function serve(root, opts = {}) {
       }
       if (req.url.startsWith('/api/plans')) {
         return json(res, 200, { plans: listPlans(activeRoot) });
+      }
+      if (req.method === 'GET' && req.url.startsWith('/api/dataverse-state')) {
+        return json(res, 200, dataverseSchema.readState(activeRoot));
       }
       if (req.url.startsWith('/api/stories')) {
         const { readStories } = require('./stories');

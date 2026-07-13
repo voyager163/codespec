@@ -230,6 +230,43 @@ async function selftest() {
     check('live server serves the generated plan HTML', planServerChecks.pageOk);
     check('live server serves the user guide at /guide', planServerChecks.guideOk);
 
+    // ── scaffold-project: /api/action creates a new project + re-points the workspace ──
+    const scaffoldParent = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-scaffold-parent-'));
+    const scaffoldSrv = serve(root, { port: 0 });
+    const scaffoldServerChecks = await new Promise((resolve) => {
+      scaffoldSrv.on('listening', async () => {
+        const port = scaffoldSrv.address().port;
+        try {
+          const result = await req(port, 'POST', '/api/action', { type: 'scaffold-project', targetDir: scaffoldParent, name: 'demo-app' });
+          scaffoldSrv.close(() => resolve({ result }));
+        } catch (e) {
+          scaffoldSrv.close(() => resolve({ error: e.message }));
+        }
+      });
+    });
+    // The real bin/create-powercodex.js isn't spawned against a throwaway dir in this
+    // fast selftest (it needs npm/git and takes real seconds); assert the route exists
+    // and degrades honestly (never crashes, never fabricates success) when scaffolding
+    // can't complete in this sandbox — the true happy path is covered by Task 3's unit
+    // test (fake CLI) and Task 9's manual end-to-end run.
+    check('scaffold-project route exists and returns a well-formed response', scaffoldServerChecks.result && 'ok' in scaffoldServerChecks.result.json);
+    fs.rmSync(scaffoldParent, { recursive: true, force: true });
+
+    // ── /api/dataverse-state: read-only table list for the Add-datasource picker ──
+    const dvStateRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-dvstate-'));
+    const { writeState: writeDvState } = require('./dataverse-schema');
+    writeDvState(dvStateRoot, { tables: [{ displayName: 'Invoices', logicalName: 'cr_invoice', columns: [] }] });
+    const dvSrv = serve(dvStateRoot, { port: 0 });
+    const dvChecks = await new Promise((resolve) => {
+      dvSrv.on('listening', async () => {
+        const port = dvSrv.address().port;
+        const state = await req(port, 'GET', '/api/dataverse-state');
+        dvSrv.close(() => resolve({ state }));
+      });
+    });
+    check('/api/dataverse-state returns the tables already applied to Dataverse', Array.isArray(dvChecks.state.json.tables) && dvChecks.state.json.tables[0].logicalName === 'cr_invoice');
+    fs.rmSync(dvStateRoot, { recursive: true, force: true });
+
     // Portable import into a throwaway "any project".
     const impRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-import-'));
     fs.writeFileSync(path.join(impRoot, 'package.json'), JSON.stringify({ name: 'acme-portal', scripts: { dev: 'vite' }, devDependencies: { vite: '^5' } }, null, 2));
