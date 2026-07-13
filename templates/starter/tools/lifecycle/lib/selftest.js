@@ -823,6 +823,8 @@ async function selftest() {
       check(`toolbar has an Add datasource button (${label})`, /id="datasourceBtn"/.test(html));
       check(`Add-datasource panel lists Dataverse tables from /api/dataverse-state (${label})`, /api\/dataverse-state/.test(html) && /id="dsPanel"/.test(html));
       check(`there is a Create new project entry point calling scaffold-project (${label})`, /id="newProjectBtn"/.test(html) && html.includes("'scaffold-project'"));
+      const scriptMatch = html.match(/<script>([\s\S]*?)<\/script>/);
+      check(`inline script parses without a syntax error (${label})`, (() => { try { new Function(scriptMatch[1]); return true; } catch { return false; } })());
     }
 
     const passed = checks.filter(Boolean).length;

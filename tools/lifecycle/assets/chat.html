@@ -1038,7 +1038,7 @@
     const table = $('dsTableSelect').value;
     const connector = $('dsConnectorInput').value.trim();
     $('dsOverlay').classList.remove('open');
-    bubble('me', table ? 'Add datasource: '+table : (connector ? 'Add datasource: '+connector : 'Add datasource'));
+    bubble('me', table ? 'Add datasource: '+esc(table) : (connector ? 'Add datasource: '+esc(connector) : 'Add datasource'));
     const r = await api('add-datasource', table ? {api:'dataverse', table} : {api: connector});
     bubble('ai', r.ok ? '✅ Data source added.' : '⚠️ ' + esc(r.error || 'Could not add that data source'));
   };
@@ -1051,11 +1051,11 @@
     if(window.pcDesktop && window.pcDesktop.pickFolder) targetDir = await window.pcDesktop.pickFolder();
     if(!targetDir) targetDir = prompt('Folder to create it in (absolute path):');
     if(!targetDir) return;
-    bubble('me', 'New project: '+name);
+    bubble('me', 'New project: '+esc(name));
     const typing = showTyping();
     const r = await api('scaffold-project', {targetDir, name});
     typing.remove();
-    bubble('ai', r.ok ? '✅ Created "'+esc(name)+'" and switched to it. It's ready to build.' : '⚠️ ' + esc(r.error || 'Could not create the project'));
+    bubble('ai', r.ok ? '✅ Created "'+esc(name)+'" and switched to it. It’s ready to build.' : '⚠️ ' + esc(r.error || 'Could not create the project'));
     if(r.ok){ loadTree(); }
   };
 
