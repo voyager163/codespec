@@ -182,6 +182,17 @@
   .canvas .pick{margin-left:auto;display:flex;align-items:center;gap:6px}
   .canvas .pick select{background:var(--panel-2);color:var(--muted);border:1px solid var(--line);border-radius:7px;font-size:10.5px;padding:4px 6px;max-width:150px;font-family:inherit}
   .canvas .pick select:hover{border-color:var(--line-2);color:var(--text)}
+  /* canvas Preview | Code toggle + live-preview mode */
+  .canvas .ch .cvmode{flex:none;border-radius:8px}
+  .canvas .ch .cvmode .o{padding:5px 10px;font-size:10.5px;gap:5px}
+  .canvas .ch .cvmode .o.on.code{color:#06203f;background:linear-gradient(135deg,var(--accent),var(--cyan))}
+  .canvas .ch .cvmode .o.on.preview{color:#06203f;background:linear-gradient(135deg,var(--accent-2),#c4b5fd)}
+  .canvas .ch .dev{display:inline-flex;gap:4px}
+  .canvas .ch .dev .b.on{color:#06203f;border-color:transparent;background:linear-gradient(135deg,var(--accent),var(--accent-2))}
+  .canvas .pvwrap{flex:1;min-height:0;overflow:auto;background:#0a0c11;display:flex;justify-content:center}
+  .canvas .pvwrap iframe{flex:1;border:none;background:#fff;height:100%;width:100%}
+  .canvas .pvwrap.framed{padding:14px}
+  .canvas .pvwrap.framed iframe{flex:none;height:100%;max-width:100%;border-radius:10px;box-shadow:var(--shadow)}
 
   /* ---------- workspace file tree ---------- */
   .tree{width:0;flex:none;border-right:1px solid var(--line);background:#0a0c11;display:flex;flex-direction:column;overflow:hidden;transition:width .3s var(--ease-out)}
@@ -329,15 +340,29 @@
     <div class="split hidden" id="splitCanvas"></div>
     <aside class="canvas" id="canvas">
       <div class="ch">
-        <span>📄</span><span class="t">Canvas</span><span class="fn" id="canvasFn">plan-preview.html</span>
-        <span class="pick">
+        <div class="modepick cvmode">
+          <button class="o code on" id="cvCode" title="See the plan &amp; files">📄 Code</button>
+          <button class="o preview" id="cvPreview" title="See your app running with mock data">▶ Preview</button>
+        </div>
+        <span class="fn" id="canvasFn">plan-preview.html</span>
+        <span class="pick" id="cvCodeCtl">
           <select id="canvasPick" title="Switch artifact"></select>
           <button class="b" id="canvasOpen">⤢ Open</button>
           <button class="b go" id="canvasBuild">⚡ Build this</button>
         </span>
+        <span class="pick" id="cvPreviewCtl" style="display:none">
+          <span class="dev">
+            <button class="b on" data-w="0" title="Desktop width">🖥</button>
+            <button class="b" data-w="834" title="Tablet width">▤</button>
+            <button class="b" data-w="390" title="Mobile width">▯</button>
+          </span>
+          <button class="b" id="cvOpenBrowser" title="Open the running preview in a new browser tab">↗ Browser</button>
+        </span>
       </div>
       <div class="empty" id="canvasEmpty">Your plan will preview here once we've shaped it in Chat.</div>
       <iframe id="canvasFrame" title="Plan preview" style="display:none"></iframe>
+      <div class="empty" id="previewState" style="display:none"></div>
+      <div class="pvwrap" id="previewWrap" style="display:none"><iframe id="previewFrame" title="Live app preview"></iframe></div>
     </aside>
   </main>
 
@@ -379,6 +404,7 @@
     history: [], providerId: null, activeProvider: null, providers: [],
     poll: null, shownHeal: false, builtOnce: false, fpPath: null, canvasUrl: null, runNode: null,
     treeRoot: null, projType: null,
+    canvasMode: 'code', previewUrl: null, previewPoll: null, previewDevW: 0,
     anyReady: false, vscode: false, skippedSetup: false,
   };
 
@@ -619,11 +645,12 @@
   // ---------- canvas ----------
   function openCanvas(on){
     const c=$('canvas'); c.classList.toggle('open', on); $('canvasToggle').classList.toggle('on', on); $('splitCanvas').classList.toggle('hidden', !on);
-    if(on){ const cw=parseInt(localStorage.getItem('pcx.canvasW')||'',10); c.style.width = cw ? Math.max(300,cw)+'px' : ''; }
-    else { c.style.width=''; }
+    if(on){ const cw=parseInt(localStorage.getItem('pcx.canvasW')||'',10); c.style.width = cw ? Math.max(300,cw)+'px' : ''; if(app.canvasMode==='preview') startPreviewPolling(); }
+    else { c.style.width=''; stopPreviewPolling(); }
   }
   // Point the canvas iframe at any URL (an artifact, a saved plan, or a previewed file).
   function showUrlInCanvas(url, fn){
+    if(app.canvasMode==='preview') setCanvasMode('code'); // loading a doc is a Code-tab action
     const f=$('canvasFrame'); f.style.display='block'; $('canvasEmpty').style.display='none';
     // Only load same-origin app paths into the canvas iframe — never a
     // javascript:/data: URL a crafted artifact/plan name could smuggle in.
@@ -663,6 +690,7 @@
   }
   function renderCanvas(){
     if(!app.plan) return;
+    if(app.canvasMode==='preview') setCanvasMode('code');
     const f=$('canvasFrame'); f.style.display='block'; $('canvasEmpty').style.display='none';
     if(app.planFile){
       // Render the comprehensive plan document the server saved into the repo.
@@ -676,10 +704,87 @@
   async function refreshCanvas(){
     const plans = await getPlans();
     if(plans.length){
+      if(app.canvasMode==='preview') setCanvasMode('code');
       const p = plans[plans.length-1]; const f=$('canvasFrame');
       f.style.display='block'; $('canvasEmpty').style.display='none';
       f.removeAttribute('srcdoc'); f.src = '/'+p.file;
       $('canvasFn').textContent = p.file.split('/').pop(); app.canvasUrl = '/'+p.file;
+    }
+  }
+
+  // ---------- live preview (Preview tab) ----------
+  // The Preview tab shows the app actually running on its local dev server (mock data),
+  // as opposed to the Code tab's plan/artifact documents. It talks to the server's
+  // /api/preview/{start,status} routes and renders the real dev-server URL in its OWN
+  // iframe. It deliberately does NOT reuse showUrlInCanvas(): that guard only accepts
+  // same-origin "/"-paths (to block javascript:/data: smuggling from artifact names),
+  // and a dev server lives at http://localhost:<port>/. We keep an equally tight guard
+  // here — localhost/127.0.0.1 origins only — so loosening the artifact guard was never
+  // needed and every other caller stays protected.
+  function safePreviewUrl(url){
+    return typeof url==='string' && /^http:\/\/(127\.0\.0\.1|localhost):\d+(\/|$)/.test(url) ? url : null;
+  }
+  function showPreviewState(msg){
+    $('previewWrap').style.display='none';
+    const s=$('previewState'); s.style.display='grid'; s.textContent=msg;
+  }
+  function setPreviewFrame(url){
+    const safe=safePreviewUrl(url);
+    if(!safe){ showPreviewState('That preview address looked unsafe, so I didn’t load it. Try building again.'); return; }
+    app.previewUrl=safe;
+    $('previewState').style.display='none'; $('previewWrap').style.display='flex';
+    const f=$('previewFrame'); if(f.getAttribute('src')!==safe) f.src=safe;
+    $('canvasFn').textContent=safe.replace(/^https?:\/\//,'');
+    applyPreviewWidth();
+  }
+  function applyPreviewWidth(){
+    const w=app.previewDevW|0, wrap=$('previewWrap'), f=$('previewFrame');
+    if(w>0){ wrap.classList.add('framed'); f.style.width=w+'px'; }
+    else { wrap.classList.remove('framed'); f.style.width=''; }
+  }
+  async function startPreview(){
+    // Reuse a URL we already hold (no cold-start flash); the server's start is
+    // idempotent, and polling will catch it if the server has since died.
+    if(app.previewUrl){ setPreviewFrame(app.previewUrl); startPreviewPolling(); return; }
+    showPreviewState('Starting your preview… the first run installs what it needs, so give it a moment.');
+    let data=null;
+    try { data = await (await fetch('/api/preview/start',{method:'POST'})).json(); } catch { data=null; }
+    if(app.canvasMode!=='preview') return; // user switched to Code while we waited
+    if(data && data.url){ setPreviewFrame(data.url); startPreviewPolling(); }
+    else { showPreviewState((data && data.message) || 'I couldn’t start the preview just now. Make sure your app has a dev script, then try Preview again.'); }
+  }
+  function startPreviewPolling(){
+    stopPreviewPolling();
+    // Watch the dev server while the Preview tab is active; surface an honest error
+    // (never a blank iframe) if it dies. Stops itself when the tab is hidden/closed.
+    app.previewPoll=setInterval(async ()=>{
+      if(app.canvasMode!=='preview'){ stopPreviewPolling(); return; }
+      let s=null; try { s=await (await fetch('/api/preview/status',{cache:'no-store'})).json(); } catch {}
+      if(app.canvasMode!=='preview'){ stopPreviewPolling(); return; }
+      if(s && s.running && s.url){ if(app.previewUrl!==s.url) setPreviewFrame(s.url); }
+      else { app.previewUrl=null; stopPreviewPolling(); showPreviewState('The preview server stopped. Switch back to Preview to start it again.'); }
+    }, 3000);
+  }
+  function stopPreviewPolling(){ if(app.previewPoll){ clearInterval(app.previewPoll); app.previewPoll=null; } }
+  // Restore the Code tab's own view: the loaded doc if there is one, else the placeholder.
+  function showCodeView(){
+    const f=$('canvasFrame'), has=f.getAttribute('src')||f.getAttribute('srcdoc');
+    f.style.display=has?'block':'none'; $('canvasEmpty').style.display=has?'none':'grid';
+    $('canvasFn').textContent=app.canvasUrl?app.canvasUrl.split('/').pop():'plan-preview.html';
+  }
+  function setCanvasMode(mode){
+    app.canvasMode=mode; const preview=mode==='preview';
+    $('cvCode').className='o code'+(preview?'':' on');
+    $('cvPreview').className='o preview'+(preview?' on':'');
+    $('cvCodeCtl').style.display=preview?'none':'';
+    $('cvPreviewCtl').style.display=preview?'':'none';
+    if(preview){
+      $('canvasEmpty').style.display='none'; $('canvasFrame').style.display='none';
+      startPreview();
+    } else {
+      stopPreviewPolling();
+      $('previewWrap').style.display='none'; $('previewState').style.display='none';
+      showCodeView();
     }
   }
 
@@ -886,6 +991,13 @@
   $('setupOverlay').onclick = (e)=>{ if(e.target===$('setupOverlay')){ app.skippedSetup=true; closeSetup(); } };
   $('canvasOpen').onclick = ()=>{ if(app.canvasUrl){ window.open(app.canvasUrl,'_blank'); } else if(app.plan){ const w=window.open('','_blank'); w.document.write(buildPreviewHtml(app.plan)); w.document.close(); } };
   $('canvasBuild').onclick = ()=>{ if(app.plan) build(); };
+  $('cvCode').onclick = ()=> setCanvasMode('code');
+  $('cvPreview').onclick = ()=> setCanvasMode('preview');
+  $('cvOpenBrowser').onclick = ()=>{ if(app.previewUrl) window.open(app.previewUrl,'_blank'); };
+  document.querySelectorAll('#cvPreviewCtl .dev .b').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('#cvPreviewCtl .dev .b').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); app.previewDevW=parseInt(b.dataset.w,10)||0; applyPreviewWidth();
+  });
   $('openProjectBtn').onclick = chooseProject;
   $('fpClose').onclick = hideFolderModal;
   $('fpGo').onclick = ()=>{ const v=$('fpInput').value.trim(); if(v) openFolder(v); };

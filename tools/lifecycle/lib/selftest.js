@@ -623,6 +623,26 @@ async function selftest() {
     check('chat prompt has no harness on a greeting', !/POWERCODEX HARNESS/.test(chatMod.buildPrompt({ system: 'x', message: 'hello', intent: 'chat', rights: hOn })));
     check('harness flag defaults to on in the consent gate', require('./rights').DEFAULTS.allowHarness === true);
 
+    // ── Phase 1: live preview — Canvas UI (chat.html) carries the Preview|Code toggle ──
+    // UI-only assets can't be driven headless from here (that is task 1.6's real-browser
+    // smoke test); assert the toggle markup + the preview-specific loader exist, and that
+    // the vendored starter copy (which ships in every generated project) stays in lockstep
+    // with the engine copy. The starter path only resolves in the engine repo, so skip it
+    // when running from inside a generated project.
+    const chatHtmlPaths = [
+      path.join(__dirname, '..', 'assets', 'chat.html'),
+      path.join(__dirname, '..', '..', '..', 'templates', 'starter', 'tools', 'lifecycle', 'assets', 'chat.html'),
+    ];
+    for (const [i, p] of chatHtmlPaths.entries()) {
+      if (i === 1 && !fs.existsSync(p)) continue; // vendored starter only exists in the engine repo
+      const label = i === 0 ? 'engine' : 'vendored starter';
+      const html = fs.readFileSync(p, 'utf8');
+      check(`canvas has a Preview|Code toggle (${label})`, /id="cvPreview"/.test(html) && /id="cvCode"/.test(html));
+      check(`canvas preview tab has a device-width toggle + open-in-browser (${label})`, /id="cvOpenBrowser"/.test(html) && /class="dev"/.test(html));
+      check(`canvas has a preview loader separate from showUrlInCanvas, wired to the preview routes (${label})`, /function setPreviewFrame/.test(html) && /api\/preview\/start/.test(html) && /api\/preview\/status/.test(html));
+      check(`preview loader keeps a localhost-only URL guard (rejects javascript:/data:) (${label})`, /function safePreviewUrl/.test(html) && html.includes('localhost):'));
+    }
+
     const passed = checks.filter(Boolean).length;
     const ok = checks.every(Boolean);
     console.log(`\n${ok ? 'PASS' : 'FAIL'} · ${passed}/${checks.length} checks · summary ${JSON.stringify(summary)}`);
