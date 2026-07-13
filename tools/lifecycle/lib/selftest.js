@@ -248,6 +248,30 @@ async function selftest() {
     check('scaffolded package.json is renamed from the template to the project', newPkg.name === 'field-reports');
     fs.rmSync(newAppRoot, { recursive: true, force: true });
 
+    // ── scaffold-cli.js: spawns bin/create-powercodex.js, parses [run]/[ok]/[fail] lines ──
+    const scaffoldCli = require('./scaffold-cli');
+    const scParent = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-scaffold-cli-'));
+    const scLog = [];
+    // Inject a fake CLI script so this never spawns npm install / git init for real.
+    const fakeCliPath = path.join(scParent, 'fake-create.js');
+    fs.writeFileSync(fakeCliPath, `
+      console.log('[run] Copy starter template');
+      console.log('[ok] Copy starter template');
+      console.log('[run] Initialize git repository');
+      console.log('[ok] Initialize git repository');
+    `);
+    const scOk = await scaffoldCli.scaffoldNewProject(scParent, {
+      name: 'demo-app',
+      emit: async ({ level, message }) => scLog.push(`[${level}] ${message}`),
+      _binPath: fakeCliPath,
+    });
+    check('scaffoldNewProject reports scaffolded:true on a clean exit', scOk.scaffolded === true);
+    check('scaffoldNewProject resolves projectDir to targetDir/name', scOk.projectDir === path.join(scParent, 'demo-app'));
+    check('scaffoldNewProject relays [ok] lines as good-level progress', scLog.some((l) => l.startsWith('[good]') && l.includes('Copy starter template')));
+    const scMissing = await scaffoldCli.scaffoldNewProject(scParent, { name: 'x', emit: async () => {}, _binPath: null });
+    check('scaffoldNewProject degrades honestly when the CLI is not available', scMissing.scaffolded === false && /not available/i.test(scMissing.error || ''));
+    fs.rmSync(scParent, { recursive: true, force: true });
+
     // ── brownfield ingestion · code-grounded intake · freeze ─────────────────
     const { buildDigest, writeDigest, readDigest } = require('./digest');
     const { buildStories, readStories, refineStories } = require('./stories');
