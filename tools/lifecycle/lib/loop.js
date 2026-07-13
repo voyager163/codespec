@@ -9,6 +9,7 @@ const { scoreCompliance } = require('./compliance');
 const freeze = require('./freeze');
 const { readStories } = require('./stories');
 const pacInit = require('./pac-init');
+const preview = require('./preview');
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -212,8 +213,19 @@ async function runLoop(root, opts = {}) {
         await emit({ rotation: r, stage: 4, agent: 'runner', level: 'good', message: `Captured app URL → ${baseUrl} · stored in Approved_rights/approval.json` });
       }
     } else {
-      // On-device: the build gate compiles the app (real), or a local dev URL (simulate).
-      baseUrl = opts.appUrl || rights.appUrl || (realMode ? '' : 'http://127.0.0.1:5173');
+      // On-device: the build gate compiles the app (real) via a live preview server, or a
+      // local dev URL (simulate — unchanged, a labeled demo value, never touched here).
+      // Real mode calls preview.start() for a genuine dev-server URL instead of leaving
+      // baseUrl fabricated/empty by accident; honest degrade (never a fake URL) mirrors
+      // pacInit.pushCodeApp's try/catch a few lines above. Extracted to
+      // resolveOnDeviceBaseUrl() so it's testable without running the whole loop (same
+      // shape as pacInit.registerCodeApp's `_pac` boundary).
+      baseUrl = opts.appUrl || rights.appUrl || '';
+      if (!baseUrl) {
+        baseUrl = realMode
+          ? await resolveOnDeviceBaseUrl(root, { rotation: r, emit, _previewStart: opts._previewStart })
+          : 'http://127.0.0.1:5173';
+      }
       await emit({
         rotation: r,
         stage: 4,
@@ -394,6 +406,22 @@ async function runLoop(root, opts = {}) {
   return summary;
 }
 
+// Real-mode stage-4 baseUrl: calls preview.js for a genuine dev-server URL instead of
+// leaving baseUrl fabricated/empty by accident. Honest degrade (result.ok === false)
+// emits the plain-language message and leaves baseUrl empty — never a fake URL. Exported
+// as its own function (mirrors pacInit.registerCodeApp's testable-without-the-loop shape,
+// `_pac` → `_previewStart`) so selftest can inject a fake preview.start instead of
+// spawning a real npm/vite process.
+async function resolveOnDeviceBaseUrl(root, { rotation, emit, _previewStart } = {}) {
+  const previewStart = _previewStart || preview.start;
+  const result = await previewStart(root, { emit: (e) => emit({ rotation, stage: 4, agent: 'runner', ...e }) });
+  if (result && result.url) return result.url;
+  if (result && result.ok === false) {
+    await emit({ rotation, stage: 4, agent: 'runner', level: 'warn', message: result.message });
+  }
+  return '';
+}
+
 // Turn the run options into concrete build tasks. Priority: explicit opts.tasks →
 // planner output from the approved plan/goal → a representative sample (demo legibility).
 function resolveTasks(opts, root) {
@@ -455,4 +483,4 @@ function pickObservation(rotation) {
   return list[(rotation - 1) % list.length];
 }
 
-module.exports = { runLoop };
+module.exports = { runLoop, resolveOnDeviceBaseUrl };

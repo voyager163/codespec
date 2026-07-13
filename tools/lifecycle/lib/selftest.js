@@ -491,6 +491,110 @@ async function selftest() {
     check('preview stop() on an unknown root is a safe no-op', preview.stop(pvOk).stopped === false);
     fs.rmSync(pvOk, { recursive: true, force: true });
 
+    // ── Phase 1: live preview — server routes call through to preview.js ──────
+    // Exercise the real HTTP routes (not the module functions directly) so this
+    // proves the server wiring, not just preview.js's own contract (already
+    // covered above). The degrade path needs no injected _spawn/_probe (nothing
+    // is spawned); the running-state path seeds the module's shared registry via
+    // a direct preview.start() call with a fake process, then reads it back
+    // through the HTTP status/stop routes — this is the same shared singleton
+    // server.js's require('./preview') resolves to, so it's a faithful check.
+    const pvRouteNoDev = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-preview-route-nodev-'));
+    fs.mkdirSync(path.join(pvRouteNoDev, 'node_modules'), { recursive: true });
+    fs.writeFileSync(path.join(pvRouteNoDev, 'package.json'), JSON.stringify({ scripts: { build: 'vite build' } }));
+    const pvRoute = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-preview-route-ok-'));
+    fs.mkdirSync(path.join(pvRoute, 'node_modules'), { recursive: true });
+    fs.writeFileSync(path.join(pvRoute, 'package.json'), JSON.stringify({ scripts: { dev: 'vite' } }));
+    await preview.start(pvRoute, { _spawn: countingVite(7654), _probe: okProbe });
+    check('preview module has a running server for pvRoute before hitting routes', preview.status(pvRoute).running === true);
+
+    const routeChecks = await new Promise((resolve) => {
+      const srv = serve(pvRouteNoDev, { port: 0 });
+      srv.on('listening', async () => {
+        const port = srv.address().port;
+        try {
+          const startDegraded = await req(port, 'POST', '/api/preview/start', {});
+          srv.close(() => resolve({ startDegraded }));
+        } catch {
+          srv.close(() => resolve({}));
+        }
+      });
+    });
+    check('POST /api/preview/start calls through to preview.start() (honest degrade, no dev script)', routeChecks.startDegraded && routeChecks.startDegraded.json.ok === false && /dev.*script/i.test(routeChecks.startDegraded.json.message || ''));
+
+    const routeChecks2 = await new Promise((resolve) => {
+      const srv = serve(pvRoute, { port: 0 });
+      srv.on('listening', async () => {
+        const port = srv.address().port;
+        try {
+          const status1 = await req(port, 'GET', '/api/preview/status');
+          const stopped = await req(port, 'POST', '/api/preview/stop', {});
+          const status2 = await req(port, 'GET', '/api/preview/status');
+          srv.close(() => resolve({ status1, stopped, status2 }));
+        } catch {
+          srv.close(() => resolve({}));
+        }
+      });
+    });
+    check('GET /api/preview/status calls through to preview.status() (reflects the running server)', routeChecks2.status1 && routeChecks2.status1.json.running === true && routeChecks2.status1.json.url === 'http://localhost:7654');
+    check('POST /api/preview/stop calls through to preview.stop()', routeChecks2.stopped && routeChecks2.stopped.json.stopped === true);
+    check('status route reflects the stop (not running afterward)', routeChecks2.status2 && routeChecks2.status2.json.running === false);
+    fs.rmSync(pvRouteNoDev, { recursive: true, force: true });
+    fs.rmSync(pvRoute, { recursive: true, force: true });
+
+    // ── openProject() stops the outgoing project's preview on switch ──────────
+    // A preview left running for the project being closed must not survive a
+    // project switch — assert directly against preview.status() (module-level,
+    // the same registry server.js's openProject() mutates) rather than through
+    // an HTTP round trip, since the status route only ever reports activeRoot.
+    const pvA = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-preview-switch-a-'));
+    const pvB = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-preview-switch-b-'));
+    fs.mkdirSync(path.join(pvA, 'node_modules'), { recursive: true });
+    fs.writeFileSync(path.join(pvA, 'package.json'), JSON.stringify({ scripts: { dev: 'vite' } }));
+    await preview.start(pvA, { _spawn: countingVite(7655), _probe: okProbe });
+    check('preview module has a running server for project A before switching', preview.status(pvA).running === true);
+    const switchChecks = await new Promise((resolve) => {
+      const srv = serve(pvA, { port: 0 });
+      srv.on('listening', async () => {
+        const port = srv.address().port;
+        try {
+          const opened = await req(port, 'POST', '/api/action', { type: 'open-project', path: pvB });
+          srv.close(() => resolve({ opened }));
+        } catch {
+          srv.close(() => resolve({}));
+        }
+      });
+    });
+    check('opening project B while A has a live preview succeeds', switchChecks.opened && switchChecks.opened.json.ok === true);
+    check('switching projects via openProject() stops the outgoing project\'s preview', preview.status(pvA).running === false);
+    preview.stop(pvB); // safety net in case a future change starts a preview during open-project
+    fs.rmSync(pvA, { recursive: true, force: true });
+    fs.rmSync(pvB, { recursive: true, force: true });
+
+    // ── Phase 1: on-device preview wiring (loop.js → preview.js) — honest baseUrl ────
+    // loop.js's real-mode on-device branch (stage 4, the `!dataverse` path) must call
+    // preview.start() for a genuine dev-server URL and never fabricate one on failure.
+    // Tested via the extracted resolveOnDeviceBaseUrl() directly — mirrors how
+    // pacInit.registerCodeApp is tested directly above (`_pac`) rather than through the
+    // full loop — so this never spawns a real npm/vite process or touches a real port.
+    const { resolveOnDeviceBaseUrl } = require('./loop');
+    const previewOkEvents = [];
+    const previewOkUrl = await resolveOnDeviceBaseUrl(root, {
+      rotation: 1,
+      emit: async (e) => previewOkEvents.push(e),
+      _previewStart: async () => ({ url: 'http://localhost:6123', pid: 4242 }),
+    });
+    check('real-mode on-device build calls preview.start and uses its URL as baseUrl', previewOkUrl === 'http://localhost:6123');
+
+    const previewDegradeEvents = [];
+    const previewDegradedUrl = await resolveOnDeviceBaseUrl(root, {
+      rotation: 1,
+      emit: async (e) => previewDegradeEvents.push(e),
+      _previewStart: async () => ({ ok: false, message: 'no dev script, so no live preview' }),
+    });
+    check('honest preview degrade leaves baseUrl empty (never fabricated)', previewDegradedUrl === '');
+    check('honest preview degrade emits the plain-language message (not swallowed)', previewDegradeEvents.some((e) => e.level === 'warn' && e.message === 'no dev script, so no live preview'));
+
     // ── agent harness (P1) · godmode + codeapps + craft/verify/change blend ────
     const harness = require('./harness');
     check('harness routes a build request to build mode', harness.route('build a screen to track tasks', 'plan').mode === 'build');

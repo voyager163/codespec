@@ -17,6 +17,7 @@ const mcp = require('./mcp');
 const browse = require('./browse');
 const { importInto } = require('./import');
 const { scaffold, scaffoldFromStarter, installDeps, isScaffolded } = require('./scaffold');
+const preview = require('./preview');
 
 const CLIENT = path.join(__dirname, '..', 'assets', 'dashboard.html');
 const GUIDE = path.join(__dirname, '..', 'assets', 'user-guide.html');
@@ -62,6 +63,9 @@ function serve(root, opts = {}) {
     } catch {
       digest = null;
     }
+    // A preview server for the project we're leaving must not keep running against
+    // the project we're about to open — stop it before repointing activeRoot.
+    preview.stop(activeRoot);
     activeRoot = abs;
     controller = new Controller(activeRoot, { simulate });
     render(activeRoot);
@@ -293,6 +297,22 @@ function serve(root, opts = {}) {
         if (body.type === 'open-in-vscode') return json(res, 200, require('./setup').openInVSCode(activeRoot));
         if (body.type === 'provider-signin') return json(res, 200, require('./setup').signIn(body.provider));
         return json(res, 200, await controller.action(body));
+      }
+      // Live preview: start/stop/status the local dev server for the active project
+      // (preview.js). start() streams plain-language progress onto the bus the same
+      // way /api/agent does, so the Canvas sees "Installing dependencies…", etc.
+      if (req.method === 'POST' && req.url.startsWith('/api/preview/start')) {
+        const boundEmit = (e) => {
+          emit(activeRoot, Object.assign({ rotation: 0, stage: 0, agent: 'preview', level: 'info', message: '' }, e));
+          render(activeRoot);
+        };
+        return json(res, 200, await preview.start(activeRoot, { emit: boundEmit }));
+      }
+      if (req.method === 'POST' && req.url.startsWith('/api/preview/stop')) {
+        return json(res, 200, preview.stop(activeRoot));
+      }
+      if (req.url.startsWith('/api/preview/status')) {
+        return json(res, 200, preview.status(activeRoot));
       }
       // Deep readiness: installed AND signed in, per provider (probes the CLIs, so it can
       // take a few seconds). Drives the no-degrade setup gate.

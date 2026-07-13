@@ -9,6 +9,7 @@ const fs = require('node:fs');
 // The lifecycle tool is vendored next to the app (scripts/sync-lifecycle.js copies
 // it in before start/dist), so everything ships inside the packaged .exe.
 const { serve } = require(path.join(__dirname, 'vendor', 'lifecycle', 'lib', 'server'));
+const preview = require(path.join(__dirname, 'vendor', 'lifecycle', 'lib', 'preview'));
 
 let mainWindow = null;
 let server = null;
@@ -104,5 +105,10 @@ app.on('quit', () => {
     if (server) server.close();
   } catch {
     /* best-effort shutdown */
+  }
+  try {
+    preview.stopAll();
+  } catch {
+    /* best-effort shutdown — preview.js also self-registers on process exit */
   }
 });
