@@ -349,6 +349,8 @@
 
 <script>
   const $ = (id)=>document.getElementById(id);
+  // Escape HTML metacharacters — dropped file names are DOM text, never markup.
+  const esc = (s)=>String(s==null?'':s).replace(/[&<>"']/g, (c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const views = { intake:$('view-intake'), dash:$('view-dash'), plan:$('view-plan') };
   document.querySelectorAll('.tab').forEach(t=>{
     t.addEventListener('click',()=>{
@@ -368,7 +370,7 @@
     {name:'README.md',ext:'MD',sz:'3.4 KB'},
   ];
   function renderFiles(list){
-    filelist.innerHTML=list.map(f=>`<li><span class="ext">${f.ext}</span><span>${f.name}</span><span class="sz">${f.sz}</span></li>`).join('');
+    filelist.innerHTML=list.map(f=>`<li><span class="ext">${esc(f.ext)}</span><span>${esc(f.name)}</span><span class="sz">${esc(f.sz)}</span></li>`).join('');
   }
   drop.addEventListener('click',()=>filein.click());
   drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('over')});

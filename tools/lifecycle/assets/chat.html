@@ -385,6 +385,8 @@
   // ---------- helpers ----------
   function scroll(){ thread.scrollTop = thread.scrollHeight; }
   function esc(s){ return String(s).replace(/[&<>"]/g, (c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+  // Strip HTML tags, looping until stable so nested/overlapping tags can't re-form.
+  function stripTags(s){ let o=String(s==null?'':s),p; do{ p=o; o=o.replace(/<[^>]+>/g,''); }while(o!==p); return o; }
   function bubble(role, html){
     const m = document.createElement('div'); m.className = 'msg ' + role;
     m.innerHTML = '<div class="av '+(role==='ai'?'ai':'me')+'">'+(role==='ai'?'✦':'🙂')+'</div><div class="bub">'+html+'</div>';
@@ -514,7 +516,7 @@
     if(!app.plan) return;
     setMode('agent'); app.shownHeal = false;
     bubble('me', 'Build this 👍');
-    const plainItems = app.plan.items.map(i=>i.replace(/<[^>]+>/g,''));
+    const plainItems = app.plan.items.map(i=>stripTags(i));
     const mvp = plainItems.map(i=>'• '+i).join('\n');
     // Send the approved plan so the loop builds exactly these capabilities, and the
     // chosen AI so the code engine can author with it.
@@ -623,6 +625,9 @@
   // Point the canvas iframe at any URL (an artifact, a saved plan, or a previewed file).
   function showUrlInCanvas(url, fn){
     const f=$('canvasFrame'); f.style.display='block'; $('canvasEmpty').style.display='none';
+    // Only load same-origin app paths into the canvas iframe — never a
+    // javascript:/data: URL a crafted artifact/plan name could smuggle in.
+    if(typeof url!=='string' || !url.startsWith('/')) return;
     f.removeAttribute('srcdoc'); f.src=url;
     $('canvasFn').textContent = fn || url.split('/').pop(); app.canvasUrl = url;
   }
@@ -643,7 +648,7 @@
   // document loads, or as a fallback if authoring failed. The real, comprehensive plan
   // (remarks, capability table, Now vs After, outcome log) is the saved .html file.
   function buildPreviewHtml(plan){
-    const items = plan.items.map(i=>'<div class="i"><b>✓</b><span>'+i+'</span></div>').join('');
+    const items = plan.items.map(i=>'<div class="i"><b>✓</b><span>'+esc(i)+'</span></div>').join('');
     return '<!doctype html><meta charset="utf-8"><style>'+
       'body{margin:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#0b0d12;color:#e8ecf4}'+
       '.hero{padding:30px 22px 22px;text-align:center;background:radial-gradient(360px 150px at 70% -25%,rgba(167,139,250,.25),transparent),#161a24}'+

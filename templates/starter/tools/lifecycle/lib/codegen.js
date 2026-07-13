@@ -71,7 +71,7 @@ function generateScreen({ componentName, displayName, goal, capabilities = {}, i
   p(`// Goal: ${String(goal || '').replace(/\n/g, ' ').slice(0, 120)}`);
   if (items.length) {
     p('// Approved capabilities:');
-    for (const it of items.slice(0, 8)) p('//   • ' + String(it).replace(/<[^>]+>/g, '').replace(/\n/g, ' ').slice(0, 90));
+    for (const it of items.slice(0, 8)) p('//   • ' + stripTags(it).replace(/\n/g, ' ').slice(0, 90));
   }
   p('import { useMemo, useState } from "react"');
   p('');
@@ -183,6 +183,13 @@ function generateScreen({ componentName, displayName, goal, capabilities = {}, i
 
 function esc(s) {
   return String(s == null ? '' : s).replace(/[{}<>]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+function stripTags(s) {
+  // Loop until stable so nested/overlapping tags cannot re-form after one pass.
+  let out = String(s == null ? '' : s);
+  let prev;
+  do { prev = out; out = out.replace(/<[^>]+>/g, ''); } while (out !== prev);
+  return out;
 }
 function oneLine(s) {
   return String(s == null ? '' : s).replace(/\s+/g, ' ').trim();

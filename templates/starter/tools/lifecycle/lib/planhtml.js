@@ -38,7 +38,12 @@ function oneLine(s) {
   return String(s == null ? '' : s).replace(/\s+/g, ' ').trim();
 }
 function stripTags(s) {
-  return String(s == null ? '' : s).replace(/<[^>]+>/g, '');
+  // Loop until stable: a single pass lets nested/overlapping tags (e.g.
+  // "<scr<script>ipt>") re-form a live tag after one removal.
+  let out = String(s == null ? '' : s);
+  let prev;
+  do { prev = out; out = out.replace(/<[^>]+>/g, ''); } while (out !== prev);
+  return out;
 }
 
 // Plain-English label + behaviour note for each capability flag — the "remarks" that

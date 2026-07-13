@@ -438,7 +438,11 @@ function serve(root, opts = {}) {
       if (/\.powercodex\/(plans|artifacts)\//.test(req.url) && /\.(html|json|png)$/.test(req.url.split('?')[0])) {
         const rel = decodeURIComponent(req.url.split('?')[0].replace(/^\/+/, ''));
         const abs = path.resolve(activeRoot, rel);
-        const okBase = abs.startsWith(path.resolve(plansDir(activeRoot))) || abs.startsWith(path.resolve(artifacts.artifactsDir(activeRoot)));
+        // Confine to the allowed dirs with a path-separator boundary (mirrors
+        // src/mcp/lib/resolve-root.mjs) — a bare startsWith() would let a sibling
+        // like ".powercodex/plans-evil/x" escape a ".powercodex/plans" prefix.
+        const within = (base) => { const r = path.relative(base, abs); return r === '' || (!r.startsWith('..') && !path.isAbsolute(r)); };
+        const okBase = within(path.resolve(plansDir(activeRoot))) || within(path.resolve(artifacts.artifactsDir(activeRoot)));
         if (okBase && fs.existsSync(abs)) {
           const type = abs.endsWith('.json') ? 'application/json' : abs.endsWith('.png') ? 'image/png' : 'text/html; charset=utf-8';
           res.writeHead(200, { 'content-type': type, 'cache-control': 'no-store' });
