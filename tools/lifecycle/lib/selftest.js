@@ -730,6 +730,30 @@ async function selftest() {
     check('classifyIntent leaves an unrelated build ask as plan', classifyIntent('build a screen to track tasks') === 'plan');
     check('classifyIntent leaves "fix it" as act', classifyIntent('fix it') === 'act');
 
+    // ── agent.run(): push / add-datasource execute inline; scaffold-project defers ──
+    const agentRunRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-agent-run-'));
+    fs.writeFileSync(path.join(agentRunRoot, 'package.json'), JSON.stringify({ name: 'x' }));
+    require('./rights').ensureRights(agentRunRoot, { allowPush: true });
+    const agentPushEvents = [];
+    const agentPushResult = await agentMod.run(agentRunRoot, {
+      message: 'push my changes',
+      emit: (e) => agentPushEvents.push(e),
+      _pushFn: async () => ({ pushed: true, built: false, output: 'ok' }),
+    });
+    check('agent push intent executes inline and reports kind:push', agentPushResult.kind === 'push' && agentPushResult.ok === true);
+    check('agent push intent streams progress onto the bus', agentPushEvents.length > 0);
+    const agentDsResult = await agentMod.run(agentRunRoot, {
+      message: 'add a datasource for the Orders table',
+      emit: () => {},
+      _addDataSourceFn: async () => ({ added: true, output: 'ok' }),
+    });
+    check('agent add-datasource intent executes inline and reports kind:add-datasource', agentDsResult.kind === 'add-datasource' && agentDsResult.ok === true);
+    const agentScaffoldResult = await agentMod.run(agentRunRoot, { message: 'start a new project called Inspections', emit: () => {} });
+    check('agent scaffold-project intent defers to the server with the extracted name', agentScaffoldResult.kind === 'scaffold-project' && agentScaffoldResult.name === 'Inspections');
+    const agentScaffoldNoName = await agentMod.run(agentRunRoot, { message: 'start a new project', emit: () => {} });
+    check('agent scaffold-project asks for a name when none is given', agentScaffoldNoName.kind === 'answer' && /name/i.test(agentScaffoldNoName.reply || ''));
+    fs.rmSync(agentRunRoot, { recursive: true, force: true });
+
     // ── Phase 1: live preview — Canvas UI (chat.html) carries the Preview|Code toggle ──
     // UI-only assets can't be driven headless from here (that is task 1.6's real-browser
     // smoke test); assert the toggle markup + the preview-specific loader exist, and that

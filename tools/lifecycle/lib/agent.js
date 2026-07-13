@@ -19,17 +19,19 @@ const artifacts = require('./artifacts');
 const memory = require('./memory');
 const harness = require('./harness');
 const rightsGate = require('./rights');
+const pacInit = require('./pac-init');
+const { addDataSource } = require('./datasource');
 
 function oneLine(s) {
   return String(s == null ? '' : s).replace(/\s+/g, ' ').trim();
 }
 
 const AGENT_SYSTEM = [
-  'You are PowerCodex in AGENT mode — a hands-on engineering agent working inside the maker’s project folder.',
+  'You are PowerCodex in AGENT mode — a hands-on engineering agent working inside the maker\'s project folder.',
   'You can read and edit the real files in this workspace to carry out the request.',
   'Guidance:',
   '- Do the smallest correct thing that satisfies the request; prefer real edits over describing them.',
-  '- Match the surrounding code’s style and conventions.',
+  '- Match the surrounding code\'s style and conventions.',
   '- When you finish, reply with a short, plain-language summary of what you changed (a few sentences).',
   '- If you produce a standalone HTML deliverable, wrap it in a ```html fenced block so it can be previewed.',
 ].join('\n');
@@ -57,7 +59,7 @@ function buildAgentPrompt({ message, history, memory: mem, rights } = {}) {
 
 // Run the agent. `emit` (optional) streams structured activity onto the bus; the server
 // passes one bound to the active root. Returns a result the server/client act on.
-async function run(root, { message, history, provider, emit, memory: mem } = {}) {
+async function run(root, { message, history, provider, emit, memory: mem, _pushFn, _addDataSourceFn } = {}) {
   const adapter = providers.resolve(provider);
   const simulated = adapter.simulated === true;
   const intent = classifyIntent(message, history);
@@ -101,11 +103,51 @@ async function run(root, { message, history, provider, emit, memory: mem } = {})
     return {
       kind: 'artifact',
       intent,
-      reply: entry ? `Done — I built a ${kind.replace(/-/g, ' ')} and opened it in the canvas. Tell me what to change.` : `I couldn’t create that artifact: ${err}`,
+      reply: entry ? `Done — I built a ${kind.replace(/-/g, ' ')} and opened it in the canvas. Tell me what to change.` : `I couldn't create that artifact: ${err}`,
       artifact: entry,
       provider: adapter.id,
       simulated,
     };
+  }
+
+  // 2b) A push request → run it now (same pushGate + buildAndPush as the button).
+  if (intent === 'push') {
+    let rights = null;
+    try { rights = rightsGate.load(root); } catch { /* fail closed below */ }
+    if (!rights || rights.allowPush !== true) {
+      return { kind: 'push', intent, ok: false, reply: 'Push is off — turn on "Publish to my environment" in the rights panel first.', provider: adapter.id, simulated };
+    }
+    const push = _pushFn || pacInit.buildAndPush;
+    const result = await push(root, { emit: (e) => say(e.level, `Push · ${e.message}`) });
+    say(result.pushed ? 'good' : 'bad', result.pushed ? 'Agent · push succeeded' : `Agent · push failed: ${result.error || ''}`);
+    return { kind: 'push', intent, ok: !!result.pushed, reply: result.pushed ? 'Pushed to your environment.' : `Push failed: ${result.error || 'see activity log'}`, provider: adapter.id, simulated };
+  }
+
+  // 2c) An add-datasource request → run it now.
+  if (intent === 'add-datasource') {
+    let rights = null;
+    try { rights = rightsGate.load(root); } catch { /* fail closed below */ }
+    if (!rights || rights.allowPush !== true) {
+      return { kind: 'add-datasource', intent, ok: false, reply: 'Adding a data source is off — turn on "Publish to my environment" in the rights panel first.', provider: adapter.id, simulated };
+    }
+    const tableMatch = message.match(/\bfor (?:the )?[""]?([a-z0-9 _-]+?)[""]?\s*(?:table|entity)?\s*$/i);
+    const table = tableMatch ? tableMatch[1].trim() : undefined;
+    const addFn = _addDataSourceFn || addDataSource;
+    const result = await addFn(root, { api: 'dataverse', table, emit: (e) => say(e.level, `Datasource · ${e.message}`) });
+    say(result.added ? 'good' : 'bad', result.added ? 'Agent · data source added' : `Agent · data source failed: ${result.error || ''}`);
+    return { kind: 'add-datasource', intent, ok: !!result.added, reply: result.added ? `Added the ${table || 'requested'} data source.` : `Couldn't add that data source: ${result.error || 'see activity log'}`, provider: adapter.id, simulated };
+  }
+
+  // 2d) A scaffold-project request → classify + extract a name; the server does the
+  //     real work (Task 7) because it must re-point the active workspace afterward.
+  if (intent === 'scaffold-project') {
+    const nameMatch = message.match(/\b(?:called|named)\s+[""]?([a-z0-9][a-z0-9 _-]{1,60}?)[""]?\s*$/i);
+    const name = nameMatch ? nameMatch[1].trim() : null;
+    if (!name) {
+      return { kind: 'answer', intent, reply: 'What name should the new project have?', provider: adapter.id, simulated };
+    }
+    say('info', `Agent · recognised a new-project request — "${name}"`);
+    return { kind: 'scaffold-project', intent, name, provider: adapter.id, simulated };
   }
 
   // 3) act / answer → drive the provider inside the workspace.
@@ -159,7 +201,7 @@ async function run(root, { message, history, provider, emit, memory: mem } = {})
   const reply =
     text.replace(/```html[\s\S]*?```/i, '').trim() ||
     (simulated
-      ? 'I can carry that out here. Connect Claude Code (the CLI) and Agent mode will read and edit your project directly; until then I’m running the simulated brain.'
+      ? 'I can carry that out here. Connect Claude Code (the CLI) and Agent mode will read and edit your project directly; until then I\'m running the simulated brain.'
       : 'Done.');
   say(simulated ? 'warn' : 'good', simulated ? 'Agent · simulated (no AI CLI found)' : 'Agent · done');
 
