@@ -704,6 +704,18 @@ async function selftest() {
     check('chat prompt has no harness on a greeting', !/POWERCODEX HARNESS/.test(chatMod.buildPrompt({ system: 'x', message: 'hello', intent: 'chat', rights: hOn })));
     check('harness flag defaults to on in the consent gate', require('./rights').DEFAULTS.allowHarness === true);
 
+    // ── classifyIntent: push / add-datasource / scaffold-project ───────────────
+    const { classifyIntent } = require('./chat');
+    check('classifyIntent recognizes "push my changes"', classifyIntent('push my changes') === 'push');
+    check('classifyIntent recognizes "deploy this"', classifyIntent('deploy this') === 'push');
+    check('classifyIntent recognizes "publish to my environment"', classifyIntent('publish to my environment') === 'push');
+    check('classifyIntent recognizes "add a datasource for the Orders table"', classifyIntent('add a datasource for the Orders table') === 'add-datasource');
+    check('classifyIntent recognizes "wire up a data source"', classifyIntent('wire up a data source') === 'add-datasource');
+    check('classifyIntent recognizes "start a new project called Inspections"', classifyIntent('start a new project called Inspections') === 'scaffold-project');
+    check('classifyIntent recognizes "create a new powercodex project"', classifyIntent('create a new powercodex project') === 'scaffold-project');
+    check('classifyIntent leaves an unrelated build ask as plan', classifyIntent('build a screen to track tasks') === 'plan');
+    check('classifyIntent leaves "fix it" as act', classifyIntent('fix it') === 'act');
+
     // ── Phase 1: live preview — Canvas UI (chat.html) carries the Preview|Code toggle ──
     // UI-only assets can't be driven headless from here (that is task 1.6's real-browser
     // smoke test); assert the toggle markup + the preview-specific loader exist, and that

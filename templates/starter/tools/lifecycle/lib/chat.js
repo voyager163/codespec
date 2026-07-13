@@ -67,8 +67,22 @@ function classifyIntent(message, history) {
     return 'chat';
   }
 
+  // Deterministic actions with a real, specific engine behind them — checked before
+  // the generic 'act' catch-all so they run the actual pac command, not a free-form
+  // AI guess. Order matters: scaffold-project before add-datasource ("create a new
+  // project" must not be read as "add a data source").
+  if (/\b(start|create|make|set up|scaffold)\b.*\b(new )?(powercodex )?project\b/.test(g) || /\bnew powercodex project\b/.test(g)) {
+    return 'scaffold-project';
+  }
+  if (/\b(add|wire up|connect|hook up)\b.*\b(data ?source|dataverse table|connector)\b/.test(g)) {
+    return 'add-datasource';
+  }
+  if (/\b(push|deploy|publish)\b/.test(g) && !/\bpush notification/.test(g)) {
+    return 'push';
+  }
+
   // Imperative action on work that already exists.
-  if (/\b(do it|just do it|go ahead|proceed|fix it|fix this|repair|deploy|publish|ship it|make it live|push (it|this|to)|run it|run the app|start it)\b/.test(g)) {
+  if (/\b(do it|just do it|go ahead|proceed|fix it|fix this|repair|ship it|make it live|run it|run the app|start it)\b/.test(g)) {
     return 'act';
   }
 
