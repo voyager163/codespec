@@ -12,7 +12,7 @@ const DEFAULTS = {
   // Pointer to the verified MDM browser profile. The pointer is committed; the
   // real session lives under a gitignored .profiles/ dir so cookies never enter git.
   profilePath: '',
-  // App URL captured after `npx power-apps push` — the E2E tester's base URL.
+  // App URL captured after `pac code push` — the E2E tester's base URL.
   appUrl: '',
   // On-device building & testing is safe (nothing goes live), so it is allowed by
   // default — the maker-first product builds & self-heals without prompting. Publishing

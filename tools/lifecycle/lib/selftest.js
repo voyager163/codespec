@@ -64,7 +64,7 @@ async function selftest() {
     check('Approved_rights/approval.json created', fs.existsSync(approvalFile(root)));
     check('all 7 lifecycle stages emitted (0..6)', [0, 1, 2, 3, 4, 5, 6].every((s) => stages.has(s)));
     check('build executor produced assets', events.some((e) => e.agent === 'build-executor' && e.level === 'good'));
-    check('run step honored push-vs-dev rule', events.some((e) => e.agent === 'runner' && /power-apps push|npm run dev/.test(e.message)));
+    check('run step honored push-vs-dev rule', events.some((e) => e.agent === 'runner' && /pac code push|npm run dev/.test(e.message)));
     check('self-heal triggered at least once', summary.selfHeals >= 1);
     check('observer authored a spec from observation', summary.observations >= 1);
     check('loop finished without false stop', summary.stopped === false);
@@ -407,6 +407,25 @@ async function selftest() {
     } finally {
       fs.rmSync(cgRoot, { recursive: true, force: true });
     }
+
+    // ── Gap #2: real Code App registration (pac) — degrade contract ───────────
+    // The build stage turns a plain React app into a compliant Power Apps Code App by
+    // running `pac code init` (writes power.config.json). It must degrade honestly when
+    // pac is absent/unauthed: a plain-language nudge, never a crash, never a fabricated
+    // marker. Inject the pac boundary so this is deterministic regardless of whether pac
+    // happens to be installed on the machine running the test.
+    const pacInit = require('./pac-init');
+    const pacRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-pac-'));
+    const pacAbsent = { checkPac: async () => { throw new Error('pac CLI not found'); } };
+    const regDegraded = await pacInit.registerCodeApp(pacRoot, { appName: 'demo', _pac: pacAbsent });
+    check('code-app registration degrades to a plain-language nudge when pac is absent', regDegraded.registered === false && /finish Power Platform setup/i.test(regDegraded.message || ''));
+    check('code-app registration never fabricates power.config.json without pac', !fs.existsSync(path.join(pacRoot, 'power.config.json')));
+    const pacFake = { checkPac: async () => '1.0', initCodeApp: async (r) => { fs.writeFileSync(path.join(r, 'power.config.json'), '{}'); return { initialised: true, appDir: r }; } };
+    const regOk = await pacInit.registerCodeApp(pacRoot, { appName: 'demo', _pac: pacFake });
+    check('code-app registration runs pac code init when pac is reachable', regOk.registered === true && fs.existsSync(path.join(pacRoot, 'power.config.json')));
+    const regSkip = await pacInit.registerCodeApp(pacRoot, { appName: 'demo', _pac: pacFake });
+    check('code-app registration is a no-op once power.config.json exists', regSkip.skipped === true);
+    fs.rmSync(pacRoot, { recursive: true, force: true });
 
     // ── agent harness (P1) · godmode + codeapps + craft/verify/change blend ────
     const harness = require('./harness');

@@ -8,6 +8,7 @@ const { render } = require('./dashboard');
 const { scoreCompliance } = require('./compliance');
 const freeze = require('./freeze');
 const { readStories } = require('./stories');
+const pacInit = require('./pac-init');
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -161,6 +162,25 @@ async function runLoop(root, opts = {}) {
     }
     lastBuild = (await eng.buildExecutor({ emit, rotation: r, tasks, env: opts.env || rights.environmentId, maker: opts.maker || rights.makerUrl })) || [];
 
+    // Make it a real, registered Power Apps Code App when we can. `pac code init` writes
+    // the authoritative power.config.json (the Code App marker) at the project root —
+    // this is what turns a plain React app into a compliant Code App, the product's whole
+    // reason to exist. Runs only in real mode, only when pac is reachable, and only once
+    // (skips if already initialised). If pac is missing/unauthed it degrades to a plain-
+    // language nudge instead of blocking — auth needs the setup step, which is fine to
+    // defer. ponytail: pac owns the SDK version + config schema, so we never hand-author
+    // them; we just invoke the real CLI at the root where package.json lives.
+    if (realMode) {
+      const reg = await pacInit.registerCodeApp(root, {
+        appName: opts.name || path.basename(root),
+        environmentUrl: opts.env || rights.makerUrl,
+        emit: (e) => emit({ rotation: r, stage: 3, agent: 'build-executor', ...e }),
+      });
+      if (reg && reg.message) {
+        await emit({ rotation: r, stage: 3, agent: 'build-executor', level: reg.level || 'info', message: reg.message });
+      }
+    }
+
     // Step 4 — run. On-device code builds verify by compiling (no publish needed);
     // publishing live is a separate, gated step. `dataverse` defaults off in real mode
     // (build on the maker's machine) and on in simulate (to show the push narrative).
@@ -172,7 +192,19 @@ async function runLoop(root, opts = {}) {
         summary.stopped = true;
         break;
       }
-      await emit({ rotation: r, stage: 4, agent: 'runner', level: 'good', message: `Dataverse connected → npx power-apps push · got app link${realMode ? '' : ' (simulated)'}` });
+      if (realMode) {
+        // Real publish: pac code push deploys the Code App to the tenant. Best-effort —
+        // a push failure is surfaced in plain language and doesn't crash the loop; the
+        // maker can fix setup and re-run.
+        try {
+          await pacInit.pushCodeApp(root, { emit: (e) => emit({ rotation: r, stage: 4, agent: 'runner', ...e }) });
+        } catch (e) {
+          const first = (e && e.message ? String(e.message).split('\n')[0] : 'pac code push failed');
+          await emit({ rotation: r, stage: 4, agent: 'runner', level: 'warn', message: `Publish to Power Platform failed: ${first} · check Power Platform setup and try again` });
+        }
+      } else {
+        await emit({ rotation: r, stage: 4, agent: 'runner', level: 'good', message: 'Dataverse connected → pac code push · got app link (simulated)' });
+      }
       baseUrl = opts.appUrl || rights.appUrl || (realMode ? '' : 'https://apps.powerapps.com/play/e/demo-env/a/demo-app');
       if (baseUrl) {
         setAppUrl(root, baseUrl);

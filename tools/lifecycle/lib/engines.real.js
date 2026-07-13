@@ -3,9 +3,11 @@ const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 
 // Real engine bridge — drives a managed Edge (MDM) browser over CDP using the vendored
-// Playwright-for-MDM engine (../engine/mdm-attach.mjs). In this phase only the e2e/run
-// engine and profile verification are real; Engine 1 (the build executor that creates
-// portal assets) has no real implementation yet and stays simulated (tracked separately).
+// Playwright-for-MDM engine (../engine/mdm-attach.mjs). The e2e/run engine and profile
+// verification are real. Engine 1 (the build executor) now has real navigation — it
+// attaches to the maker surface and verifies each asset's page loaded — but field-by-field
+// authoring (creating the table/column/flow itself) is not automated yet and is reported
+// honestly as `created:false`, never faked as done.
 //
 // The vendored engine is ESM and imports `playwright`, so it is loaded with a lazy,
 // dynamic import() (works from CommonJS). resolveEngines() only constructs this bridge

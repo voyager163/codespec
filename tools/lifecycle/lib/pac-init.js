@@ -180,4 +180,37 @@ async function pushCodeApp(root, { appDir, emit = async () => {} } = {}) {
   return { pushed: true, output: r.stdout };
 }
 
-module.exports = { checkPac, preflight, listAuthProfiles, ensureAuth, initCodeApp, pushCodeApp };
+// Decide + perform Code App registration for a freshly-built project, degrading
+// gracefully. This is the whole "make it a real Power Apps Code App" contract in one
+// place so the loop stays thin and the behaviour is testable without a live pac:
+//   • already a Code App (power.config.json present) → no-op.
+//   • pac not reachable → a plain-language nudge to finish Power Platform setup.
+//   • pac reachable → run `pac code init` at the project root; on failure, nudge.
+// Never throws. Returns { registered, skipped?, level?, message? } — the loop emits
+// `message` (if any) with `level`; the reachable-success path emits inside initCodeApp.
+// `_pac` injects the pac boundary for tests (defaults to this module's real functions).
+async function registerCodeApp(root, { appName = 'MyPowerApp', environmentUrl, emit = async () => {}, _pac } = {}) {
+  if (fs.existsSync(path.join(root, 'power.config.json'))) return { registered: true, skipped: true };
+  const api = _pac || { checkPac, initCodeApp };
+  const reachable = await api.checkPac().then(() => true).catch(() => false);
+  if (!reachable) {
+    return {
+      registered: false,
+      level: 'info',
+      message: 'Built as code · finish Power Platform setup (install/sign in to pac) to register this as a live Power Apps Code App',
+    };
+  }
+  try {
+    const r = await api.initCodeApp(root, { appName, outputDir: root, environmentUrl, emit });
+    return { registered: !!r.initialised, appDir: r.appDir };
+  } catch (e) {
+    const first = e && e.message ? String(e.message).split('\n')[0] : 'pac code init failed';
+    return {
+      registered: false,
+      level: 'warn',
+      message: `Could not register the Power Apps Code App yet: ${first} · finish Power Platform setup, then rebuild`,
+    };
+  }
+}
+
+module.exports = { checkPac, preflight, listAuthProfiles, ensureAuth, initCodeApp, pushCodeApp, registerCodeApp };
