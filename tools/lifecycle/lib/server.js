@@ -23,6 +23,35 @@ const CLIENT = path.join(__dirname, '..', 'assets', 'dashboard.html');
 const GUIDE = path.join(__dirname, '..', 'assets', 'user-guide.html');
 const CHAT = path.join(__dirname, '..', 'assets', 'chat.html');
 
+// Recursively list every .html/.json/.png file under `dir`, as absolute paths.
+// Real filesystem enumeration — never touches the request.
+function listServableFiles(dir) {
+  const out = [];
+  let entries;
+  try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return out; }
+  for (const entry of entries) {
+    const abs = path.join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...listServableFiles(abs));
+    else if (/\.(html|json|png)$/.test(entry.name)) out.push(abs);
+  }
+  return out;
+}
+
+// Allowlist lookup for the plan/artifact static file route: enumerate every real
+// file under plansDir/artifactsDir, key each by its root-relative URL shape, and
+// return the *enumerated* absolute path for an exact match — the request string is
+// only ever used as a Map key, never to construct a path, so there is no path
+// expression left for untrusted input to influence.
+function resolveAllowedArtifact(root, rawRel) {
+  const files = [...listServableFiles(plansDir(root)), ...listServableFiles(artifacts.artifactsDir(root))];
+  const wanted = rawRel.split(/[/\\]+/).join('/');
+  for (const abs of files) {
+    const key = path.relative(root, abs).split(path.sep).join('/');
+    if (key === wanted) return abs;
+  }
+  return null;
+}
+
 // A tiny zero-dependency live dashboard + maker-chat server. The client polls
 // /api/state and re-renders, and POSTs to /api/action, /api/emit and /api/chat to
 // drive the loop. Works over http:// — no browser file:// fetch restrictions.
@@ -437,15 +466,14 @@ function serve(root, opts = {}) {
       // only files inside .powercodex/plans/ are served.
       if (/\.powercodex\/(plans|artifacts)\//.test(req.url) && /\.(html|json|png)$/.test(req.url.split('?')[0])) {
         const rawRel = decodeURIComponent(req.url.split('?')[0].replace(/^\/+/, ''));
-        // Strip any leading ".." traversal segments before joining — the documented
-        // CodeQL js/path-injection remediation pattern — then re-confirm with a
-        // path-separator-bounded check (mirrors src/mcp/lib/resolve-root.mjs) so a
-        // sibling like ".powercodex/plans-evil/x" still can't escape ".powercodex/plans".
-        const rel = rawRel.replace(/(^|[/\\])\.\.([/\\]|$)/g, '$1');
-        const abs = path.resolve(activeRoot, rel);
-        const within = (base) => { const r = path.relative(base, abs); return r === '' || (!r.startsWith('..') && !path.isAbsolute(r)); };
-        const okBase = within(path.resolve(plansDir(activeRoot))) || within(path.resolve(artifacts.artifactsDir(activeRoot)));
-        if (okBase && fs.existsSync(abs)) {
+        // Allowlist, not a guarded join: enumerate the real files that actually exist
+        // under the two allowed directories, and only ever read a path that came out of
+        // that enumeration — never one built from the request. The request string is
+        // used only as a lookup KEY against the allowlist, so it never reaches fs
+        // as (or as part of) a path, closing the traversal class entirely rather than
+        // guarding a tainted path after the fact.
+        const abs = resolveAllowedArtifact(activeRoot, rawRel);
+        if (abs) {
           const type = abs.endsWith('.json') ? 'application/json' : abs.endsWith('.png') ? 'image/png' : 'text/html; charset=utf-8';
           res.writeHead(200, { 'content-type': type, 'cache-control': 'no-store' });
           res.end(abs.endsWith('.png') ? fs.readFileSync(abs) : fs.readFileSync(abs, 'utf8'));

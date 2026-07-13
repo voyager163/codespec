@@ -664,12 +664,21 @@
     try { arts = (await (await fetch('/api/artifacts',{cache:'no-store'})).json()).artifacts || []; } catch {}
     try { plans = await getPlans(); } catch {}
     const items=[...plans.map(p=>({file:p.file,label:p.title||p.id,kind:'plan'})), ...arts.map(a=>({file:a.file,label:a.title||a.kind,kind:a.kind}))];
+    app.canvasItems = items;
     const sel=$('canvasPick');
     if(!items.length){ sel.style.display='none'; return; }
     sel.style.display='';
-    sel.innerHTML = items.map(i=>'<option value="/'+esc(i.file)+'">'+esc(i.kind)+' · '+esc(i.label)+'</option>').join('');
-    if(app.canvasUrl) sel.value=app.canvasUrl;
-    sel.onchange=()=>{ showUrlInCanvas(sel.value, sel.value.split('/').pop()); openCanvas(true); };
+    // The option value is an index into app.canvasItems, never the file path itself —
+    // the iframe src is always built from the trusted fetched array, not from reading
+    // the <select>'s value back out of the DOM.
+    sel.innerHTML = items.map((i,idx)=>'<option value="'+idx+'">'+esc(i.kind)+' · '+esc(i.label)+'</option>').join('');
+    const curIdx = items.findIndex((i)=>('/'+i.file)===app.canvasUrl);
+    if(curIdx>=0) sel.value=String(curIdx);
+    sel.onchange=()=>{
+      const item = app.canvasItems[Number(sel.value)];
+      if(item) showUrlInCanvas('/'+item.file, item.file.split('/').pop());
+      openCanvas(true);
+    };
   }
   // Inline skeleton — only shown for the brief moment before the server's authored plan
   // document loads, or as a fallback if authoring failed. The real, comprehensive plan
