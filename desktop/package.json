@@ -12,7 +12,8 @@
     "dist": "node scripts/build-exe.js portable",
     "dist:installer": "node scripts/build-exe.js nsis",
     "dist:dir": "node scripts/build-exe.js dir",
-    "dist:inplace": "npm run sync && electron-builder --win portable"
+    "dist:inplace": "npm run sync && electron-builder --win portable",
+    "dist:mac": "npm run sync && electron-builder --mac dmg"
   },
   "devDependencies": {
     "electron": "^32.2.0",
@@ -25,6 +26,12 @@
     "files": ["main.js", "preload.js", "vendor/**/*", "package.json"],
     "win": {
       "target": ["portable"]
+    },
+    "mac": {
+      "target": ["dmg"],
+      "category": "public.app-category.developer-tools",
+      "identity": null,
+      "artifactName": "PowerCodex.dmg"
     },
     "portable": {
       "artifactName": "PowerCodex.exe"
