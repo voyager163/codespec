@@ -22,3 +22,20 @@ fs.cpSync(src, dst, {
 });
 
 console.log('synced lifecycle →', path.relative(process.cwd(), dst));
+
+// The published starter is the canonical scaffold for desktop "Create a new app"
+// (decision D5). Vendor it beside the engine so desktop-born projects get the full
+// harness / e2e / data layout; scaffold.js resolves it at vendor/templates/starter.
+const tplSrc = path.resolve(__dirname, '..', '..', 'templates', 'starter');
+const tplDst = path.resolve(__dirname, '..', 'vendor', 'templates', 'starter');
+if (fs.existsSync(tplSrc)) {
+  fs.rmSync(tplDst, { recursive: true, force: true });
+  fs.mkdirSync(path.dirname(tplDst), { recursive: true });
+  fs.cpSync(tplSrc, tplDst, {
+    recursive: true,
+    filter: (s) => !SKIP.test(s),
+  });
+  console.log('synced starter →', path.relative(process.cwd(), tplDst));
+} else {
+  console.warn('starter template not found at', tplSrc, '— desktop scaffold will fall back to the generic template');
+}

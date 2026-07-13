@@ -232,6 +232,22 @@ async function selftest() {
     check('import configures the chosen providers', Array.isArray(imp.config.providers) && imp.config.providers.length >= 1);
     fs.rmSync(impRoot, { recursive: true, force: true });
 
+    // ── desktop "Create a new app" lands the full starter, not the generic template ──
+    // (decision D5): harness, e2e suite, and lifecycle tooling from birth. Assertions
+    // mirror scripts/verify-generated-project.js so the CLI and desktop scaffolds agree.
+    const { scaffoldFromStarter, starterDir } = require('./scaffold');
+    check('starter template is resolvable for the desktop scaffold', !!starterDir());
+    const newAppRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-newapp-'));
+    const scaf = scaffoldFromStarter(newAppRoot, { name: 'Field Reports' });
+    check('desktop scaffold copies the starter (not the generic template)', !!scaf && scaf.source === 'starter' && scaf.created === true);
+    check('scaffolded app ships the agent harness (tools/lifecycle)', fs.existsSync(path.join(newAppRoot, 'tools', 'lifecycle', 'bin', 'powercodex-lifecycle.js')));
+    check('scaffolded app ships the e2e suite (e2e/home.spec.ts)', fs.existsSync(path.join(newAppRoot, 'e2e', 'home.spec.ts')));
+    check('scaffolded app ships telemetry + playwright config', fs.existsSync(path.join(newAppRoot, 'src', 'telemetry', 'app-telemetry.ts')) && fs.existsSync(path.join(newAppRoot, 'playwright.config.ts')));
+    const newPkg = JSON.parse(fs.readFileSync(path.join(newAppRoot, 'package.json'), 'utf8'));
+    check('scaffolded package.json carries the starter scripts (e2e/lint/test/lifecycle:selftest)', ['e2e', 'lint', 'test', 'lifecycle:selftest'].every((s) => newPkg.scripts && newPkg.scripts[s]));
+    check('scaffolded package.json is renamed from the template to the project', newPkg.name === 'field-reports');
+    fs.rmSync(newAppRoot, { recursive: true, force: true });
+
     // ── brownfield ingestion · code-grounded intake · freeze ─────────────────
     const { buildDigest, writeDigest, readDigest } = require('./digest');
     const { buildStories, readStories, refineStories } = require('./stories');
@@ -426,6 +442,54 @@ async function selftest() {
     const regSkip = await pacInit.registerCodeApp(pacRoot, { appName: 'demo', _pac: pacFake });
     check('code-app registration is a no-op once power.config.json exists', regSkip.skipped === true);
     fs.rmSync(pacRoot, { recursive: true, force: true });
+
+    // ── Phase 1: live preview (preview.js) — honest-start / honest-degrade ─────
+    // start() must run a REAL dev server or degrade honestly — never fabricate a URL.
+    // Inject the spawn + probe boundaries (the `_pac` pattern) so this is deterministic
+    // and never spawns a real npm/vite process or touches a real port.
+    const { EventEmitter } = require('node:events');
+    const preview = require('./preview');
+    // A fake vite process: prints the "Local:" line on the next tick, supports kill().
+    const fakeVite = (port) => () => {
+      const proc = new EventEmitter();
+      proc.pid = 4242;
+      proc.stdout = new EventEmitter();
+      proc.stderr = new EventEmitter();
+      proc.kill = () => { proc.killed = true; proc.emit('exit', 0); };
+      setImmediate(() => proc.stdout.emit('data', Buffer.from(`  ➜  Local:   http://localhost:${port}/\n`)));
+      return proc;
+    };
+    const okProbe = async () => true; // resolves ready without touching a real port
+
+    // (a) missing dev script → honest nudge, nothing spawned.
+    const pvNoDev = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-preview-nodev-'));
+    fs.mkdirSync(path.join(pvNoDev, 'node_modules'), { recursive: true });
+    fs.writeFileSync(path.join(pvNoDev, 'package.json'), JSON.stringify({ scripts: { build: 'vite build' } }));
+    let spawnedNoDev = false;
+    const noDevRes = await preview.start(pvNoDev, { _spawn: () => { spawnedNoDev = true; throw new Error('should not spawn'); }, _probe: okProbe });
+    check('preview degrades to a plain-language nudge when no dev script exists', noDevRes.ok === false && /dev.*script/i.test(noDevRes.message || ''));
+    check('preview never spawns a process when it degrades on a missing dev script', spawnedNoDev === false);
+    fs.rmSync(pvNoDev, { recursive: true, force: true });
+
+    // (b) successful start via injected fake spawn — parses the port, never fabricates it.
+    const pvOk = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-preview-ok-'));
+    fs.mkdirSync(path.join(pvOk, 'node_modules'), { recursive: true });
+    fs.writeFileSync(path.join(pvOk, 'package.json'), JSON.stringify({ scripts: { dev: 'vite' } }));
+    let spawnCount = 0;
+    const countingVite = (port) => { const mk = fakeVite(port); return (...a) => { spawnCount += 1; return mk(...a); }; };
+    const startRes = await preview.start(pvOk, { _spawn: countingVite(6123), _probe: okProbe });
+    check('preview start returns the port parsed from vite stdout (not hardcoded)', startRes.url === 'http://localhost:6123' && startRes.pid === 4242);
+    check('preview status reflects the running server', preview.status(pvOk).running === true && preview.status(pvOk).url === 'http://localhost:6123');
+
+    // (c) idempotent: a second start() for the same root reuses the server, no new spawn.
+    const startAgain = await preview.start(pvOk, { _spawn: countingVite(9999), _probe: okProbe });
+    check('preview start is idempotent for the same root (reuses, no second spawn)', startAgain.url === 'http://localhost:6123' && spawnCount === 1);
+
+    // (d) stop()/status() reflect reality.
+    check('preview stop() kills the tracked server', preview.stop(pvOk).stopped === true);
+    check('preview status is not-running after stop()', preview.status(pvOk).running === false);
+    check('preview stop() on an unknown root is a safe no-op', preview.stop(pvOk).stopped === false);
+    fs.rmSync(pvOk, { recursive: true, force: true });
 
     // ── agent harness (P1) · godmode + codeapps + craft/verify/change blend ────
     const harness = require('./harness');

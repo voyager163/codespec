@@ -197,4 +197,43 @@ function esc(s) {
   return String(s == null ? '' : s).replace(/[<>{}]/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-module.exports = { scaffold, isScaffolded, installDeps };
+// The published starter (`templates/starter/`) is the canonical scaffold: it ships the
+// agent harness, the e2e/ suite, telemetry, and the data layout CLI projects get from
+// `bin/create-powercodex.js`. Desktop "Create a new app" copies the same starter so
+// desktop-born projects have that shape from birth (decision D5) — one scaffold, two
+// entry points. We resolve it across two layouts: the repo checkout
+// (tools/lifecycle/lib → <repo>/templates/starter) and the vendored desktop app
+// (desktop/vendor/lifecycle/lib → desktop/vendor/templates/starter, placed there by
+// desktop/scripts/sync-lifecycle.js). Returns null when neither exists — e.g. an offline
+// build that didn't vendor templates — so callers fall back to the generic scaffold().
+function starterDir() {
+  const candidates = [
+    path.resolve(__dirname, '..', '..', '..', 'templates', 'starter'),
+    path.resolve(__dirname, '..', '..', 'templates', 'starter'),
+  ];
+  return candidates.find((p) => fs.existsSync(path.join(p, 'package.json'))) || null;
+}
+
+// Copy the starter into `root`, mirroring create-powercodex.js's copyStarter (fs.cpSync +
+// rename the package). Returns null when the starter isn't available so the caller can
+// fall back to scaffold(); throws only on a real copy failure. Non-destructive: existing
+// files in `root` are skipped (force:false), never overwritten.
+function scaffoldFromStarter(root, opts = {}) {
+  const name = (opts.name || path.basename(root) || 'my-app').replace(/[^a-zA-Z0-9 _-]/g, '').trim() || 'my-app';
+  if (isScaffolded(root)) return { created: false, already: true, name, files: [], source: 'starter' };
+  const dir = starterDir();
+  if (!dir) return null;
+  fs.cpSync(dir, root, { recursive: true, force: false, errorOnExist: false });
+  // Rename the package from the template's own name to the maker's project.
+  const pkgPath = path.join(root, 'package.json');
+  try {
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+    pkg.name = name.toLowerCase().replace(/\s+/g, '-');
+    fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
+  } catch {
+    /* keep the template's name if package.json can't be rewritten */
+  }
+  return { created: true, already: false, name, files: fs.readdirSync(root), source: 'starter' };
+}
+
+module.exports = { scaffold, scaffoldFromStarter, starterDir, isScaffolded, installDeps };

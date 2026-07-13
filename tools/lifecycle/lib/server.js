@@ -16,7 +16,7 @@ const project = require('./project');
 const mcp = require('./mcp');
 const browse = require('./browse');
 const { importInto } = require('./import');
-const { scaffold, installDeps, isScaffolded } = require('./scaffold');
+const { scaffold, scaffoldFromStarter, installDeps, isScaffolded } = require('./scaffold');
 
 const CLIENT = path.join(__dirname, '..', 'assets', 'dashboard.html');
 const GUIDE = path.join(__dirname, '..', 'assets', 'user-guide.html');
@@ -77,6 +77,8 @@ function serve(root, opts = {}) {
   // dependencies in the background. Safe: only scaffolds a truly empty workspace (no
   // package.json), never over an existing project. The first build verifies once deps
   // land; until then the build gate reports honestly that deps aren't installed yet.
+  // Prefer the published starter (harness + e2e + data layout, decision D5); fall back to
+  // the generic scaffold when the starter isn't vendored (offline build).
   function createProject(body = {}) {
     const hasPkg = fs.existsSync(path.join(activeRoot, 'package.json'));
     if (hasPkg && !isScaffolded(activeRoot)) {
@@ -84,7 +86,7 @@ function serve(root, opts = {}) {
     }
     let result;
     try {
-      result = scaffold(activeRoot, { name: body.name });
+      result = scaffoldFromStarter(activeRoot, { name: body.name }) || scaffold(activeRoot, { name: body.name });
     } catch (e) {
       return { ok: false, error: 'Could not scaffold the app: ' + e.message };
     }
