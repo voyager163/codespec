@@ -709,6 +709,8 @@ async function selftest() {
     check('classifyIntent recognizes "push my changes"', classifyIntent('push my changes') === 'push');
     check('classifyIntent recognizes "deploy this"', classifyIntent('deploy this') === 'push');
     check('classifyIntent recognizes "publish to my environment"', classifyIntent('publish to my environment') === 'push');
+    check('classifyIntent does not misroute "push back on this design" as push', classifyIntent('push back on this design') !== 'push');
+    check('classifyIntent does not misroute "let\'s not deploy yet, I have concerns" as push', classifyIntent("let's not deploy yet, I have concerns") !== 'push');
     check('classifyIntent recognizes "add a datasource for the Orders table"', classifyIntent('add a datasource for the Orders table') === 'add-datasource');
     check('classifyIntent recognizes "wire up a data source"', classifyIntent('wire up a data source') === 'add-datasource');
     check('classifyIntent recognizes "start a new project called Inspections"', classifyIntent('start a new project called Inspections') === 'scaffold-project');
