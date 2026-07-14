@@ -56,7 +56,7 @@ function buildHtml(events) {
           return `<div class="obs ${esc(sig)}"><div class="orow"><span class="sig ${esc(sig)}">${esc(sig)}</span><span class="conf mono">conf ${esc((d.confidence != null ? d.confidence : 0).toFixed ? d.confidence.toFixed(2) : d.confidence)}</span></div><div class="ot">${esc(e.message.replace(/^Authored next spec from observation · \w+ · /, ''))}</div><div class="oa">${d.needsApproval ? 'Endorse →' : 'Auto-applying…'}</div></div>`;
         })
         .join('')
-    : '<div class="empty">No observations yet — the observer is watching the run…</div>';
+    : '<div class="empty">No observations yet — real observations arrive with live e2e testing.</div>';
 
   const statusPill = done
     ? stopped

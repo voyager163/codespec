@@ -65,8 +65,8 @@ async function selftest() {
     check('all 7 lifecycle stages emitted (0..6)', [0, 1, 2, 3, 4, 5, 6].every((s) => stages.has(s)));
     check('build executor produced assets', events.some((e) => e.agent === 'build-executor' && e.level === 'good'));
     check('run step honored push-vs-dev rule', events.some((e) => e.agent === 'runner' && /pac code push|npm run dev/.test(e.message)));
-    check('self-heal triggered at least once', summary.selfHeals >= 1);
-    check('observer authored a spec from observation', summary.observations >= 1);
+    check('no self-heal on a clean run (nothing fabricated to repair)', summary.selfHeals === 0);
+    check('observer emits no fabricated observation cards', summary.observations === 0 && !events.some((e) => e.level === 'observation'));
     check('loop finished without false stop', summary.stopped === false);
 
     const indexHtml = path.join(liveDir(root), 'index.html');
@@ -131,8 +131,8 @@ async function selftest() {
     check('reflection writes a Learning_Experience lesson', fs.existsSync(lesson.file));
     const refreshed = deriveState(root);
     check('insights count logged lessons', refreshed.insights.lessons >= 1);
-    check('insights compute self-heals from the run', refreshed.insights.selfHeals >= 1);
-    check('notifications surface pending approvals', refreshed.notifications.length >= 1);
+    check('insights compute self-heals from the run', typeof refreshed.insights.selfHeals === 'number' && refreshed.insights.selfHeals === summary.selfHeals);
+    check('notifications list reflects pending approvals honestly (none on a clean run)', Array.isArray(refreshed.notifications) && refreshed.notifications.length === 0);
 
     // Cross-project learning: a lesson logged in project A is visible from project B.
     const wsRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-ws-'));
@@ -235,18 +235,38 @@ async function selftest() {
     // ── desktop "Create a new app" lands the full starter, not the generic template ──
     // (decision D5): harness, e2e suite, and lifecycle tooling from birth. Assertions
     // mirror scripts/verify-generated-project.js so the CLI and desktop scaffolds agree.
+    // ponytail: dev-repo-only — a scaffolded/vendored app has no templates/starter to copy,
+    // so starterDir() is null there; skip rather than fail. This lets the *identical* file
+    // run in both the dev tree and the synced starter copy (scripts/sync-starter-lifecycle.js),
+    // so no sync-time content surgery is needed to strip this block.
     const { scaffoldFromStarter, starterDir } = require('./scaffold');
-    check('starter template is resolvable for the desktop scaffold', !!starterDir());
-    const newAppRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-newapp-'));
-    const scaf = scaffoldFromStarter(newAppRoot, { name: 'Field Reports' });
-    check('desktop scaffold copies the starter (not the generic template)', !!scaf && scaf.source === 'starter' && scaf.created === true);
-    check('scaffolded app ships the agent harness (tools/lifecycle)', fs.existsSync(path.join(newAppRoot, 'tools', 'lifecycle', 'bin', 'powercodex-lifecycle.js')));
-    check('scaffolded app ships the e2e suite (e2e/home.spec.ts)', fs.existsSync(path.join(newAppRoot, 'e2e', 'home.spec.ts')));
-    check('scaffolded app ships telemetry + playwright config', fs.existsSync(path.join(newAppRoot, 'src', 'telemetry', 'app-telemetry.ts')) && fs.existsSync(path.join(newAppRoot, 'playwright.config.ts')));
-    const newPkg = JSON.parse(fs.readFileSync(path.join(newAppRoot, 'package.json'), 'utf8'));
-    check('scaffolded package.json carries the starter scripts (e2e/lint/test/lifecycle:selftest)', ['e2e', 'lint', 'test', 'lifecycle:selftest'].every((s) => newPkg.scripts && newPkg.scripts[s]));
-    check('scaffolded package.json is renamed from the template to the project', newPkg.name === 'field-reports');
-    fs.rmSync(newAppRoot, { recursive: true, force: true });
+    if (starterDir()) {
+      check('starter template is resolvable for the desktop scaffold', !!starterDir());
+      const newAppRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'powercodex-newapp-'));
+      const scaf = scaffoldFromStarter(newAppRoot, { name: 'Field Reports' });
+      check('desktop scaffold copies the starter (not the generic template)', !!scaf && scaf.source === 'starter' && scaf.created === true);
+      check('scaffolded app ships the agent harness (tools/lifecycle)', fs.existsSync(path.join(newAppRoot, 'tools', 'lifecycle', 'bin', 'powercodex-lifecycle.js')));
+      check('scaffolded app ships the e2e suite (e2e/home.spec.ts)', fs.existsSync(path.join(newAppRoot, 'e2e', 'home.spec.ts')));
+      check('scaffolded app ships telemetry + playwright config', fs.existsSync(path.join(newAppRoot, 'src', 'telemetry', 'app-telemetry.ts')) && fs.existsSync(path.join(newAppRoot, 'playwright.config.ts')));
+      const newPkg = JSON.parse(fs.readFileSync(path.join(newAppRoot, 'package.json'), 'utf8'));
+      check('scaffolded package.json carries the starter scripts (e2e/lint/test/lifecycle:selftest)', ['e2e', 'lint', 'test', 'lifecycle:selftest'].every((s) => newPkg.scripts && newPkg.scripts[s]));
+      check('scaffolded package.json is renamed from the template to the project', newPkg.name === 'field-reports');
+      fs.rmSync(newAppRoot, { recursive: true, force: true });
+    }
+
+    // ── starter lifecycle tree stays a generated copy of dev (drift guard) ──────────
+    // ponytail: the sync script lives at repo-root scripts/, outside tools/lifecycle, so a
+    // scaffolded/vendored copy won't carry it — skip the guard there. In the dev repo it
+    // re-runs the sync's own compare logic in-memory and fails if the starter has drifted.
+    const syncScript = path.resolve(__dirname, '..', '..', '..', 'scripts', 'sync-starter-lifecycle.js');
+    if (fs.existsSync(syncScript)) {
+      const { drift } = require(syncScript);
+      const drifted = drift();
+      check(
+        `starter lifecycle tree is in sync with dev${drifted.length ? ` (drifted: ${drifted.slice(0, 3).join(', ')}${drifted.length > 3 ? ' …' : ''})` : ''}`,
+        drifted.length === 0,
+      );
+    }
 
     // ── brownfield ingestion · code-grounded intake · freeze ─────────────────
     const { buildDigest, writeDigest, readDigest } = require('./digest');
@@ -429,8 +449,41 @@ async function selftest() {
       check('generated screen is interactive (create/delete/reset against the seam)', /data\.create\(/.test(scr) && /data\.remove\(/.test(scr) && /data\.reset\(/.test(scr));
       const seamIdx = path.join(cgRoot, 'src', 'data', 'index.ts');
       check('data seam is materialized (src/data) so @/data resolves and the preview has a local db', fs.existsSync(seamIdx) && fs.existsSync(path.join(cgRoot, 'src', 'data', 'seed.json')));
-      const seedRows = JSON.parse(fs.readFileSync(path.join(cgRoot, 'src', 'data', 'seed.json'), 'utf8'));
-      check('seed.json holds valid Item rows for the local db', Array.isArray(seedRows) && seedRows.length > 0 && seedRows.every((r) => typeof r.id === 'number' && typeof r.title === 'string' && (r.status === 'Open' || r.status === 'Done')));
+
+      // Schema-driven codegen: two different intakes must yield two different apps, seed
+      // rows must conform to the emitted type, and a thin intake must degrade honestly.
+      const { deriveSchema, generateScreen, seedFor } = require('./codegen');
+      const conforms = (schema, rows) =>
+        Array.isArray(rows) && rows.length > 0 &&
+        rows.every((r) => typeof r.id === 'number' && schema.fields.every((f) => {
+          const v = r[f.name];
+          if (f.type === 'number' || f.type === 'currency') return typeof v === 'number';
+          if (f.type === 'boolean') return typeof v === 'boolean';
+          if (f.type === 'choice') return f.values.includes(v);
+          return typeof v === 'string';
+        }));
+
+      const loanSchema = deriveSchema({ displayName: 'Equipment Loan Tracker', goal: 'track equipment loans: borrower, due date, and returned status' });
+      const fbSchema = deriveSchema({ displayName: 'Customer Feedback Log', goal: 'log customer feedback with a rating and category and status' });
+      const loanFields = loanSchema.fields.map((f) => f.name).sort().join(',');
+      const fbFields = fbSchema.fields.map((f) => f.name).sort().join(',');
+      check('distinct intents derive distinct schemas (not the fixed Item shape)', loanSchema.entity !== fbSchema.entity && loanFields !== fbFields);
+      check('derived fields carry types (a date and a choice, not just strings)', loanSchema.fields.some((f) => f.type === 'date') && fbSchema.fields.some((f) => f.type === 'choice'));
+
+      const loanScreen = generateScreen({ componentName: 'Loans', displayName: 'Equipment Loan Tracker', goal: 'x', schema: loanSchema });
+      const fbScreen = generateScreen({ componentName: 'Feedback', displayName: 'Customer Feedback Log', goal: 'x', schema: fbSchema });
+      check('generated screens render their own fields (not a shared hardcoded set)', loanScreen.includes('r.dueDate') && !loanScreen.includes('r.rating') && fbScreen.includes('r.rating'));
+      check('seed rows conform to the emitted type', conforms(loanSchema, seedFor(loanSchema)) && conforms(fbSchema, seedFor(fbSchema)));
+
+      const thin = deriveSchema({ displayName: 'Stuff', goal: 'stuff' });
+      check('a thin intake degrades to a reported fallback shape (not fabricated fields)', thin.fallback === true && thin.fields.length >= 2);
+      const thinEvents = [];
+      await buildCodeTasks({
+        root: cgRoot,
+        tasks: [{ type: 'code.screen', name: 'thin', componentName: 'Thin', route: '/thin', goal: 'stuff' }],
+        emit: (e) => thinEvents.push(e),
+      });
+      check('the fallback is surfaced honestly in the event stream', thinEvents.some((e) => /thin|starter shape/i.test(e.message || '')));
     } finally {
       fs.rmSync(cgRoot, { recursive: true, force: true });
     }

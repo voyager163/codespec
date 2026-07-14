@@ -241,9 +241,8 @@ async function runLoop(root, opts = {}) {
     //   diff   — apply the fix, emit a diff event, wait for approval, then re-run once
     //   auto   — keep healing and re-running until green or maxHealRetries is exhausted
     const specs = opts.specs || ['projects-grid.spec.ts', 'status-chip.spec.ts', 'new-project.spec.ts'];
-    const injectDefect = r === 1 && opts.selfHeal !== false ? specs[0] : null;
     summary.specsRun += specs.length;
-    let result = await eng.e2eTester({ emit, rotation: r, specs, injectDefect, baseUrl });
+    let result = await eng.e2eTester({ emit, rotation: r, specs, baseUrl });
 
     if (!result.passed) {
       const signature = result.failures.join(',');
@@ -259,7 +258,7 @@ async function runLoop(root, opts = {}) {
       await emit({ rotation: r, stage: 5, agent: 'e2e-tester', level: 'info', message: `Self-heal: repairing ${result.failures[0]}` });
       summary.selfHeals += 1;
       if (eng.heal) await eng.heal({ emit, rotation: r, failures: result.failures });
-      result = await eng.e2eTester({ emit, rotation: r, specs, injectDefect: null, baseUrl });
+      result = await eng.e2eTester({ emit, rotation: r, specs, baseUrl });
 
       // If still red, apply the chosen fix strategy.
       if (!result.passed) {
@@ -278,7 +277,7 @@ async function runLoop(root, opts = {}) {
             await emit({ rotation: r, stage: 5, agent: 'e2e-tester', level: 'info', message: `Auto-fix attempt ${retries}/${maxHealRetries}: repairing ${result.failures[0]}` });
             summary.selfHeals += 1;
             if (eng.heal) await eng.heal({ emit, rotation: r, failures: result.failures });
-            result = await eng.e2eTester({ emit, rotation: r, specs, injectDefect: null, baseUrl });
+            result = await eng.e2eTester({ emit, rotation: r, specs, baseUrl });
           }
           if (!result.passed && !summary.stopped) {
             await emit({ rotation: r, stage: 5, agent: 'e2e-tester', level: 'warn', message: `Auto-fix exhausted (${maxHealRetries} attempt(s)) · still red · escalating` });
@@ -299,7 +298,7 @@ async function runLoop(root, opts = {}) {
             if (approved) {
               await emit({ rotation: r, stage: 5, agent: 'e2e-tester', level: 'info', message: 'Diff approved · re-running tests' });
               if (eng.heal) await eng.heal({ emit, rotation: r, failures: result.failures });
-              result = await eng.e2eTester({ emit, rotation: r, specs, injectDefect: null, baseUrl });
+              result = await eng.e2eTester({ emit, rotation: r, specs, baseUrl });
               if (!result.passed) {
                 await emit({ rotation: r, stage: 5, agent: 'e2e-tester', level: 'warn', message: `Still red after approved fix · ${result.failures.length} issue(s) · escalating` });
                 summary.stopped = true;
@@ -311,7 +310,7 @@ async function runLoop(root, opts = {}) {
           } else {
             // No approval gate configured: apply fix and continue (best-effort).
             if (eng.heal) await eng.heal({ emit, rotation: r, failures: result.failures });
-            result = await eng.e2eTester({ emit, rotation: r, specs, injectDefect: null, baseUrl });
+            result = await eng.e2eTester({ emit, rotation: r, specs, baseUrl });
             if (!result.passed) {
               await emit({ rotation: r, stage: 5, agent: 'e2e-tester', level: 'warn', message: `Still red after fix (no approval gate) · ${result.failures.length} issue(s) · escalating` });
               summary.stopped = true;
@@ -352,19 +351,16 @@ async function runLoop(root, opts = {}) {
     }
 
     // Step 6 — observe -> re-spec
-    const observation = pickObservation(r);
-    if (observation) {
-      summary.observations += 1;
-      const auto = observation.signal === 'defect' && allowed(rights, 'allowAutoApplyDefects');
-      await emit({
-        rotation: r,
-        stage: 6,
-        agent: 'observer',
-        level: 'observation',
-        message: `Authored next spec from observation · ${observation.signal} · ${observation.title}`,
-        data: { signal: observation.signal, confidence: observation.confidence, needsApproval: !auto },
-      });
-    }
+    // ponytail: no real observation source yet (Gap 4 · e2e-against-preview). Emit an
+    // honest heartbeat rather than fabricating canned observation cards; summary.observations
+    // stays 0 until a genuine signal is wired in.
+    await emit({
+      rotation: r,
+      stage: 6,
+      agent: 'observer',
+      level: 'info',
+      message: 'No new observations this rotation (no real observation source yet)',
+    });
   }
 
   await emit({
@@ -473,14 +469,6 @@ async function waitForApproval(isApproved, isPaused, emit, rotation, { timeoutMs
     await sleep(pollMs);
   }
   return false;
-}
-
-function pickObservation(rotation) {
-  const list = [
-    { signal: 'gap', confidence: 0.74, title: 'Approved "Archive" screen has no e2e spec' },
-    { signal: 'improvement', confidence: 0.63, title: 'Empty-state on Tasks list feels abrupt' },
-  ];
-  return list[(rotation - 1) % list.length];
 }
 
 module.exports = { runLoop, resolveOnDeviceBaseUrl };

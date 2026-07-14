@@ -249,14 +249,49 @@ export async function captureScreenshot(context, targetUrl, outPath, { timeout =
 
 // ---- Power Platform portal automation -----------------------------------------
 
+// Extract the Dataverse logical name from a maker-portal URL.
+// The portal uses two URL patterns depending on the surface:
+//   /environments/{envId}/entities/{logicalName}/...
+//   /environments/{envId}/tables/{logicalName}/...
+// Falls back to null if neither pattern matches.
+function logicalNameFromUrl(url) {
+  const m = url.match(/\/(?:entities|tables)\/([a-z0-9_]+)\//i);
+  return m ? m[1].toLowerCase() : null;
+}
+
+// Read the schema-name (“Name”) field that the table editor shows next to Display Name.
+// The portal renders it as a read-only or editable text input labelled “Name” (not
+// “Display name”). Returns null when the field is not visible (panel not open, wrong page).
+async function readSchemaNameField(page) {
+  try {
+    // Try the labelled input first (most variants).
+    const nameInput = page.getByLabel(/^name$/i).first();
+    if (await visible(nameInput, 2000)) {
+      const v = await nameInput.inputValue().catch(() => '');
+      if (v && /^[a-z0-9_]+$/i.test(v)) return v.toLowerCase();
+    }
+    // Some portal variants render it as a read-only span near “Display name”.
+    const spans = await page.getByText(/^[a-z]{2,6}_[a-z0-9_]+$/i).all();
+    for (const s of spans) {
+      const t = await s.textContent().catch(() => '');
+      if (t && /^[a-z]{2,6}_[a-z0-9_]+$/i.test(t.trim())) return t.trim().toLowerCase();
+    }
+  } catch {
+    /* best-effort — caller falls back to URL extraction */
+  }
+  return null;
+}
+
 // Create a Dataverse table in the make.powerapps.com maker portal via the DOM, then
-// verify it exists. This is the real vertical slice for `dataverse.table.create`.
+// verify it exists and capture its logical name. This is the real vertical slice for
+// `dataverse.table.create`.
 //
 // Portal DOM is brittle and Microsoft ships A/B variants, so every step is defensive:
 // we try a set of stable, role/text-based locators, wait for the table grid, and ONLY
 // report created:true after re-reading the tables list and finding the new row. Any
-// uncertainty returns created:false with a reason — never a faked success. This must be
-// validated against a live tenant; selectors are best-effort until then.
+// uncertainty returns created:false with a reason — never a faked success.
+//
+// Returns: { created, logicalName, reason, finalUrl, steps }
 export async function createDataverseTable(context, { environmentId, displayName, pluralName, primaryColumn } = {}) {
   const name = (displayName || 'New Table').trim();
   const plural = (pluralName || (name.endsWith('s') ? name : name + 's')).trim();
@@ -272,23 +307,23 @@ export async function createDataverseTable(context, { environmentId, displayName
 
     // If we got bounced to a sign-in page, the caller must clear MFA first.
     if (/login\.microsoftonline\.com|\/signin/i.test(page.url())) {
-      return finish(false, 'sign-in required — clear MFA in the Edge window, then retry', page, steps);
+      return finishTable(false, null, 'sign-in required — clear MFA in the Edge window, then retry', page, steps);
     }
 
-    // "New table" → "New table" (the split-button/menu varies; try a few entry points).
+    // “New table” → “New table” (the split-button/menu varies; try a few entry points).
     const newTable = page.getByRole('button', { name: /new table/i }).first();
     if (await visible(newTable)) {
       await newTable.click().catch(() => {});
-      // A menu may offer "Start from blank"; click it when present.
+      // A menu may offer “Start from blank”; click it when present.
       const blank = page.getByRole('menuitem', { name: /blank|start from blank/i }).first();
       if (await visible(blank, 2500)) await blank.click().catch(() => {});
       note('clicked New table');
     } else {
-      return finish(false, 'could not find the “New table” button (portal layout may have changed)', page, steps);
+      return finishTable(false, null, 'could not find the “New table” button (portal layout may have changed)', page, steps);
     }
 
     // The new-table panel: fill the display name. The field is usually labelled
-    // "Display name"; fall back to the first visible textbox in the panel.
+    // “Display name”; fall back to the first visible textbox in the panel.
     const displayField = page.getByLabel(/display name/i).first();
     if (await visible(displayField, 8000)) {
       await displayField.fill(name).catch(() => {});
@@ -296,7 +331,7 @@ export async function createDataverseTable(context, { environmentId, displayName
     } else {
       const anyBox = page.getByRole('textbox').first();
       if (await visible(anyBox, 3000)) await anyBox.fill(name).catch(() => {});
-      else return finish(false, 'the new-table panel did not open as expected', page, steps);
+      else return finishTable(false, null, 'the new-table panel did not open as expected', page, steps);
     }
 
     // Plural name is sometimes auto-filled; set it if the field is editable & empty.
@@ -318,19 +353,202 @@ export async function createDataverseTable(context, { environmentId, displayName
       await save.click().catch(() => {});
       note('clicked Save');
     } else {
-      return finish(false, 'could not find the Save/Create button on the panel', page, steps);
+      return finishTable(false, null, 'could not find the Save/Create button on the panel', page, steps);
     }
 
     // Saving a Dataverse table can take a while; wait for the editor or list to settle.
     await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
 
+    // --- Logical name capture (attempt 1): read from the post-save URL.
+    // After saving, the portal typically navigates to the table editor whose URL
+    // contains the logical name: /entities/{logicalName}/ or /tables/{logicalName}/
+    let logicalName = logicalNameFromUrl(page.url());
+    note(`post-save URL: ${page.url()} → logicalName: ${logicalName || '(not in URL)'}`);
+
+    // --- Logical name capture (attempt 2): read the “Name” field in the editor DOM.
+    if (!logicalName) {
+      logicalName = await readSchemaNameField(page);
+      if (logicalName) note(`read logical name from DOM schema-name field: ${logicalName}`);
+    }
+
     // Verify: go back to the tables list and look for the new display name.
     await page.goto(tablesUrl, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {});
     await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
     const found = await page.getByText(name, { exact: false }).first().isVisible().catch(() => false);
-    return finish(!!found, found ? '' : 'saved, but the new table was not visible in the list on re-read', page, steps);
+
+    // --- Logical name capture (attempt 3): scan table list for a link/href containing
+    // the logical name pattern adjacent to the display name row we just created.
+    if (!logicalName && found) {
+      try {
+        const row = page.getByText(name, { exact: false }).first();
+        const parent = row.locator('xpath=ancestor::tr[1]|ancestor::div[contains(@class,”row”)][1]').first();
+        const links = await parent.locator('a[href]').all();
+        for (const link of links) {
+          const href = await link.getAttribute('href').catch(() => '');
+          const ln = logicalNameFromUrl(href || '');
+          if (ln) { logicalName = ln; break; }
+        }
+        if (logicalName) note(`read logical name from table list row href: ${logicalName}`);
+      } catch {
+        /* best-effort */
+      }
+    }
+
+    return finishTable(
+      !!found,
+      logicalName,
+      found ? '' : 'saved, but the new table was not visible in the list on re-read',
+      page,
+      steps,
+    );
   } catch (error) {
-    return finish(false, error.message, page, steps);
+    return finishTable(false, null, error.message, page, steps);
+  }
+}
+
+// Add a column to an existing Dataverse table via the maker portal.
+// Supported types: text, number, date, datetime, boolean, choice, lookup, email, url, phone, currency
+//
+// Returns: { created, logicalName, reason, finalUrl, steps }
+export async function addDataverseColumn(context, {
+  environmentId,
+  tableLogicalName,
+  displayName,
+  type = 'text',
+  choices = [],
+  required = false,
+  description = '',
+} = {}) {
+  if (!tableLogicalName) return { created: false, logicalName: null, reason: 'tableLogicalName is required', finalUrl: '', steps: [] };
+  const base = 'https://make.powerapps.com';
+  const editorUrl = environmentId
+    ? `${base}/environments/${environmentId}/entities/${tableLogicalName}/fields`
+    : `${base}/entities/${tableLogicalName}/fields`;
+  const page = await context.newPage();
+  const steps = [];
+  const note = (m) => steps.push(m);
+
+  // Map our simple type names to what the portal calls them in its dropdown.
+  const TYPE_LABELS = {
+    text: /^text$/i,
+    number: /^(number|whole number|decimal number)/i,
+    date: /^date only$/i,
+    datetime: /^date and time$/i,
+    boolean: /^(yes\/no|boolean|two options)/i,
+    choice: /^choice$/i,
+    lookup: /^lookup$/i,
+    email: /^email$/i,
+    url: /^url$/i,
+    phone: /^phone$/i,
+    currency: /^currency$/i,
+  };
+  const typeLabel = TYPE_LABELS[type.toLowerCase()] || new RegExp(type, 'i');
+
+  try {
+    await page.goto(editorUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
+    note(`opened table editor: ${page.url()}`);
+
+    if (/login\.microsoftonline\.com|\/signin/i.test(page.url())) {
+      return finishColumn(false, null, 'sign-in required', page, steps);
+    }
+
+    // Click “+ New column” (various labels across portal versions).
+    const newColBtn = page.getByRole('button', { name: /new column|add column|\+ column/i }).first();
+    if (await visible(newColBtn, 8000)) {
+      await newColBtn.click().catch(() => {});
+      note('clicked New column');
+    } else {
+      return finishColumn(false, null, 'could not find the “+ New column” button', page, steps);
+    }
+
+    // Fill Display name.
+    const dispField = page.getByLabel(/display name/i).first();
+    if (await visible(dispField, 8000)) {
+      await dispField.fill(displayName).catch(() => {});
+      note(`filled display name “${displayName}”`);
+    } else {
+      return finishColumn(false, null, 'column panel did not open (Display name field not found)', page, steps);
+    }
+
+    // Select Data type.
+    // The dropdown is usually a combobox or a select labelled “Data type”.
+    const dtField = page.getByLabel(/data type/i).first();
+    if (await visible(dtField, 4000)) {
+      // Try clicking to open the dropdown, then pick the option.
+      await dtField.click().catch(() => {});
+      await page.waitForTimeout(400);
+      const option = page.getByRole('option', { name: typeLabel }).first();
+      if (await visible(option, 3000)) {
+        await option.click().catch(() => {});
+        note(`selected data type “${type}”`);
+      } else {
+        // Fall back: type into the field and pick the first suggestion.
+        await dtField.fill(type).catch(() => {});
+        const suggestion = page.getByRole('option').first();
+        if (await visible(suggestion, 2000)) await suggestion.click().catch(() => {});
+        note(`typed data type “${type}” and picked first suggestion`);
+      }
+    }
+
+    // For Choice type: add each choice value.
+    if (/^choice$/i.test(type) && choices.length) {
+      for (const choice of choices) {
+        const addChoice = page.getByRole('button', { name: /add item|add choice|\+ new choice/i }).first();
+        if (await visible(addChoice, 3000)) {
+          await addChoice.click().catch(() => {});
+          const lastInput = page.getByRole('textbox').last();
+          if (await visible(lastInput, 2000)) await lastInput.fill(String(choice)).catch(() => {});
+        }
+      }
+      note(`added ${choices.length} choice(s): ${choices.join(', ')}`);
+    }
+
+    // Required toggle (optional).
+    if (required) {
+      const reqToggle = page.getByLabel(/required/i).first();
+      if (await visible(reqToggle, 1500)) await reqToggle.check().catch(() => {});
+    }
+
+    // Description (optional).
+    if (description) {
+      const descField = page.getByLabel(/description/i).first();
+      if (await visible(descField, 1500)) await descField.fill(description).catch(() => {});
+    }
+
+    // Save the column.
+    const saveBtn = page.getByRole('button', { name: /^(save|done|create)$/i }).first();
+    if (await visible(saveBtn, 4000)) {
+      await saveBtn.click().catch(() => {});
+      note('clicked Save');
+    } else {
+      return finishColumn(false, null, 'could not find Save button on column panel', page, steps);
+    }
+
+    await page.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => {});
+
+    // Capture the column logical name from URL or the schema-name field.
+    let logicalName = logicalNameFromUrl(page.url());
+    // The column URL pattern is /entities/{table}/fields/{columnLogicalName}
+    const colMatch = page.url().match(/\/fields\/([a-z0-9_]+)/i);
+    if (colMatch) logicalName = colMatch[1].toLowerCase();
+    if (!logicalName) logicalName = await readSchemaNameField(page);
+    note(`column logical name: ${logicalName || '(not captured)'}`);
+
+    // Verify: look for the column display name in the fields list.
+    await page.goto(editorUrl, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {});
+    await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
+    const found = await page.getByText(displayName, { exact: false }).first().isVisible().catch(() => false);
+
+    return finishColumn(
+      !!found,
+      logicalName,
+      found ? '' : 'saved, but column not visible in the fields list on re-read',
+      page,
+      steps,
+    );
+  } catch (error) {
+    return finishColumn(false, null, error.message, page, steps);
   }
 }
 
@@ -351,6 +569,26 @@ async function finish(created, reason, page, steps) {
     /* best-effort */
   }
   return { created, reason: reason || '', finalUrl, steps };
+}
+
+async function finishTable(created, logicalName, reason, page, steps) {
+  const finalUrl = page ? page.url() : '';
+  try {
+    if (page) await page.close();
+  } catch {
+    /* best-effort */
+  }
+  return { created, logicalName: logicalName || null, reason: reason || '', finalUrl, steps };
+}
+
+async function finishColumn(created, logicalName, reason, page, steps) {
+  const finalUrl = page ? page.url() : '';
+  try {
+    if (page) await page.close();
+  } catch {
+    /* best-effort */
+  }
+  return { created, logicalName: logicalName || null, reason: reason || '', finalUrl, steps };
 }
 
 export function formatSmokeTestReport(result) {

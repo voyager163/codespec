@@ -41,6 +41,7 @@
   ],
   "scripts": {
     "verify": "node scripts/verify-generated-project.js",
+    "sync:starter": "node scripts/sync-starter-lifecycle.js",
     "lifecycle": "node tools/lifecycle/bin/powercodex-lifecycle.js",
     "lifecycle:serve": "node tools/lifecycle/bin/powercodex-lifecycle.js serve",
     "lifecycle:selftest": "node tools/lifecycle/bin/powercodex-lifecycle.js selftest",
