@@ -1,5 +1,6 @@
 {
   "name": "powercodex-desktop",
+  "productName": "PowerCodex",
   "version": "0.1.0",
   "description": "PowerCodex desktop — Chat & Agent for low-code makers, in one window.",
   "author": "PowerCodex",
@@ -12,17 +13,20 @@
     "dist": "node scripts/build-exe.js portable",
     "dist:installer": "node scripts/build-exe.js nsis",
     "dist:dir": "node scripts/build-exe.js dir",
-    "dist:inplace": "npm run sync && electron-builder --win portable"
+    "dist:inplace": "npm run sync && electron-builder --win portable",
+    "dist:win": "npm run sync && electron-builder --win portable",
+    "dist:mac": "npm run sync && electron-builder --mac dmg",
+    "pack": "npm run sync && electron-builder --dir"
   },
   "devDependencies": {
-    "electron": "^32.2.0",
+    "electron": "^43.1.0",
     "electron-builder": "^25.1.8"
   },
   "build": {
     "appId": "com.powercodex.desktop",
     "productName": "PowerCodex",
     "directories": { "output": "dist", "buildResources": "build" },
-    "files": ["main.js", "preload.js", "vendor/**/*", "package.json"],
+    "files": ["main.js", "preload.js", "lib/**/*", "vendor/**/*", "package.json"],
     "win": {
       "target": ["portable"]
     },
@@ -35,10 +39,18 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "runAfterFinish": true,
-      "deleteAppDataOnUninstall": true,
+      "deleteAppDataOnUninstall": false,
       "shortcutName": "PowerCodex",
       "menuCategory": "PowerCodex",
       "artifactName": "PowerCodex-Setup.exe"
+    },
+    "mac": {
+      "target": ["dmg"],
+      "category": "public.app-category.developer-tools",
+      "artifactName": "PowerCodex-${version}-${arch}.${ext}"
+    },
+    "dmg": {
+      "artifactName": "PowerCodex-${version}-${arch}.dmg"
     }
   }
 }

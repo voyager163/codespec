@@ -13,6 +13,17 @@ const os = require('node:os');
 const fs = require('node:fs');
 const path = require('node:path');
 
+// This is the Windows-only convenience wrapper (it passes --win and does Windows
+// process/registry cleanup). Fail fast with a pointer elsewhere so a mac/Linux run
+// doesn't die inside a confusing wine/electron-builder error.
+if (process.platform !== 'win32') {
+  console.error(
+    'build-exe.js is the Windows build helper. On macOS use `npm run dist:mac`; ' +
+      'for a host-OS unpacked build use `npm run pack`.'
+  );
+  process.exit(1);
+}
+
 const projectDir = path.resolve(__dirname, '..');
 const target = (process.argv[2] || 'portable').toLowerCase(); // 'portable' | 'nsis' | 'dir'
 const ARTIFACT = { portable: 'PowerCodex.exe', nsis: 'PowerCodex-Setup.exe' };

@@ -3,4 +3,9 @@ vendor/
 dist/
 out-installer/
 release*/
+build-out/
 *.log
+
+# The root .gitignore ignores build/ globally; keep desktop/build/ trackable
+# because it is electron-builder's buildResources dir (icon.ico / icon.icns).
+!build/

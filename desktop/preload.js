@@ -7,4 +7,6 @@ contextBridge.exposeInMainWorld('pcDesktop', {
   isDesktop: true,
   // Opens the native OS folder picker; resolves to an absolute path or null.
   pickFolder: () => ipcRenderer.invoke('pc:pickFolder'),
+  // Reveals the app's data folder in the OS file manager; resolves to a boolean.
+  openDataFolder: () => ipcRenderer.invoke('pc:openDataFolder'),
 });

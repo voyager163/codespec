@@ -36,7 +36,32 @@ Other targets:
 
 Everything the app needs is packaged inside the executable. On launch it starts a
 local server on a free port, writes its working files under your user data folder
-(`%APPDATA%/PowerCodex`), and opens the chat window.
+(`%APPDATA%/PowerCodex` on Windows, `~/Library/Application Support/PowerCodex` on macOS),
+and opens the chat window. Main‑process logs are written to `<userData>/logs/main.log`.
+
+## Build for macOS
+
+```bash
+cd desktop
+npm install                                 # one-time: pulls Electron + electron-builder
+CSC_IDENTITY_AUTO_DISCOVERY=false npm run dist:mac   # → dist/PowerCodex-<version>-<arch>.dmg
+```
+
+The build is **unsigned**, so on first launch macOS Gatekeeper blocks it — **right‑click
+the app → Open** once to approve it (thereafter it opens normally). To build both Intel and
+Apple‑Silicon images at once: `electron-builder --mac dmg --x64 --arm64`.
+
+> **Signing & notarization (later, not configured here):** provide a Developer ID via
+> `CSC_LINK`/`CSC_KEY_PASSWORD` and add a `"notarize": { "teamId": "…" }` block under
+> `build.mac` in `package.json`. Left out on purpose so local builds work with no
+> credentials.
+
+## Cross‑platform notes
+
+- `npm run pack` (`electron-builder --dir`) builds an unpacked app for the **host OS** —
+  handy for a quick local smoke test and it validates the full packaging config.
+- Real installers must be built on their target OS: the **`.dmg` requires macOS** and the
+  **`.exe` requires Windows** (electron‑builder won't cross‑build these reliably here).
 
 ## How it fits together
 
@@ -48,5 +73,7 @@ local server on a free port, writes its working files under your user data folde
 
 ## Optional: app icon
 
-Drop a `build/icon.ico` (256×256) in this folder and electron‑builder will use it for
-the window, taskbar, and installer. Without one, the default Electron icon is used.
+Drop a `build/icon.ico` (256×256, Windows) and/or `build/icon.icns` (macOS) into this
+folder and electron‑builder picks them up automatically for the window, taskbar/dock, and
+installer. Without them, the default Electron icon is used. (`desktop/.gitignore` keeps the
+`build/` folder trackable so these icons commit even though the repo root ignores `build/`.)
