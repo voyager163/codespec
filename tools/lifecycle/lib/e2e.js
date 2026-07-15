@@ -111,21 +111,26 @@ function failureSignature(failures) {
 // ---- run one full exercise pass ----------------------------------------------
 // driver: { open(url), listInteractive(), fill(sel,val), check(sel), click(sel),
 //           select(sel,val), navigate(sel), drainEvents(), close() }
-async function runE2E(url, driver, { onStep = () => {}, maxSteps = 120 } = {}) {
+async function runE2E(url, driver, { onStep = () => {}, maxSteps = 120, maxDurationMs = 120000 } = {}) {
   if (!driver) return { passed: false, failures: [{ type: 'setup', detail: 'no browser driver (install playwright)', severity: 'error' }], exercised: 0, coverage: 0 };
+  const { withTimeout, deadline } = require('./timeout');
+  const withinTime = deadline(maxDurationMs);
   const allFailures = [];
   let exercised = 0;
   let elements = [];
   try {
-    await driver.open(url);
+    // A hung navigation must not stall the run forever.
+    await withTimeout(driver.open(url), Math.min(maxDurationMs, 30000), 'page open');
     // Initial page load errors.
     allFailures.push(...classifyFailures(await safe(driver.drainEvents), { stepLabel: 'page load' }));
     elements = (await safe(driver.listInteractive)) || [];
   } catch (e) {
+    try { await driver.close(); } catch { /* best-effort */ }
     return { passed: false, failures: [{ type: 'nav-error', detail: e.message, severity: 'error' }], exercised: 0, coverage: 0 };
   }
   const steps = planInteractions(elements).slice(0, maxSteps);
   for (const step of steps) {
+    if (!withinTime()) { allFailures.push({ type: 'timeout', detail: `stopped after ${maxDurationMs}ms; exercised ${exercised}/${steps.length}`, severity: 'warn' }); break; }
     try {
       if (step.action === 'fill') await driver.fill(step.selector, step.value);
       else if (step.action === 'check') await driver.check(step.selector);

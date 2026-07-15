@@ -302,7 +302,11 @@ function serve(root, opts = {}) {
             emit(activeRoot, { rotation: 0, stage: 4, agent: 'preview', level: /error|fail/i.test(line) ? 'bad' : 'info', message: 'Preview · ' + String(line).slice(0, 120) });
             render(activeRoot);
           };
-          const result = await preview.start(activeRoot, { onLine: boundEmit });
+          const onExit = (info) => {
+            emit(activeRoot, { rotation: 0, stage: 4, agent: 'preview', level: 'warn', message: `Preview stopped unexpectedly (exit ${info.code}) · ${(info.tail || []).slice(-1)[0] || ''}` });
+            render(activeRoot);
+          };
+          const result = await preview.start(activeRoot, { onLine: boundEmit, onExit });
           emit(activeRoot, { rotation: 0, stage: 4, agent: 'preview', level: result.ok ? 'good' : 'warn', message: result.ok ? `Preview running → ${result.url}` : `Preview not started · ${result.error || ''}` });
           render(activeRoot);
           return json(res, 200, result);

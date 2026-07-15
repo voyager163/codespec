@@ -42,15 +42,27 @@ function findPac() {
 const PAC = findPac();
 
 // Run pac and return { stdout, stderr, code }. Never throws — callers check code.
-async function pac(args, { cwd = process.cwd(), env } = {}) {
+// A hung pac call (network stall, waiting on an auth prompt) is killed after timeoutMs
+// so it can't stall the publish flow forever — a real hard kill, not just an awaiter.
+async function pac(args, { cwd = process.cwd(), env, timeoutMs = 180000 } = {}) {
   return new Promise((resolve) => {
     const child = spawn(PAC, args, { cwd, env: env || process.env, stdio: 'pipe' });
     let stdout = '';
     let stderr = '';
+    let timedOut = false;
+    const timer = timeoutMs > 0 ? setTimeout(() => {
+      timedOut = true;
+      try { child.kill('SIGKILL'); } catch { /* already gone */ }
+    }, timeoutMs) : null;
+    if (timer && timer.unref) timer.unref();
     child.stdout.on('data', (d) => { stdout += d; });
     child.stderr.on('data', (d) => { stderr += d; });
-    child.on('close', (code) => resolve({ stdout: stdout.trim(), stderr: stderr.trim(), code: code ?? 0 }));
-    child.on('error', (e) => resolve({ stdout: '', stderr: e.message, code: 1 }));
+    child.on('close', (code) => {
+      if (timer) clearTimeout(timer);
+      if (timedOut) return resolve({ stdout: stdout.trim(), stderr: `pac ${args[0] || ''} timed out after ${timeoutMs}ms and was stopped.`, code: 1, timedOut: true });
+      resolve({ stdout: stdout.trim(), stderr: stderr.trim(), code: code ?? 0 });
+    });
+    child.on('error', (e) => { if (timer) clearTimeout(timer); resolve({ stdout: '', stderr: e.message, code: 1 }); });
   });
 }
 

@@ -59,7 +59,7 @@ function status(root) {
 
 // Start (or reuse) a dev server for `root`. Resolves once the URL is captured, the
 // process exits early, or a timeout elapses. `onLine` relays server output for the UI.
-function start(root, { onLine, timeoutMs = 25000 } = {}) {
+function start(root, { onLine, onExit, timeoutMs = 25000 } = {}) {
   const abs = key(root);
 
   if (running(abs)) {
@@ -124,8 +124,14 @@ function start(root, { onLine, timeoutMs = 25000 } = {}) {
       finish({ ok: false, error: 'The dev server failed to launch: ' + e.message });
     });
     child.on('exit', (code) => {
+      const wasTracked = servers.get(abs) === entry;
       // Only clear if this is still the tracked child (stop() may have replaced it).
-      if (servers.get(abs) === entry) servers.delete(abs);
+      if (wasTracked) servers.delete(abs);
+      // A crash AFTER we reported the URL: settled is true, so tell the caller out-of-band
+      // (the UI can mark the preview stopped) instead of silently leaving a dead server.
+      if (settled && wasTracked && entry.url && onExit) {
+        try { onExit({ code, url: entry.url, tail: entry.tail.slice(-5) }); } catch { /* best-effort */ }
+      }
       finish({ ok: false, error: 'The dev server stopped before it was ready (exit ' + code + '). ' + (entry.tail.slice(-3).join(' · ') || '') });
     });
 
