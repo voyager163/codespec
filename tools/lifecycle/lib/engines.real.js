@@ -117,6 +117,23 @@ function create(root) {
       await emit({ rotation, stage: 5, agent: 'e2e-tester', level: 'warn', message: 'Real e2e needs a live app URL — none captured (set Approved_rights appUrl or run a dev server)' });
       return { failures: ['no-app-url'], coverage: 0, passed: false, real: true };
     }
+    // On-device dev server (localhost) → exercise every element for real (Rule 3), no
+    // managed browser needed. Degrades to the tenant smoke test below when unavailable.
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)/i.test(baseUrl)) {
+      try {
+        const e2e = require('./e2e');
+        const driver = await e2e.createPlaywrightDriver({ headless: true });
+        if (driver) {
+          await emit({ rotation, stage: 5, agent: 'e2e-tester', level: 'info', message: `Real element test → ${baseUrl}` });
+          const r = await e2e.runE2E(baseUrl, driver);
+          const failures = (r.hardFailures || []).map((f) => `${f.type}: ${f.detail}`);
+          await emit({ rotation, stage: 5, agent: 'e2e-tester', level: r.passed ? 'good' : 'bad', message: `${r.passed ? 'pass' : 'FAIL'} · exercised ${r.exercised}/${r.planned} interactions · ${failures.length} issue(s)` });
+          return { failures, coverage: r.coverage, passed: r.passed, real: true, elementTest: true };
+        }
+      } catch (e) {
+        await emit({ rotation, stage: 5, agent: 'e2e-tester', level: 'warn', message: 'Element test unavailable (' + e.message + ') → falling back to smoke test' });
+      }
+    }
     const m = await engine();
     const context = await ensureContext(emit, rotation, null);
     await emit({ rotation, stage: 5, agent: 'e2e-tester', level: 'info', message: `Real smoke test → ${baseUrl}` });

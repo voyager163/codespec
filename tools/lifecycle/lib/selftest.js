@@ -459,6 +459,29 @@ async function selftest() {
     check('publish captures the live app URL from pac output', publish.extractAppUrl('done. Play at https://apps.powerapps.com/play/e/env/a/app now') === 'https://apps.powerapps.com/play/e/env/a/app');
     check('publish check never throws when pac is absent', typeof (await publish.check(root)).appName === 'string');
 
+    // Real e2e engine — element planning, failure classification, and the heal loop,
+    // exercised with a fake browser driver (no Playwright/browser needed here).
+    const e2e = require('./e2e');
+    const plan = e2e.planInteractions([
+      { kind: 'input', type: 'email', selector: '#e' },
+      { kind: 'select', selector: '#s', options: ['a', 'b'] },
+      { kind: 'button', text: 'Go', selector: '#g' },
+      { kind: 'link', text: 'Home', selector: '#h', href: '/' },
+    ]);
+    check('e2e plans fills before clicks and exercises every option', plan.map((s) => s.action).indexOf('fill') < plan.map((s) => s.action).indexOf('click') && plan.filter((s) => s.action === 'select').length === 2);
+    check('e2e classifies real failures and filters benign noise', (() => {
+      const f = e2e.classifyFailures({ consoleErrors: ['boom', 'favicon.ico 404'], pageErrors: ['TypeError'] });
+      return f.length === 2 && f.some((x) => x.type === 'pageerror');
+    })());
+    const fakeDriver = (queue) => ({ async open() {}, async listInteractive() { return [{ kind: 'input', type: 'text', selector: '#a' }, { kind: 'button', text: 'Go', selector: '#b' }]; }, async fill() {}, async check() {}, async click() {}, async select() {}, async navigate() {}, async drainEvents() { return queue.shift() || {}; }, async close() {} });
+    check('e2e run reports green when the app is clean', (await e2e.runE2E('http://x', fakeDriver([{}, {}, {}]))).passed === true);
+    check('e2e run reports red on a real page error', (await e2e.runE2E('http://x', fakeDriver([{ pageErrors: ['Cannot read null'] }, {}, {}]))).passed === false);
+    check('e2e heal loop reaches green after a fix', (() => {
+      let fixed = false;
+      return e2e.healLoop({ url: 'http://x', makeDriver: async () => fixed ? fakeDriver([{}, {}, {}]) : fakeDriver([{ pageErrors: ['bug'] }, {}, {}]), onFix: async () => { fixed = true; }, rebuild: async () => ({ passed: true }), maxRounds: 3 }).then((h) => h.passed === true && h.rounds === 2);
+    })());
+    check('e2e heal loop stops on no-progress', (await e2e.healLoop({ url: 'http://x', makeDriver: async () => fakeDriver([{ pageErrors: ['same'] }, {}, {}]), onFix: async () => {}, rebuild: async () => ({ passed: true }), maxRounds: 5 })).noProgress === true);
+
     const passed = checks.filter(Boolean).length;
     const ok = checks.every(Boolean);
     console.log(`\n${ok ? 'PASS' : 'FAIL'} · ${passed}/${checks.length} checks · summary ${JSON.stringify(summary)}`);

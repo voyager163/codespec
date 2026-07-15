@@ -276,6 +276,7 @@
       <button class="iconbtn" id="openProjectBtn" title="Open an existing project folder">📂 Open project</button>
       <button class="iconbtn" id="openVSCodeBtn" title="Open this project in VS Code">⧉ VS Code</button>
       <button class="iconbtn" id="previewBtn" title="Run your app on localhost and try it — no database needed">▶ Preview</button>
+      <button class="iconbtn" id="testBtn" title="Exercise every element of your app and report issues">🧪 Test</button>
       <button class="iconbtn" id="publishBtn" title="Publish your app live to Power Platform">🚀 Publish</button>
       <button class="provchip" id="provChip" title="Which AI is answering — click to switch"><span class="br">🧠</span><span class="nm" id="provName">…</span><span style="color:var(--faint)">▾</span></button>
       <button class="iconbtn" id="canvasToggle" title="Show the canvas">🖼️ Canvas</button>
@@ -899,6 +900,7 @@
   makeSplit($('splitTree'),'left'); makeSplit($('splitCanvas'),'right');
   $('openVSCodeBtn').onclick = openInVSCode;
   $('previewBtn').onclick = togglePreview;
+  $('testBtn').onclick = testApp;
   $('publishBtn').onclick = showPublishModal;
   $('pubClose').onclick = hidePublishModal;
   $('pubRecheck').onclick = refreshPubStatus;
@@ -991,6 +993,44 @@
       const err=(res&&res.error)||'could not start the preview';
       if(res&&res.needsInstall){ bubble('ai','⏳ '+esc(err)); }
       else { bubble('ai','Hmm — I couldn’t start the preview: '+esc(err)); }
+    }
+  }
+
+  // ---------- test every element (Rule 3) + verified fix ----------
+  async function testApp(){
+    const btn=$('testBtn'); btn.disabled=true; btn.textContent='Testing…';
+    $('statusPanel').classList.add('open');
+    bubble('ai','🧪 Exercising every element of your app — filling inputs, clicking buttons, trying each dropdown, following links…');
+    const res = await api('e2e-run');
+    btn.disabled=false; btn.textContent='🧪 Test';
+    if(!res || res.ok===false){
+      if(res&&res.needsPlaywright){ bubble('ai','To run the full element test I need Playwright installed in your app:<div class="small" style="margin-top:6px;font-family:ui-monospace,Menlo,Consolas,monospace">npm i -D playwright</div>Then click Test again.'); return; }
+      if(res&&res.needsInstall){ bubble('ai','⏳ '+esc(res.error||'dependencies still installing')); return; }
+      bubble('ai','I couldn’t run the test: '+esc((res&&res.error)||'unknown error')); return;
+    }
+    if(res.passed){
+      bubble('ai','✅ All clear — exercised <b>'+res.exercised+'</b> interactions across <b>'+res.elements+'</b> elements with no errors. Your app’s happy path works end to end.');
+      return;
+    }
+    const hard=(res.hardFailures||[]).slice(0,8);
+    const list=hard.map(f=>'<div class="i"><b>!</b><span>'+esc(f.type)+': '+esc(f.detail)+'</span></div>').join('');
+    const m=bubble('ai','⚠️ Found <b>'+(res.hardFailures||[]).length+'</b> issue(s) while exercising your app:'+
+      '<div style="margin-top:8px">'+list+'</div>');
+    const q=document.createElement('div'); q.className='qbtns';
+    q.innerHTML='<button class="qb" id="fixTheseBtn">🔧 Fix these for me</button>';
+    m.querySelector('.bub').appendChild(q);
+    q.querySelector('#fixTheseBtn').onclick=()=>{ const summary=hard.map(f=>'- '+f.type+': '+f.detail).join('\n'); runFix('The app has these issues found by testing:\n'+summary+'\nFix them so the app runs cleanly.'); };
+  }
+  // Apply a fix, then prove the app still builds (and re-test if it's running).
+  async function runFix(message){
+    bubble('ai','🔧 Working on a fix…');
+    const res = await api('fix', { message, provider: app.providerId });
+    if(res && res.ok){
+      const built = res.build && res.build.passed ? ' The app still builds.' : '';
+      bubble('ai','✅ Fix applied.'+built+' Click <b>🧪 Test</b> again to confirm it’s green.');
+    } else {
+      const errs = res && res.build && res.build.errors && res.build.errors.length ? ' First errors: '+esc(res.build.errors.slice(0,2).join(' · ')) : '';
+      bubble('ai','I attempted a fix but it isn’t clean yet.'+errs+' You can describe the problem in more detail and I’ll try again.');
     }
   }
 

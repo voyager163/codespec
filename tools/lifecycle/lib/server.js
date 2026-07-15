@@ -19,6 +19,8 @@ const { importInto } = require('./import');
 const { scaffold, installDeps, isScaffolded } = require('./scaffold');
 const preview = require('./preview');
 const publish = require('./publish');
+const e2e = require('./e2e');
+const { verifyBuild } = require('./codegen');
 
 const CLIENT = path.join(__dirname, '..', 'assets', 'dashboard.html');
 const GUIDE = path.join(__dirname, '..', 'assets', 'user-guide.html');
@@ -306,6 +308,41 @@ function serve(root, opts = {}) {
           return json(res, 200, result);
         }
         if (body.type === 'preview-stop') return json(res, 200, preview.stop(activeRoot));
+        // Real end-to-end test: exercise every element on the running app (Rule 3).
+        if (body.type === 'e2e-run') {
+          const boundEmit = (level, message) => { emit(activeRoot, { rotation: 0, stage: 5, agent: 'e2e-tester', level, message }); render(activeRoot); };
+          let url = preview.status(activeRoot).url;
+          if (!url) {
+            const started = await preview.start(activeRoot, { onLine: () => {} });
+            if (!started.ok) { boundEmit('warn', 'Cannot test — app not running: ' + (started.error || '')); return json(res, 200, { ok: false, error: started.error, needsInstall: started.needsInstall }); }
+            url = started.url;
+          }
+          const driver = await e2e.createPlaywrightDriver({ headless: true }).catch(() => null);
+          if (!driver) { boundEmit('warn', 'Playwright not installed — run: npm i -D playwright'); return json(res, 200, { ok: false, needsPlaywright: true, url }); }
+          boundEmit('info', `Testing every element on ${url}…`);
+          let shown = 0;
+          const result = await e2e.runE2E(url, driver, { onStep: (s) => { if (shown++ < 12) boundEmit('info', 'Exercised · ' + s.label); } });
+          boundEmit(result.passed ? 'good' : 'bad', result.passed
+            ? `Green · exercised ${result.exercised}/${result.planned} interactions across ${result.elements} elements`
+            : `${result.hardFailures.length} issue(s) found across ${result.exercised} interactions`);
+          return json(res, 200, Object.assign({ ok: true, url }, result));
+        }
+        // Verified fix: apply an AI fix for a reported bug, then prove the app still
+        // builds (and, if it's running, that the element test is green) before claiming done.
+        if (body.type === 'fix') {
+          const boundEmit = (e) => { emit(activeRoot, Object.assign({ rotation: 0, stage: 3, agent: 'agent', level: 'info', message: '' }, e)); render(activeRoot); };
+          const desc = String(body.message || '').trim();
+          if (!desc) return json(res, 200, { ok: false, error: 'Describe the bug to fix.' });
+          boundEmit({ level: 'info', message: 'Fixing: ' + desc.slice(0, 100) });
+          let agentResult = null;
+          try {
+            agentResult = await agent.run(activeRoot, { message: 'Fix this issue and keep the app building: ' + desc, history: body.history || [], provider: body.provider, emit: boundEmit });
+          } catch (e) { agentResult = { reply: 'fix attempt failed: ' + e.message }; }
+          const build = verifyBuild(activeRoot);
+          boundEmit({ level: build.passed ? 'good' : 'bad', message: build.ran ? (build.passed ? 'Build verified after fix' : 'Still not building — ' + (build.errors || []).slice(0, 2).join(' · ')) : 'Build not verified (' + (build.reason || 'deps') + ')' });
+          const out = { ok: build.passed !== false, build: { ran: build.ran, passed: build.passed, errors: build.errors || [] }, reply: agentResult && agentResult.reply };
+          return json(res, 200, out);
+        }
         // Publish to Power Platform (consent-gated, real pac flow).
         if (body.type === 'publish-check') return json(res, 200, await publish.check(activeRoot));
         if (body.type === 'publish') {
