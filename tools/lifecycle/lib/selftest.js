@@ -488,6 +488,12 @@ async function selftest() {
     check('mock data generates typed rows per table', mockGen.Jobs.length === 2 && mockGen.Jobs[0].Status === 'Open' && typeof mockGen.Jobs[0].Hours === 'number');
     check('mock data write is a no-op without the data convention', mockdata.writeMockModule(root).written === false);
 
+    // Governance gate (Rule 2) — pure decision logic.
+    const governance = require('./governance');
+    check('governance parses ssh + proxied remotes', governance.parseRemote('git@github.com:a/b.git').owner === 'a' && governance.parseRemote('http://h:9/git/a/b').repo === 'b');
+    check('governance classifies security checks', governance.classifyChecks([{ name: 'CodeQL', status: 'completed', conclusion: 'failure' }]).state === 'failed' && governance.classifyChecks([{ name: 'CodeQL', status: 'completed', conclusion: 'success' }]).state === 'passed');
+    check('governance flags protected branches', governance.isProtectedBranch('main') && !governance.isProtectedBranch('feature/x'));
+
     const passed = checks.filter(Boolean).length;
     const ok = checks.every(Boolean);
     console.log(`\n${ok ? 'PASS' : 'FAIL'} · ${passed}/${checks.length} checks · summary ${JSON.stringify(summary)}`);

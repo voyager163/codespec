@@ -11,7 +11,22 @@ const preview = require('../lib/preview');
 const e2e = require('../lib/e2e');
 const publish = require('../lib/publish');
 const mockdata = require('../lib/mockdata');
+const governance = require('../lib/governance');
+const { spawnSync } = require('node:child_process');
 const { withTimeout, withTimeoutOr, deadline, TimeoutError } = require('../lib/timeout');
+
+function gitRepo(branch) {
+  const d = tmp();
+  const run = (args) => spawnSync('git', args, { cwd: d, encoding: 'utf8' });
+  run(['init', '-q']);
+  run(['config', 'user.email', 't@example.com']);
+  run(['config', 'user.name', 'Test']);
+  run(['checkout', '-q', '-B', branch || 'main']);
+  fs.writeFileSync(path.join(d, 'f.txt'), 'x');
+  run(['add', '-A']);
+  run(['commit', '-q', '-m', 'init']);
+  return d;
+}
 
 function tmp() { return fs.mkdtempSync(path.join(os.tmpdir(), 'pcx-it-')); }
 
@@ -167,5 +182,57 @@ test('mockdata writeMockModule writes a TS module when the convention exists', (
   const w = mockdata.writeMockModule(d);
   assert.strictEqual(w.written, true);
   assert.match(fs.readFileSync(path.join(d, 'src', 'data', 'mock.generated.ts'), 'utf8'), /mockTables[\s\S]*Jobs/);
+  fs.rmSync(d, { recursive: true, force: true });
+});
+
+// ---- governance gate (Rule 2) -------------------------------------------------
+test('governance parses https, ssh, and proxied remotes', () => {
+  assert.deepStrictEqual(governance.parseRemote('git@github.com:acme/app.git'), { host: 'github.com', owner: 'acme', repo: 'app' });
+  assert.deepStrictEqual(governance.parseRemote('https://github.com/acme/app.git'), { host: 'github.com', owner: 'acme', repo: 'app' });
+  assert.deepStrictEqual(governance.parseRemote('http://127.0.0.1:8080/git/acme/app'), { host: '127.0.0.1:8080', owner: 'acme', repo: 'app' });
+});
+test('governance flags protected branches and slugs a feature branch', () => {
+  assert.ok(governance.isProtectedBranch('main'));
+  assert.ok(governance.isProtectedBranch('MASTER'));
+  assert.ok(!governance.isProtectedBranch('feature/x'));
+  assert.match(governance.slugBranch('Add jobs screen!'), /^powercodex\/add-jobs-screen$/);
+});
+test('governance classifies security checks pass/fail/pending', () => {
+  assert.strictEqual(governance.classifyChecks([{ name: 'CodeQL', status: 'completed', conclusion: 'success' }]).state, 'passed');
+  assert.strictEqual(governance.classifyChecks([{ name: 'CodeQL', status: 'completed', conclusion: 'failure' }]).state, 'failed');
+  assert.strictEqual(governance.classifyChecks([{ name: 'Dependabot', status: 'in_progress', conclusion: null }]).state, 'pending');
+  assert.strictEqual(governance.classifyChecks([]).state, 'pending');
+});
+test('governance blocks publishing from a protected branch', async () => {
+  const d = gitRepo('main');
+  const gate = await governance.gatePublish(d, { token: null });
+  assert.strictEqual(gate.allowed, false);
+  assert.ok(gate.blocking);
+  fs.rmSync(d, { recursive: true, force: true });
+});
+test('governance allows a feature branch but flags it unverified without a token', async () => {
+  const d = gitRepo('powercodex/feature-x');
+  const gate = await governance.gatePublish(d, { token: null });
+  assert.strictEqual(gate.allowed, true);
+  assert.strictEqual(gate.verified, false);
+  fs.rmSync(d, { recursive: true, force: true });
+});
+test('governance blocks on failed checks and allows on passing checks (injected status)', async () => {
+  const d = gitRepo('powercodex/feature-x');
+  spawnSync('git', ['remote', 'add', 'origin', 'https://github.com/acme/app.git'], { cwd: d });
+  const failed = await governance.gatePublish(d, { token: 'x', fetchStatus: async () => [{ name: 'CodeQL', status: 'completed', conclusion: 'failure' }] });
+  assert.strictEqual(failed.allowed, false);
+  assert.ok(failed.verified);
+  const ok = await governance.gatePublish(d, { token: 'x', fetchStatus: async () => [{ name: 'CodeQL', status: 'completed', conclusion: 'success' }] });
+  assert.strictEqual(ok.allowed, true);
+  assert.ok(ok.verified);
+  fs.rmSync(d, { recursive: true, force: true });
+});
+test('governance ensureFeatureBranch moves off main', () => {
+  const d = gitRepo('main');
+  const r = governance.ensureFeatureBranch(d, 'Add jobs');
+  assert.strictEqual(r.created, true);
+  assert.match(r.branch, /^powercodex\//);
+  assert.strictEqual(governance.currentBranch(d), r.branch);
   fs.rmSync(d, { recursive: true, force: true });
 });

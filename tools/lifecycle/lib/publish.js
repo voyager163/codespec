@@ -59,9 +59,22 @@ async function check(root) {
 // Publish for real. `confirm:true` is the explicit consent to go live (and persists
 // allowPush). Streams progress via `emit({ level, message })`. Returns a structured
 // result; `ok:true` only after `pac code push` actually succeeds.
-async function publish(root, { appName, environmentUrl, confirm, emit = async () => {} } = {}) {
+async function publish(root, { appName, environmentUrl, confirm, skipGovernance, emit = async () => {} } = {}) {
   if (!confirm) {
     return { ok: false, needsConsent: true, message: 'Publishing goes to a live Power Platform environment. Confirm to continue.' };
+  }
+
+  // Governance gate (CLAUDE.md Rule 2): never publish straight off a protected branch,
+  // and don't go live over failed/pending security checks when they're verifiable.
+  if (!skipGovernance) {
+    try {
+      const gate = await require('./governance').gatePublish(root);
+      if (gate.blocking) {
+        await emit({ level: 'bad', message: gate.reason });
+        return { ok: false, stage: 'governance', error: gate.reason, gate };
+      }
+      if (gate.note) await emit({ level: 'warn', message: gate.note });
+    } catch { /* governance is best-effort — never hard-fail the flow on its own error */ }
   }
 
   // 1. Persist explicit consent (Approved_rights/approval.json allowPush = true).
