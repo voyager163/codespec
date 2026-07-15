@@ -18,7 +18,9 @@ Status legend: ✅ done · 🟡 in progress · ⬜ not started
 | 2 | Loop was a scripted narrative → **tasks now come from the approved plan**, self-heal is real, build is real. | [loop.js](../tools/lifecycle/lib/loop.js) | ✅ |
 | 3 | **Code-generation engine added** — deterministic-first, AI-enhanced, router-wired. | [codegen.js](../tools/lifecycle/lib/codegen.js), [planner.js](../tools/lifecycle/lib/planner.js) | ✅ |
 | 4 | **Plan → tasks wired** through chat → intake → planner → loop. | [chat.html](../tools/lifecycle/assets/chat.html), [control.js](../tools/lifecycle/lib/control.js), [loop.js](../tools/lifecycle/lib/loop.js) | ✅ |
-| 5 | **Real build verification** runs the project's own `npm run build` / `tsc` as the test gate. Live publish (`pac`/`power-apps push`) still gated behind the Publish switch. | [codegen.js `verifyBuild`](../tools/lifecycle/lib/codegen.js) | ✅ build / 🟡 publish |
+| 5 | **Real build verification** runs the project's own `npm run build` / `tsc` as the test gate. | [codegen.js `verifyBuild`](../tools/lifecycle/lib/codegen.js) | ✅ |
+| 5a | **Live localhost preview** — a real Vite dev server for the active project, shown in the Canvas, no Dataverse/auth needed. Button in the UI. | [preview.js](../tools/lifecycle/lib/preview.js), [server.js](../tools/lifecycle/lib/server.js), [chat.html](../tools/lifecycle/assets/chat.html) | ✅ wired |
+| 5b | **In-app Publish to Power Platform** — a consent-gated action wiring the real `pac` flow (build gate → `pac auth` → `pac code init` → `pac code push` → capture live URL). Button + modal in the UI. | [publish.js](../tools/lifecycle/lib/publish.js), [server.js](../tools/lifecycle/lib/server.js), [chat.html](../tools/lifecycle/assets/chat.html) | ✅ wired / ⏳ unproven on a live tenant |
 
 ## P1 — Correctness bugs (small, surgical)
 
@@ -40,7 +42,10 @@ Status legend: ✅ done · 🟡 in progress · ⬜ not started
 ### Still open (needs a live environment to finish)
 - **Compile proof on the maker's machine.** The generated TSX is verified to parse + transpile under TypeScript strict; the end-to-end `npm install && npm run build` could not run in this sandbox (registry blocked). Run once on a networked machine to confirm green.
 - **Portal DOM selectors** for `dataverse.table.create` are best-effort until validated against a live tenant + MFA.
-- **`pac code push`** (real publish) + app-URL capture; remaining recipes (column/connection/flow) DOM automation.
+- **Publish (`pac code init`/`pac code push`)** is now wired end-to-end into the UI ([publish.js](../tools/lifecycle/lib/publish.js)) and captures the app URL, but has **not been run against a real tenant** (no `pac`/tenant in the build sandbox). First live run must confirm the auth → init → push sequence and the URL-capture regex against real `pac` output.
+- **Preview → publish continuity:** the localhost preview is real; the same app should be the one published. Verify the preview's built output matches what `pac code push` ships once run live.
+- Remaining Dataverse recipes (column/connection/flow) DOM automation.
+- **Template mirror:** preview.js/publish.js are wired into `tools/lifecycle` (what the desktop app runs). The `templates/starter/tools/lifecycle` copy shipped into generated projects has **not** been updated yet — sync it so standalone generated projects get the same Preview/Publish.
 
 ## P3 — Nice-to-have
 

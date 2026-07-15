@@ -17,6 +17,8 @@ const mcp = require('./mcp');
 const browse = require('./browse');
 const { importInto } = require('./import');
 const { scaffold, installDeps, isScaffolded } = require('./scaffold');
+const preview = require('./preview');
+const publish = require('./publish');
 
 const CLIENT = path.join(__dirname, '..', 'assets', 'dashboard.html');
 const GUIDE = path.join(__dirname, '..', 'assets', 'user-guide.html');
@@ -62,6 +64,8 @@ function serve(root, opts = {}) {
     } catch {
       digest = null;
     }
+    // Stop any dev server running for the project we're leaving.
+    try { preview.stop(activeRoot); } catch { /* best-effort */ }
     activeRoot = abs;
     controller = new Controller(activeRoot, { simulate });
     render(activeRoot);
@@ -290,6 +294,33 @@ function serve(root, opts = {}) {
         // Open the whole project in VS Code, or launch a provider sign-in in a terminal.
         if (body.type === 'open-in-vscode') return json(res, 200, require('./setup').openInVSCode(activeRoot));
         if (body.type === 'provider-signin') return json(res, 200, require('./setup').signIn(body.provider));
+        // Live localhost preview — run the app for real, no Dataverse/auth needed.
+        if (body.type === 'preview-start') {
+          const boundEmit = (line) => {
+            emit(activeRoot, { rotation: 0, stage: 4, agent: 'preview', level: /error|fail/i.test(line) ? 'bad' : 'info', message: 'Preview · ' + String(line).slice(0, 120) });
+            render(activeRoot);
+          };
+          const result = await preview.start(activeRoot, { onLine: boundEmit });
+          emit(activeRoot, { rotation: 0, stage: 4, agent: 'preview', level: result.ok ? 'good' : 'warn', message: result.ok ? `Preview running → ${result.url}` : `Preview not started · ${result.error || ''}` });
+          render(activeRoot);
+          return json(res, 200, result);
+        }
+        if (body.type === 'preview-stop') return json(res, 200, preview.stop(activeRoot));
+        // Publish to Power Platform (consent-gated, real pac flow).
+        if (body.type === 'publish-check') return json(res, 200, await publish.check(activeRoot));
+        if (body.type === 'publish') {
+          const boundEmit = async (e) => {
+            emit(activeRoot, Object.assign({ rotation: 0, stage: 4, agent: 'publish', level: 'info', message: '' }, e));
+            render(activeRoot);
+          };
+          const result = await publish.publish(activeRoot, {
+            appName: body.appName,
+            environmentUrl: body.environmentUrl,
+            confirm: body.confirm === true,
+            emit: boundEmit,
+          });
+          return json(res, 200, result);
+        }
         return json(res, 200, await controller.action(body));
       }
       // Deep readiness: installed AND signed in, per provider (probes the CLIs, so it can
@@ -374,6 +405,9 @@ function serve(root, opts = {}) {
         res.end(page);
         return;
       }
+      if (req.url.startsWith('/api/preview')) {
+        return json(res, 200, preview.status(activeRoot));
+      }
       if (req.url.startsWith('/api/state')) {
         return json(res, 200, Object.assign(deriveState(activeRoot), { control: controller.status(), project: projectInfo() }));
       }
@@ -438,6 +472,9 @@ function serve(root, opts = {}) {
       json(res, 500, { ok: false, error: error.message });
     }
   });
+
+  // Never leave a preview dev server running after the dashboard server closes.
+  server.on('close', () => { try { preview.stopAll(); } catch { /* best-effort */ } });
 
   // Bind to loopback only. The dashboard drives privileged local actions (file writes,
   // build loop, provider sign-in) and has no network authentication, so it must not be

@@ -436,6 +436,29 @@ async function selftest() {
     check('chat prompt has no harness on a greeting', !/POWERCODEX HARNESS/.test(chatMod.buildPrompt({ system: 'x', message: 'hello', intent: 'chat', rights: hOn })));
     check('harness flag defaults to on in the consent gate', require('./rights').DEFAULTS.allowHarness === true);
 
+    // Live preview (on-device dev server) — guard rails without spawning a real server.
+    const preview = require('./preview');
+    check('preview reports needs-install when node_modules is absent', (() => {
+      fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ scripts: { dev: 'vite' } }));
+      const c = preview.canRun(root);
+      return c.ok === false && c.needsInstall === true;
+    })());
+    check('preview refuses a project with no dev script', (() => {
+      const d = fs.mkdtempSync(path.join(os.tmpdir(), 'pcx-nodev-'));
+      fs.writeFileSync(path.join(d, 'package.json'), JSON.stringify({ scripts: {} }));
+      fs.mkdirSync(path.join(d, 'node_modules'));
+      const ok = preview.canRun(d).ok === false;
+      fs.rmSync(d, { recursive: true, force: true });
+      return ok;
+    })());
+    check('preview status is not-running before start', preview.status(root).running === false);
+
+    // Publish (Power Platform) — consent gate + URL capture, no live tenant needed.
+    const publish = require('./publish');
+    check('publish blocks without explicit consent', (await publish.publish(root, { confirm: false })).needsConsent === true);
+    check('publish captures the live app URL from pac output', publish.extractAppUrl('done. Play at https://apps.powerapps.com/play/e/env/a/app now') === 'https://apps.powerapps.com/play/e/env/a/app');
+    check('publish check never throws when pac is absent', typeof (await publish.check(root)).appName === 'string');
+
     const passed = checks.filter(Boolean).length;
     const ok = checks.every(Boolean);
     console.log(`\n${ok ? 'PASS' : 'FAIL'} · ${passed}/${checks.length} checks · summary ${JSON.stringify(summary)}`);
