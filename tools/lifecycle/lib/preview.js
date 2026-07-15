@@ -72,6 +72,9 @@ function start(root, { onLine, onExit, timeoutMs = 25000 } = {}) {
     return Promise.resolve({ ok: false, needsInstall: !!pre.needsInstall, error: pre.reason });
   }
 
+  // Refresh preview mock data from the schema so data screens render without a database.
+  try { require('./mockdata').writeMockModule(abs); } catch { /* no data convention — fine */ }
+
   return new Promise((resolve) => {
     let child;
     const npm = IS_WIN ? 'npm.cmd' : 'npm';
@@ -81,7 +84,8 @@ function start(root, { onLine, onExit, timeoutMs = 25000 } = {}) {
         // Own process group on POSIX so stop() can kill Vite and its children together.
         detached: !IS_WIN,
         shell: IS_WIN,
-        env: Object.assign({}, process.env, { FORCE_COLOR: '0', NO_COLOR: '1' }),
+        // VITE_POWERCODEX_MOCK makes the app's data seam serve mock rows (no DB needed).
+        env: Object.assign({}, process.env, { FORCE_COLOR: '0', NO_COLOR: '1', VITE_POWERCODEX_MOCK: '1' }),
       });
     } catch (e) {
       return resolve({ ok: false, error: 'Could not start the dev server: ' + e.message });

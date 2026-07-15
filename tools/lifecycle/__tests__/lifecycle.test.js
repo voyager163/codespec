@@ -10,6 +10,7 @@ const path = require('node:path');
 const preview = require('../lib/preview');
 const e2e = require('../lib/e2e');
 const publish = require('../lib/publish');
+const mockdata = require('../lib/mockdata');
 const { withTimeout, withTimeoutOr, deadline, TimeoutError } = require('../lib/timeout');
 
 function tmp() { return fs.mkdtempSync(path.join(os.tmpdir(), 'pcx-it-')); }
@@ -138,4 +139,33 @@ test('publish check never throws when pac is absent', async () => {
   const c = await publish.check(tmp());
   assert.strictEqual(typeof c.appName, 'string');
   assert.strictEqual(typeof c.pacInstalled, 'boolean');
+});
+
+// ---- mock data (preview without a database) -----------------------------------
+const jobSchema = { tables: [{ displayName: 'Job', pluralName: 'Jobs', columns: [
+  { displayName: 'Name', type: 'text' }, { displayName: 'Status', type: 'choice', choices: ['Open', 'Closed'] },
+  { displayName: 'Hours', type: 'number' }, { displayName: 'Due', type: 'date' }, { displayName: 'Done', type: 'boolean' },
+] }] };
+test('mockdata generates typed rows per table from the schema', () => {
+  const g = mockdata.generate(jobSchema, { rows: 3 });
+  assert.strictEqual(g.Jobs.length, 3);
+  assert.strictEqual(g.Jobs[0].Status, 'Open');
+  assert.strictEqual(g.Jobs[1].Status, 'Closed');
+  assert.strictEqual(typeof g.Jobs[0].Hours, 'number');
+  assert.match(g.Jobs[0].Due, /^\d{4}-\d{2}-\d{2}$/);
+  assert.strictEqual(typeof g.Jobs[0].Done, 'boolean');
+});
+test('mockdata writeMockModule skips when there is no data convention', () => {
+  assert.strictEqual(mockdata.writeMockModule(tmp()).written, false);
+});
+test('mockdata writeMockModule writes a TS module when the convention exists', () => {
+  const d = tmp();
+  fs.mkdirSync(path.join(d, 'src', 'data'), { recursive: true });
+  fs.writeFileSync(path.join(d, 'src', 'data', 'index.ts'), '//');
+  fs.mkdirSync(path.join(d, '.powercodex'), { recursive: true });
+  fs.writeFileSync(path.join(d, '.powercodex', 'dataverse-schema.json'), JSON.stringify(jobSchema));
+  const w = mockdata.writeMockModule(d);
+  assert.strictEqual(w.written, true);
+  assert.match(fs.readFileSync(path.join(d, 'src', 'data', 'mock.generated.ts'), 'utf8'), /mockTables[\s\S]*Jobs/);
+  fs.rmSync(d, { recursive: true, force: true });
 });

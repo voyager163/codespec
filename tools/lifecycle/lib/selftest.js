@@ -482,6 +482,12 @@ async function selftest() {
     })());
     check('e2e heal loop stops on no-progress', (await e2e.healLoop({ url: 'http://x', makeDriver: async () => fakeDriver([{ pageErrors: ['same'] }, {}, {}]), onFix: async () => {}, rebuild: async () => ({ passed: true }), maxRounds: 5 })).noProgress === true);
 
+    // Preview mock data — generated from the declared schema, typed by column.
+    const mockdata = require('./mockdata');
+    const mockGen = mockdata.generate({ tables: [{ displayName: 'Job', pluralName: 'Jobs', columns: [{ displayName: 'Status', type: 'choice', choices: ['Open', 'Closed'] }, { displayName: 'Hours', type: 'number' }] }] }, { rows: 2 });
+    check('mock data generates typed rows per table', mockGen.Jobs.length === 2 && mockGen.Jobs[0].Status === 'Open' && typeof mockGen.Jobs[0].Hours === 'number');
+    check('mock data write is a no-op without the data convention', mockdata.writeMockModule(root).written === false);
+
     const passed = checks.filter(Boolean).length;
     const ok = checks.every(Boolean);
     console.log(`\n${ok ? 'PASS' : 'FAIL'} · ${passed}/${checks.length} checks · summary ${JSON.stringify(summary)}`);

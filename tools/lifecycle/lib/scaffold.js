@@ -156,6 +156,29 @@ export default function Layout() {
 }
 `,
 
+    // Data seam — how screens read table data. In preview (VITE_POWERCODEX_MOCK=1) it
+    // returns generated mock rows so data screens work with no database; in production a
+    // real Dataverse client replaces getTable. Generated screens import from "@/data".
+    'src/data/mock.generated.ts': `// AUTO-GENERATED for preview by PowerCodex. Do not edit by hand.
+export const mockTables: Record<string, Array<Record<string, unknown>>> = {};
+`,
+
+    'src/data/index.ts': `import { mockTables } from "@/data/mock.generated"
+
+// True when running under the PowerCodex live preview (no database connected).
+export const isPreview = import.meta.env.VITE_POWERCODEX_MOCK === "1"
+
+// Read all rows of a table. Preview → representative mock data; production → your
+// real Dataverse data source (wire it here once the app is connected).
+export async function getTable<T = Record<string, unknown>>(name: string): Promise<T[]> {
+  if (isPreview) return (mockTables[name] as T[]) ?? []
+  throw new Error(
+    "No data source connected. Publish the app and wire a Dataverse client in src/data, " +
+    "or run the Preview (mock data) to try screens without a database."
+  )
+}
+`,
+
     // Plans (.powercodex/plans/*.html + *.json) ARE committed so the agent can refer
     // back and learn across machines; only the live view, screenshots, and browser
     // profiles stay local.
