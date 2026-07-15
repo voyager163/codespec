@@ -1,6 +1,6 @@
 {
   "name": "@elfredseow/powercodex",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Create a Power Apps Code Apps project prepared for OpenSpec workflows. Includes a lifecycle engine, Dataverse automation, and an MCP server.",
   "license": "MIT",
   "keywords": [

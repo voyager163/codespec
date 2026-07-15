@@ -286,6 +286,12 @@
 
   <div class="provmenu" id="provMenu"></div>
 
+  <!-- Honest banner: no real AI connected → output is templated, not generated. -->
+  <div id="simBanner" style="display:none;align-items:center;gap:10px;padding:8px 16px;background:rgba(245,201,123,.14);border-bottom:1px solid rgba(245,201,123,.35);color:#f5c97b;font-size:12.5px">
+    <span>⚠️</span><span style="flex:1">No AI is connected — replies are <b>templated</b>, not generated. Connect your AI account to unlock real building.</span>
+    <button class="iconbtn" id="simConnect" style="border-color:rgba(245,201,123,.5)">Connect AI</button>
+  </div>
+
   <div class="spanel" id="statusPanel">
     <div class="sph"><span>📊</span><span class="t">Project status</span><span class="statusbtn ok" style="margin-left:auto"><span class="d"></span><span class="stg" id="spStage">—</span></span></div>
     <div class="sb2">
@@ -400,7 +406,7 @@
     mode: 'chat', phase: 'welcome', goal: null, plan: null, planFile: null, planId: null,
     history: [], providerId: null, activeProvider: null, providers: [],
     poll: null, shownHeal: false, builtOnce: false, fpPath: null, canvasUrl: null, runNode: null,
-    previewing: false, previewUrl: null,
+    previewing: false, previewUrl: null, simActive: false,
     treeRoot: null, projType: null,
     anyReady: false, vscode: false, skippedSetup: false,
   };
@@ -720,7 +726,9 @@
     renderProvMenu();
     return data;
   }
-  function markProvider(id, simulated){ app.activeProvider=id; $('provName').textContent = id + (simulated?' (limited)':''); }
+  function markProvider(id, simulated){ app.activeProvider=id; app.simActive=!!simulated; $('provName').textContent = id + (simulated?' (limited)':''); updateSimBanner(); }
+  // Show the honest "no real AI" banner whenever the active brain is the simulated one.
+  function updateSimBanner(){ const b=$('simBanner'); if(b) b.style.display = app.simActive ? 'flex' : 'none'; }
   function provReady(p){ return p.simulated ? true : !!(p.ready!==undefined ? p.ready : p.available); }
   function provInstalled(p){ return p.simulated ? true : !!(p.installed!==undefined ? p.installed : p.available); }
   function renderProvMenu(){
@@ -902,6 +910,7 @@
   $('previewBtn').onclick = togglePreview;
   $('testBtn').onclick = testApp;
   $('publishBtn').onclick = showPublishModal;
+  $('simConnect').onclick = openSetup;
   $('pubClose').onclick = hidePublishModal;
   $('pubRecheck').onclick = refreshPubStatus;
   $('pubGo').onclick = doPublish;

@@ -1,7 +1,7 @@
 {
   "name": "powercodex-desktop",
   "productName": "PowerCodex",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "PowerCodex desktop — Chat & Agent for low-code makers, in one window.",
   "author": "PowerCodex",
   "license": "MIT",
@@ -27,6 +27,7 @@
     "productName": "PowerCodex",
     "directories": { "output": "dist", "buildResources": "build" },
     "files": ["main.js", "preload.js", "lib/**/*", "vendor/**/*", "package.json"],
+    "afterSign": "build/notarize.js",
     "win": {
       "target": ["portable"]
     },
@@ -47,6 +48,10 @@
     "mac": {
       "target": ["dmg"],
       "category": "public.app-category.developer-tools",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
       "artifactName": "PowerCodex-${version}-${arch}.${ext}"
     },
     "dmg": {

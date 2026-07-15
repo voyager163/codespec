@@ -183,6 +183,30 @@ ipcMain.handle('pc:openDataFolder', async () => {
   }
 });
 
+// Auto-update seam. No-ops unless electron-updater is installed AND an update feed is
+// configured (POWERCODEX_UPDATE_FEED or electron-builder's embedded publish config), so
+// local/unsigned builds are unaffected. When a signed release + feed exist, this is all
+// that's needed to deliver background updates.
+function wireAutoUpdate() {
+  if (process.env.POWERCODEX_DISABLE_UPDATE === '1') return;
+  let updater;
+  try {
+    updater = require('electron-updater').autoUpdater;
+  } catch {
+    return; // optional dependency not bundled — nothing to do
+  }
+  try {
+    const feed = process.env.POWERCODEX_UPDATE_FEED;
+    if (feed) updater.setFeedURL(feed);
+    updater.autoDownload = true;
+    updater.logger = { info: log.info, warn: log.warn, error: log.error };
+    updater.on('error', (e) => log.warn('auto-update:', e && e.message));
+    updater.checkForUpdatesAndNotify().catch((e) => log.warn('auto-update check failed:', e && e.message));
+  } catch (e) {
+    log.warn('auto-update wiring skipped:', e && e.message);
+  }
+}
+
 // Taskbar identity (so Windows groups + pins the app correctly).
 app.setAppUserModelId('com.powercodex.desktop');
 wireSecurity();
@@ -191,6 +215,7 @@ app.whenReady().then(() => {
   // notifications…); deny every request by default.
   session.defaultSession.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
   createWindow();
+  wireAutoUpdate();
 });
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow();
