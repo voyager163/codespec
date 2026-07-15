@@ -275,6 +275,9 @@
       <button class="iconbtn" id="treeToggle" title="Show the workspace files">🗂️ Files</button>
       <button class="iconbtn" id="openProjectBtn" title="Open an existing project folder">📂 Open project</button>
       <button class="iconbtn" id="openVSCodeBtn" title="Open this project in VS Code">⧉ VS Code</button>
+      <button class="iconbtn" id="previewBtn" title="Run your app on localhost and try it — no database needed">▶ Preview</button>
+      <button class="iconbtn" id="testBtn" title="Exercise every element of your app and report issues">🧪 Test</button>
+      <button class="iconbtn" id="publishBtn" title="Publish your app live to Power Platform">🚀 Publish</button>
       <button class="provchip" id="provChip" title="Which AI is answering — click to switch"><span class="br">🧠</span><span class="nm" id="provName">…</span><span style="color:var(--faint)">▾</span></button>
       <button class="iconbtn" id="canvasToggle" title="Show the canvas">🖼️ Canvas</button>
       <button class="statusbtn" id="statusBtn"><span class="d"></span><span class="stg" id="stStage">Starting…</span><span class="cv" id="stHint">status ▾</span></button>
@@ -282,6 +285,12 @@
   </header>
 
   <div class="provmenu" id="provMenu"></div>
+
+  <!-- Honest banner: no real AI connected → output is templated, not generated. -->
+  <div id="simBanner" style="display:none;align-items:center;gap:10px;padding:8px 16px;background:rgba(245,201,123,.14);border-bottom:1px solid rgba(245,201,123,.35);color:#f5c97b;font-size:12.5px">
+    <span>⚠️</span><span style="flex:1">No AI is connected — replies are <b>templated</b>, not generated. Connect your AI account to unlock real building.</span>
+    <button class="iconbtn" id="simConnect" style="border-color:rgba(245,201,123,.5)">Connect AI</button>
+  </div>
 
   <div class="spanel" id="statusPanel">
     <div class="sph"><span>📊</span><span class="t">Project status</span><span class="statusbtn ok" style="margin-left:auto"><span class="d"></span><span class="stg" id="spStage">—</span></span></div>
@@ -352,6 +361,25 @@
     </div>
   </div>
 
+  <!-- publish to Power Platform -->
+  <div class="overlay" id="pubOverlay">
+    <div class="modal">
+      <div class="mh"><span>🚀</span><span class="t">Publish to Power Platform</span><button type="button" class="x" id="pubClose">✕</button></div>
+      <div class="setupbody">
+        <p class="setupintro">This pushes your app <b>live</b> to a Power Platform environment using the Power Platform CLI (<code>pac</code>) signed in on this machine. Your app builds first; publishing only proceeds if the build is clean.</p>
+        <div id="pubStatus" class="setuprow"><span class="sname">Checking the Power Platform CLI…</span></div>
+        <div class="fpbar" style="margin-top:10px"><input id="pubName" type="text" placeholder="App name (e.g. Field Jobs)" /></div>
+        <div class="fpbar" style="margin-top:8px"><input id="pubEnv" type="text" placeholder="Environment URL (e.g. https://org.crm.dynamics.com)" /></div>
+        <p class="setupintro" style="margin-top:8px;color:var(--faint)">Leave the environment URL blank to publish to your current <code>pac</code> auth profile.</p>
+      </div>
+      <div class="mf">
+        <span class="hint" id="pubHint">Publishing goes live to real users.</span>
+        <button type="button" class="btn" id="pubRecheck">↻ Recheck</button>
+        <button type="button" class="btn go" id="pubGo">Publish live</button>
+      </div>
+    </div>
+  </div>
+
   <!-- AI sign-in gate (no silent degrade) -->
   <div class="overlay" id="setupOverlay">
     <div class="modal">
@@ -378,6 +406,7 @@
     mode: 'chat', phase: 'welcome', goal: null, plan: null, planFile: null, planId: null,
     history: [], providerId: null, activeProvider: null, providers: [],
     poll: null, shownHeal: false, builtOnce: false, fpPath: null, canvasUrl: null, runNode: null,
+    previewing: false, previewUrl: null, simActive: false,
     treeRoot: null, projType: null,
     anyReady: false, vscode: false, skippedSetup: false,
   };
@@ -697,7 +726,9 @@
     renderProvMenu();
     return data;
   }
-  function markProvider(id, simulated){ app.activeProvider=id; $('provName').textContent = id + (simulated?' (limited)':''); }
+  function markProvider(id, simulated){ app.activeProvider=id; app.simActive=!!simulated; $('provName').textContent = id + (simulated?' (limited)':''); updateSimBanner(); }
+  // Show the honest "no real AI" banner whenever the active brain is the simulated one.
+  function updateSimBanner(){ const b=$('simBanner'); if(b) b.style.display = app.simActive ? 'flex' : 'none'; }
   function provReady(p){ return p.simulated ? true : !!(p.ready!==undefined ? p.ready : p.available); }
   function provInstalled(p){ return p.simulated ? true : !!(p.installed!==undefined ? p.installed : p.available); }
   function renderProvMenu(){
@@ -876,6 +907,14 @@
   $('treeRefresh').onclick = ()=> loadTree();
   makeSplit($('splitTree'),'left'); makeSplit($('splitCanvas'),'right');
   $('openVSCodeBtn').onclick = openInVSCode;
+  $('previewBtn').onclick = togglePreview;
+  $('testBtn').onclick = testApp;
+  $('publishBtn').onclick = showPublishModal;
+  $('simConnect').onclick = openSetup;
+  $('pubClose').onclick = hidePublishModal;
+  $('pubRecheck').onclick = refreshPubStatus;
+  $('pubGo').onclick = doPublish;
+  $('pubOverlay').onclick = (e)=>{ if(e.target===$('pubOverlay')) hidePublishModal(); };
   $('setupRecheck').onclick = recheckSetup;
   $('setupSkip').onclick = ()=>{ app.skippedSetup=true; closeSetup(); };
   $('setupOverlay').onclick = (e)=>{ if(e.target===$('setupOverlay')){ app.skippedSetup=true; closeSetup(); } };
@@ -933,6 +972,109 @@
       catch { showFolderModal(); }
     } else {
       showFolderModal();
+    }
+  }
+
+  // ---------- live preview ----------
+  // Run the app for real on localhost and show it in the Canvas so the maker can try it.
+  // No Dataverse or sign-in needed — this is pure on-device dev-server preview.
+  async function togglePreview(){
+    const btn=$('previewBtn');
+    if(app.previewing){ // stop
+      btn.disabled=true; btn.textContent='Stopping…';
+      await api('preview-stop');
+      app.previewing=false; app.previewUrl=null;
+      btn.disabled=false; btn.textContent='▶ Preview';
+      bubble('ai','⏹ Preview stopped.');
+      return;
+    }
+    btn.disabled=true; btn.textContent='Starting…';
+    bubble('ai','▶ Starting a live preview of your app… <span class="small">The first start can take a few seconds while the dev server boots.</span>');
+    const res = await api('preview-start');
+    btn.disabled=false;
+    if(res && res.ok){
+      app.previewing=true; app.previewUrl=res.url;
+      btn.textContent='⏹ Stop preview';
+      showUrlInCanvas(res.url, 'live app'); openCanvas(true);
+      bubble('ai','✅ Your app is running at <a href="'+esc(res.url)+'" target="_blank">'+esc(res.url)+'</a>. Try it in the Canvas on the right, or open it in your browser. No database is connected — it’s a local preview.');
+    } else {
+      btn.textContent='▶ Preview';
+      const err=(res&&res.error)||'could not start the preview';
+      if(res&&res.needsInstall){ bubble('ai','⏳ '+esc(err)); }
+      else { bubble('ai','Hmm — I couldn’t start the preview: '+esc(err)); }
+    }
+  }
+
+  // ---------- test every element (Rule 3) + verified fix ----------
+  async function testApp(){
+    const btn=$('testBtn'); btn.disabled=true; btn.textContent='Testing…';
+    $('statusPanel').classList.add('open');
+    bubble('ai','🧪 Exercising every element of your app — filling inputs, clicking buttons, trying each dropdown, following links…');
+    const res = await api('e2e-run');
+    btn.disabled=false; btn.textContent='🧪 Test';
+    if(!res || res.ok===false){
+      if(res&&res.needsPlaywright){ bubble('ai','To run the full element test I need Playwright installed in your app:<div class="small" style="margin-top:6px;font-family:ui-monospace,Menlo,Consolas,monospace">npm i -D playwright</div>Then click Test again.'); return; }
+      if(res&&res.needsInstall){ bubble('ai','⏳ '+esc(res.error||'dependencies still installing')); return; }
+      bubble('ai','I couldn’t run the test: '+esc((res&&res.error)||'unknown error')); return;
+    }
+    if(res.passed){
+      bubble('ai','✅ All clear — exercised <b>'+res.exercised+'</b> interactions across <b>'+res.elements+'</b> elements with no errors. Your app’s happy path works end to end.');
+      return;
+    }
+    const hard=(res.hardFailures||[]).slice(0,8);
+    const list=hard.map(f=>'<div class="i"><b>!</b><span>'+esc(f.type)+': '+esc(f.detail)+'</span></div>').join('');
+    const m=bubble('ai','⚠️ Found <b>'+(res.hardFailures||[]).length+'</b> issue(s) while exercising your app:'+
+      '<div style="margin-top:8px">'+list+'</div>');
+    const q=document.createElement('div'); q.className='qbtns';
+    q.innerHTML='<button class="qb" id="fixTheseBtn">🔧 Fix these for me</button>';
+    m.querySelector('.bub').appendChild(q);
+    q.querySelector('#fixTheseBtn').onclick=()=>{ const summary=hard.map(f=>'- '+f.type+': '+f.detail).join('\n'); runFix('The app has these issues found by testing:\n'+summary+'\nFix them so the app runs cleanly.'); };
+  }
+  // Apply a fix, then prove the app still builds (and re-test if it's running).
+  async function runFix(message){
+    bubble('ai','🔧 Working on a fix…');
+    const res = await api('fix', { message, provider: app.providerId });
+    if(res && res.ok){
+      const built = res.build && res.build.passed ? ' The app still builds.' : '';
+      bubble('ai','✅ Fix applied.'+built+' Click <b>🧪 Test</b> again to confirm it’s green.');
+    } else {
+      const errs = res && res.build && res.build.errors && res.build.errors.length ? ' First errors: '+esc(res.build.errors.slice(0,2).join(' · ')) : '';
+      bubble('ai','I attempted a fix but it isn’t clean yet.'+errs+' You can describe the problem in more detail and I’ll try again.');
+    }
+  }
+
+  // ---------- publish to Power Platform ----------
+  function showPublishModal(){ $('pubOverlay').classList.add('open'); refreshPubStatus(); }
+  function hidePublishModal(){ $('pubOverlay').classList.remove('open'); }
+  async function refreshPubStatus(){
+    const row=$('pubStatus'); row.innerHTML='<span class="sname">Checking the Power Platform CLI…</span>';
+    const d = await api('publish-check');
+    if(d && d.appName && !$('pubName').value) $('pubName').value=d.appName;
+    if(d && d.environmentUrl && !$('pubEnv').value) $('pubEnv').value=d.environmentUrl;
+    if(d && d.pacInstalled){
+      const profiles=(d.authProfiles||[]).length;
+      row.innerHTML='<span class="sname">✅ Power Platform CLI '+esc(d.pacVersion||'')+' ready'+(profiles?(' · '+profiles+' auth profile'+(profiles>1?'s':'')):' · no auth profile yet')+'</span>';
+    } else {
+      row.innerHTML='<span class="sname">⚠️ Power Platform CLI not found. Install it, then reopen this:</span>'+
+        '<div class="small" style="margin-top:6px;font-family:ui-monospace,Menlo,Consolas,monospace">dotnet tool install --global Microsoft.PowerApps.CLI.Tool</div>';
+    }
+  }
+  async function doPublish(){
+    const btn=$('pubGo'); const name=$('pubName').value.trim(); const env=$('pubEnv').value.trim();
+    btn.disabled=true; btn.textContent='Publishing…'; $('pubHint').textContent='Building, then pushing live — watch the status panel.';
+    $('statusPanel').classList.add('open');
+    const res = await api('publish', { appName:name, environmentUrl:env, confirm:true });
+    btn.disabled=false; btn.textContent='Publish live';
+    if(res && res.ok){
+      hidePublishModal();
+      const link = res.url ? ' It’s live at <a href="'+esc(res.url)+'" target="_blank">'+esc(res.url)+'</a>.' : ' Open Power Apps to find your live app.';
+      bubble('ai','🚀 Published to Power Platform.'+link);
+    } else {
+      const err=(res&&res.error)||'publishing failed';
+      $('pubHint').textContent=err.slice(0,140);
+      let extra='';
+      if(res&&res.stage==='build'&&res.errors&&res.errors.length){ extra=' First errors: '+esc(res.errors.slice(0,3).join(' · ')); }
+      bubble('ai','I couldn’t publish: '+esc(err)+extra);
     }
   }
 

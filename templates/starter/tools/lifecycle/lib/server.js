@@ -17,6 +17,10 @@ const mcp = require('./mcp');
 const browse = require('./browse');
 const { importInto } = require('./import');
 const { scaffold, installDeps, isScaffolded } = require('./scaffold');
+const preview = require('./preview');
+const publish = require('./publish');
+const e2e = require('./e2e');
+const { verifyBuild } = require('./codegen');
 
 const CLIENT = path.join(__dirname, '..', 'assets', 'dashboard.html');
 const GUIDE = path.join(__dirname, '..', 'assets', 'user-guide.html');
@@ -62,6 +66,8 @@ function serve(root, opts = {}) {
     } catch {
       digest = null;
     }
+    // Stop any dev server running for the project we're leaving.
+    try { preview.stop(activeRoot); } catch { /* best-effort */ }
     activeRoot = abs;
     controller = new Controller(activeRoot, { simulate });
     render(activeRoot);
@@ -290,6 +296,72 @@ function serve(root, opts = {}) {
         // Open the whole project in VS Code, or launch a provider sign-in in a terminal.
         if (body.type === 'open-in-vscode') return json(res, 200, require('./setup').openInVSCode(activeRoot));
         if (body.type === 'provider-signin') return json(res, 200, require('./setup').signIn(body.provider));
+        // Live localhost preview — run the app for real, no Dataverse/auth needed.
+        if (body.type === 'preview-start') {
+          const boundEmit = (line) => {
+            emit(activeRoot, { rotation: 0, stage: 4, agent: 'preview', level: /error|fail/i.test(line) ? 'bad' : 'info', message: 'Preview · ' + String(line).slice(0, 120) });
+            render(activeRoot);
+          };
+          const onExit = (info) => {
+            emit(activeRoot, { rotation: 0, stage: 4, agent: 'preview', level: 'warn', message: `Preview stopped unexpectedly (exit ${info.code}) · ${(info.tail || []).slice(-1)[0] || ''}` });
+            render(activeRoot);
+          };
+          const result = await preview.start(activeRoot, { onLine: boundEmit, onExit });
+          emit(activeRoot, { rotation: 0, stage: 4, agent: 'preview', level: result.ok ? 'good' : 'warn', message: result.ok ? `Preview running → ${result.url}` : `Preview not started · ${result.error || ''}` });
+          render(activeRoot);
+          return json(res, 200, result);
+        }
+        if (body.type === 'preview-stop') return json(res, 200, preview.stop(activeRoot));
+        // Real end-to-end test: exercise every element on the running app (Rule 3).
+        if (body.type === 'e2e-run') {
+          const boundEmit = (level, message) => { emit(activeRoot, { rotation: 0, stage: 5, agent: 'e2e-tester', level, message }); render(activeRoot); };
+          let url = preview.status(activeRoot).url;
+          if (!url) {
+            const started = await preview.start(activeRoot, { onLine: () => {} });
+            if (!started.ok) { boundEmit('warn', 'Cannot test — app not running: ' + (started.error || '')); return json(res, 200, { ok: false, error: started.error, needsInstall: started.needsInstall }); }
+            url = started.url;
+          }
+          const driver = await e2e.createPlaywrightDriver({ headless: true }).catch(() => null);
+          if (!driver) { boundEmit('warn', 'Playwright not installed — run: npm i -D playwright'); return json(res, 200, { ok: false, needsPlaywright: true, url }); }
+          boundEmit('info', `Testing every element on ${url}…`);
+          let shown = 0;
+          const result = await e2e.runE2E(url, driver, { onStep: (s) => { if (shown++ < 12) boundEmit('info', 'Exercised · ' + s.label); } });
+          boundEmit(result.passed ? 'good' : 'bad', result.passed
+            ? `Green · exercised ${result.exercised}/${result.planned} interactions across ${result.elements} elements`
+            : `${result.hardFailures.length} issue(s) found across ${result.exercised} interactions`);
+          return json(res, 200, Object.assign({ ok: true, url }, result));
+        }
+        // Verified fix: apply an AI fix for a reported bug, then prove the app still
+        // builds (and, if it's running, that the element test is green) before claiming done.
+        if (body.type === 'fix') {
+          const boundEmit = (e) => { emit(activeRoot, Object.assign({ rotation: 0, stage: 3, agent: 'agent', level: 'info', message: '' }, e)); render(activeRoot); };
+          const desc = String(body.message || '').trim();
+          if (!desc) return json(res, 200, { ok: false, error: 'Describe the bug to fix.' });
+          boundEmit({ level: 'info', message: 'Fixing: ' + desc.slice(0, 100) });
+          let agentResult = null;
+          try {
+            agentResult = await agent.run(activeRoot, { message: 'Fix this issue and keep the app building: ' + desc, history: body.history || [], provider: body.provider, emit: boundEmit });
+          } catch (e) { agentResult = { reply: 'fix attempt failed: ' + e.message }; }
+          const build = verifyBuild(activeRoot);
+          boundEmit({ level: build.passed ? 'good' : 'bad', message: build.ran ? (build.passed ? 'Build verified after fix' : 'Still not building — ' + (build.errors || []).slice(0, 2).join(' · ')) : 'Build not verified (' + (build.reason || 'deps') + ')' });
+          const out = { ok: build.passed !== false, build: { ran: build.ran, passed: build.passed, errors: build.errors || [] }, reply: agentResult && agentResult.reply };
+          return json(res, 200, out);
+        }
+        // Publish to Power Platform (consent-gated, real pac flow).
+        if (body.type === 'publish-check') return json(res, 200, await publish.check(activeRoot));
+        if (body.type === 'publish') {
+          const boundEmit = async (e) => {
+            emit(activeRoot, Object.assign({ rotation: 0, stage: 4, agent: 'publish', level: 'info', message: '' }, e));
+            render(activeRoot);
+          };
+          const result = await publish.publish(activeRoot, {
+            appName: body.appName,
+            environmentUrl: body.environmentUrl,
+            confirm: body.confirm === true,
+            emit: boundEmit,
+          });
+          return json(res, 200, result);
+        }
         return json(res, 200, await controller.action(body));
       }
       // Deep readiness: installed AND signed in, per provider (probes the CLIs, so it can
@@ -374,6 +446,9 @@ function serve(root, opts = {}) {
         res.end(page);
         return;
       }
+      if (req.url.startsWith('/api/preview')) {
+        return json(res, 200, preview.status(activeRoot));
+      }
       if (req.url.startsWith('/api/state')) {
         return json(res, 200, Object.assign(deriveState(activeRoot), { control: controller.status(), project: projectInfo() }));
       }
@@ -438,6 +513,9 @@ function serve(root, opts = {}) {
       json(res, 500, { ok: false, error: error.message });
     }
   });
+
+  // Never leave a preview dev server running after the dashboard server closes.
+  server.on('close', () => { try { preview.stopAll(); } catch { /* best-effort */ } });
 
   // Bind to loopback only. The dashboard drives privileged local actions (file writes,
   // build loop, provider sign-in) and has no network authentication, so it must not be

@@ -1,12 +1,32 @@
 # PowerCodex — Readiness Gaps & Build Plan
 
-_Last updated: 2026-06-08_
+_Last updated: 2026-07-15_
 
 A prioritized, honest inventory of what is real, what is simulated, and what must be
 built for PowerCodex to be a **fully autonomous app-builder** rather than a polished
 demo. Items are ordered by impact. Each carries a status and the concrete files involved.
 
 Status legend: ✅ done · 🟡 in progress · ⬜ not started
+
+> **Live validation still required.** Everything below is built and tested offline
+> (139 selftest checks + 29 integration tests). The tenant/registry/creds-dependent paths
+> can only be *proven* on your machine — see [live-validation-checklist.md](./live-validation-checklist.md).
+
+---
+
+## Production-readiness build — Tiers 1–7 (2026-07-15)
+
+| Tier | What shipped | Where | Status |
+|------|--------------|-------|--------|
+| 1 | **Real element-level e2e** (enumerate every input/button/select/link, representative data, exercise, classify real failures) + **heal loop** (fix → rebuild → re-test, no-progress detection) + a verified **fix** action. Wired into the loop's e2e stage for on-device apps and a 🧪 Test button. | [e2e.js](../tools/lifecycle/lib/e2e.js), [engines.real.js](../tools/lifecycle/lib/engines.real.js), [server.js](../tools/lifecycle/lib/server.js), [chat.html](../tools/lifecycle/assets/chat.html) | ✅ built + tested (Playwright run is live-only) |
+| 3 | **Preview with mock data** — a `@/data` seam scaffolded into new apps + a schema-driven mock generator, so data screens render with no DB. | [mockdata.js](../tools/lifecycle/lib/mockdata.js), [scaffold.js](../tools/lifecycle/lib/scaffold.js), [preview.js](../tools/lifecycle/lib/preview.js) | ✅ seam + generator (codegen binding screens is the follow-on) |
+| 4 | **Governance gate (Rule 2)** — block publishing off a protected branch; gate on CodeQL/Dependabot check-runs; feature-branch + commit + push git ops. | [governance.js](../tools/lifecycle/lib/governance.js), [publish.js](../tools/lifecycle/lib/publish.js) | ✅ logic + git ops tested (PR/check polling is the live seam) |
+| 5 | **Distribution hardening** — honest "no AI connected → templated" banner, signing/notarize config + afterSign hook, auto-update seam, version 0.3.0. | [chat.html](../tools/lifecycle/assets/chat.html), [desktop/main.js](../../desktop/main.js), [desktop/package.json](../../desktop/package.json) | ✅ wired (needs signing creds + feed to activate) |
+| 6 | **Reliability** — hard timeouts (`withTimeout`/`deadline`), `pac` hard-kill on hang, preview crash surfacing, 29 dependency-free integration tests. | [timeout.js](../tools/lifecycle/lib/timeout.js), [pac-init.js](../tools/lifecycle/lib/pac-init.js), [preview.js](../tools/lifecycle/lib/preview.js), [__tests__/](../tools/lifecycle/__tests__/) | ✅ done + tested |
+| 7 | **Template parity** — the six new modules + updated server/scaffold/engines/chat mirrored into the generated-project starter. | [templates/starter/tools/lifecycle](../templates/starter/tools/lifecycle) | ✅ synced (template selftest green) |
+
+Remaining tenant-dependent work (Tier 0 validation, Tier 2 data autonomy, live Tier 4/5)
+lives in [live-validation-checklist.md](./live-validation-checklist.md).
 
 ---
 
