@@ -38,7 +38,7 @@ function oneLine(s) {
   return String(s == null ? '' : s).replace(/\s+/g, ' ').trim();
 }
 function stripTags(s) {
-  return String(s == null ? '' : s).replace(/<[^>]+>/g, '');
+  return String(s == null ? '' : s).replace(/<[^>]+>/g, '').replace(/[<>]/g, '');
 }
 
 // Plain-English label + behaviour note for each capability flag — the "remarks" that

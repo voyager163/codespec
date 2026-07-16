@@ -71,7 +71,7 @@ function generateScreen({ componentName, displayName, goal, capabilities = {}, i
   p(`// Goal: ${String(goal || '').replace(/\n/g, ' ').slice(0, 120)}`);
   if (items.length) {
     p('// Approved capabilities:');
-    for (const it of items.slice(0, 8)) p('//   • ' + String(it).replace(/<[^>]+>/g, '').replace(/\n/g, ' ').slice(0, 90));
+    for (const it of items.slice(0, 8)) p('//   • ' + String(it).replace(/<[^>]+>/g, '').replace(/[<>]/g, '').replace(/\n/g, ' ').slice(0, 90));
   }
   p('import { useMemo, useState } from "react"');
   p('');

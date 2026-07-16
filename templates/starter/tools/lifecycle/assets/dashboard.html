@@ -322,7 +322,7 @@
 <script>
   const LEVEL = { info:'#6ea8fe', good:'#5ad19a', warn:'#f5c97b', bad:'#f08a8a', observation:'#a78bfa' };
   const $ = (id) => document.getElementById(id);
-  const esc = (s) => String(s==null?'':s).replace(/[&<>]/g, (c)=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const esc = (s) => String(s==null?'':s).replace(/[&<>"']/g, (c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const hhmmss = (ts) => (ts||'').slice(11,19) || '—';
 
   let lastState = {};

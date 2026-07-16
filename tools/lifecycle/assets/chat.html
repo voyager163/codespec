@@ -413,7 +413,7 @@
 
   // ---------- helpers ----------
   function scroll(){ thread.scrollTop = thread.scrollHeight; }
-  function esc(s){ return String(s).replace(/[&<>"]/g, (c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+  function esc(s){ return String(s).replace(/[&<>"']/g, (c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function bubble(role, html){
     const m = document.createElement('div'); m.className = 'msg ' + role;
     m.innerHTML = '<div class="av '+(role==='ai'?'ai':'me')+'">'+(role==='ai'?'✦':'🙂')+'</div><div class="bub">'+html+'</div>';
@@ -543,7 +543,7 @@
     if(!app.plan) return;
     setMode('agent'); app.shownHeal = false;
     bubble('me', 'Build this 👍');
-    const plainItems = app.plan.items.map(i=>i.replace(/<[^>]+>/g,''));
+    const plainItems = app.plan.items.map(i=>i.replace(/<[^>]+>/g,'').replace(/[<>]/g,''));
     const mvp = plainItems.map(i=>'• '+i).join('\n');
     // Send the approved plan so the loop builds exactly these capabilities, and the
     // chosen AI so the code engine can author with it.
