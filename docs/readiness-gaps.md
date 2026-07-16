@@ -59,13 +59,16 @@ lives in [live-validation-checklist.md](./live-validation-checklist.md).
 | 11 | App URL: build gate needs none; live-app smoke uses captured URL when present. Real `pac` push + URL capture still to wire. | [loop.js](../tools/lifecycle/lib/loop.js) | 🟡 |
 | 12 | Build-output clutter (`release/`, `release2..4/`, `out-installer/`) from packaging retries. | desktop/ | ⬜ |
 
+### Resolved 2026-07-16
+- ✅ **Compile proof (real install + build).** A freshly scaffolded project runs `npm install` (480 pkgs) and `npm run build` (`tsc -b && vite build`) fully green on a networked machine — confirmed this session, no longer sandbox-blocked.
+- ✅ **Template mirror.** `templates/starter/tools/lifecycle` ships `preview.js`, `publish.js`, `mockdata.js`, `timeout.js`, `e2e.js`, `governance.js` — generated projects get the same Preview/Publish (Tier 7 sync verified).
+- ✅ **Generated-project security.** A fresh install flagged 4 moderate vulns (transitive `uuid <11.1.1` via `@microsoft/power-apps` → `msal-node`). Fixed with an npm `overrides: { uuid: ^11.1.1 }` pin in the starter `package.json`; re-verified **0 vulnerabilities** + build still green.
+
 ### Still open (needs a live environment to finish)
-- **Compile proof on the maker's machine.** The generated TSX is verified to parse + transpile under TypeScript strict; the end-to-end `npm install && npm run build` could not run in this sandbox (registry blocked). Run once on a networked machine to confirm green.
 - **Portal DOM selectors** for `dataverse.table.create` are best-effort until validated against a live tenant + MFA.
 - **Publish (`pac code init`/`pac code push`)** is now wired end-to-end into the UI ([publish.js](../tools/lifecycle/lib/publish.js)) and captures the app URL, but has **not been run against a real tenant** (no `pac`/tenant in the build sandbox). First live run must confirm the auth → init → push sequence and the URL-capture regex against real `pac` output.
 - **Preview → publish continuity:** the localhost preview is real; the same app should be the one published. Verify the preview's built output matches what `pac code push` ships once run live.
 - Remaining Dataverse recipes (column/connection/flow) DOM automation.
-- **Template mirror:** preview.js/publish.js are wired into `tools/lifecycle` (what the desktop app runs). The `templates/starter/tools/lifecycle` copy shipped into generated projects has **not** been updated yet — sync it so standalone generated projects get the same Preview/Publish.
 
 ## P3 — Nice-to-have
 
