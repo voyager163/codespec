@@ -35,6 +35,21 @@ the "require init command" change). Resolving it wrong ships a broken CLI — ve
 
 Then push and confirm PR #16 goes `MERGEABLE`.
 
+## 1b. Residual CodeQL alerts (3 xss-through-dom) — need DOM-flow review
+
+26 of 29 alerts are fixed + locally verified (6 path-injection in server.js via the
+`within()` boundary check; 20 HTML-escaping via completed `esc()` + tag-strip hardening).
+Three `xss-through-dom` remain — DOM text flowing to an `innerHTML` sink, which needs the
+code-flow to fix correctly (don't guess — it can break the chat rendering):
+- `tools/lifecycle/assets/chat.html:655` and its mirror `templates/starter/.../chat.html:655`
+  (the maker chat UI, localhost-only). Trace the flagged source→sink in GitHub's alert
+  detail; switch the sink from `.innerHTML =` to `.textContent =` if the value is plain
+  text, or `esc()` the interpolated value before insertion.
+- `docs/plans/intake-and-live-dashboard-redesign.html:371` — a static doc artifact, **not
+  shipped** in the npm package (`files` excludes `docs/`); lowest priority, or dismiss.
+
+Confirm on the next completed CodeQL run (the alert DB lagged behind the last pushes).
+
 ## 2. Let the security gate finish, then merge (Rule 2)
 
 - Wait for **CodeQL** (`Analyze (javascript-typescript)`) + **dependency-review** to go green on PR #16.
