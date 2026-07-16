@@ -26,6 +26,14 @@ const CLIENT = path.join(__dirname, '..', 'assets', 'dashboard.html');
 const GUIDE = path.join(__dirname, '..', 'assets', 'user-guide.html');
 const CHAT = path.join(__dirname, '..', 'assets', 'chat.html');
 
+// Path containment that respects directory boundaries. `abs.startsWith(base)` alone
+// lets a sibling like `<base>-evil` through; require an exact match or a real separator.
+const within = (base, abs) => {
+  const b = path.resolve(base);
+  const a = path.resolve(abs);
+  return a === b || a.startsWith(b + path.sep);
+};
+
 // A tiny zero-dependency live dashboard + maker-chat server. The client polls
 // /api/state and re-renders, and POSTs to /api/action, /api/emit and /api/chat to
 // drive the loop. Works over http:// — no browser file:// fetch restrictions.
@@ -388,7 +396,7 @@ function serve(root, opts = {}) {
         const p = u.searchParams.get('path');
         const wsRoot = path.resolve(activeRoot);
         const abs = p ? path.resolve(p) : wsRoot;
-        if (!abs.startsWith(wsRoot)) return json(res, 200, { ok: false, error: 'outside workspace', root: activeRoot });
+        if (!within(wsRoot, abs)) return json(res, 200, { ok: false, error: 'outside workspace', root: activeRoot });
         try {
           return json(res, 200, Object.assign({ ok: true, root: activeRoot }, browse.listTree(abs)));
         } catch (e) {
@@ -411,7 +419,7 @@ function serve(root, opts = {}) {
         }
         const wsRoot = path.resolve(activeRoot);
         const abs = path.resolve(activeRoot, rel);
-        if (!abs.startsWith(wsRoot) || !fs.existsSync(abs) || fs.statSync(abs).isDirectory()) {
+        if (!within(wsRoot, abs) || !fs.existsSync(abs) || fs.statSync(abs).isDirectory()) {
           res.writeHead(404, { 'content-type': 'text/plain' });
           res.end('Not found');
           return;
@@ -436,7 +444,7 @@ function serve(root, opts = {}) {
         } catch {
           content = '';
         }
-        const escHtml = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+        const escHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         const page =
           '<!doctype html><meta charset="utf-8"><style>body{margin:0;background:#0b0d12;color:#cdd6ea;font:12.5px/1.6 ui-monospace,Menlo,Consolas,monospace}' +
           '.h{position:sticky;top:0;background:#11151e;color:#99a2b8;padding:8px 14px;border-bottom:1px solid #262c3a;font-family:-apple-system,Segoe UI,sans-serif}' +
@@ -491,7 +499,7 @@ function serve(root, opts = {}) {
       if (/\.powercodex\/(plans|artifacts)\//.test(req.url) && /\.(html|json|png)$/.test(req.url.split('?')[0])) {
         const rel = decodeURIComponent(req.url.split('?')[0].replace(/^\/+/, ''));
         const abs = path.resolve(activeRoot, rel);
-        const okBase = abs.startsWith(path.resolve(plansDir(activeRoot))) || abs.startsWith(path.resolve(artifacts.artifactsDir(activeRoot)));
+        const okBase = within(plansDir(activeRoot), abs) || within(artifacts.artifactsDir(activeRoot), abs);
         if (okBase && fs.existsSync(abs)) {
           const type = abs.endsWith('.json') ? 'application/json' : abs.endsWith('.png') ? 'image/png' : 'text/html; charset=utf-8';
           res.writeHead(200, { 'content-type': type, 'cache-control': 'no-store' });
