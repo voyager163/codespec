@@ -198,14 +198,14 @@
   <header class="hero">
     <div class="eyebrow rise d1"><span class="dot"></span> The autonomous app-lifecycle loop</div>
     <h1 class="rise d2">From a goal to a<br/>self-healing app.</h1>
-    <p class="sub rise d3">PowerCodex turns a plain-language <b>goal</b> and an approved <b>MVP</b> into a running app — then keeps it healthy. It plans, asks for consent, builds, runs, tests, and learns from what it observes, looping until the app meets the goal. The whole machine streams to a live dashboard you keep open and watch move.</p>
+    <p class="sub rise d3">PowerCodex turns a plain-language <b>goal</b> and an approved <b>MVP</b> into a running app — then keeps it healthy. It plans, asks for consent, builds, runs, tests, and learns from what it observes, looping until the app meets the goal. The whole machine streams to the desktop app you keep open and watch move.</p>
     <div class="herobtns rise d4">
       <a class="btn primary" href="#use">How to use it</a>
       <a class="btn" href="./integration-guide.html">Add it to my project</a>
     </div>
     <div class="meta rise d5">
       <span>Zero-dependency Node tool</span>
-      <span>Live dashboard · localhost:4321</span>
+      <span>Desktop app · Chat &amp; Agent</span>
       <span>Consent-gated by design</span>
     </div>
   </header>
@@ -238,7 +238,7 @@
         <div class="card">
           <div class="ic">📡</div>
           <h3>Always observable</h3>
-          <p>Every stage, agent, and event streams to a live dashboard. Nothing happens off-screen.</p>
+          <p>Every stage, agent, and event streams to the desktop app. Nothing happens off-screen.</p>
         </div>
         <div class="card">
           <div class="ic">🩹</div>
@@ -252,7 +252,7 @@
     <section id="loop" class="rise d2">
       <p class="kicker">The loop</p>
       <h2>Seven stages, one rotation</h2>
-      <p class="lead">Each rotation moves through seven stages. The dashboard highlights the current stage live and advances an overall progress bar; when a rotation ends, observations feed the next one.</p>
+      <p class="lead">Each rotation moves through seven stages. The desktop app highlights the current stage live and advances an overall progress bar; when a rotation ends, observations feed the next one.</p>
 
       <div class="panel" style="margin-top:18px">
         <div class="loop">
@@ -288,14 +288,14 @@
           <p>Runs end-to-end tests against the running app and powers the self-heal loop when something breaks.</p>
         </div>
       </div>
-      <p class="lead" style="margin-top:16px">Both engines emit a real event stream onto an append-only status bus (<code class="inl">.powercodex/live/status.json</code>). The dashboard server reads that bus and serves <code class="inl">/api/state</code>; the page polls it every 1.2s and re-renders in place.</p>
+      <p class="lead" style="margin-top:16px">Both engines emit a real event stream onto an append-only status bus (<code class="inl">.powercodex/live/status.json</code>). The lifecycle server reads that bus and serves <code class="inl">/api/state</code>; the desktop app polls it every 1.2s and re-renders in place.</p>
     </section>
 
     <!-- HOW TO USE -->
     <section id="use" class="rise d2">
       <p class="kicker">How to use it</p>
-      <h2>Open the dashboard, then run the loop</h2>
-      <p class="lead">PowerCodex ships as a small zero-dependency Node tool with npm scripts. The flow is always the same: start the live dashboard and leave it open, then drive the loop in a second terminal — the dashboard follows along.</p>
+      <h2>Run the loop, watch it in the desktop app</h2>
+      <p class="lead">PowerCodex ships as a small zero-dependency Node tool with npm scripts. The flow is always the same: drive the loop from a terminal and watch it in the desktop app, which boots the lifecycle server in-process and follows along.</p>
 
       <ol class="steps" style="margin-top:24px">
         <li>
@@ -309,14 +309,12 @@ npm run lifecycle <span class="p">--</span> init</pre>
           <p>Open <code class="inl">Approved_rights/approval.json</code> and set the flags — build, push, auto-respec, auto-fix. The loop will only ever do what you've turned on.</p>
         </li>
         <li>
-          <h3>Start the live dashboard — keep it open</h3>
-          <p>A zero-dependency server serves the dashboard at <code class="inl">localhost:4321</code> and a <code class="inl">/api/state</code> endpoint. Add <code class="inl">--demo</code> to drive a paced simulated loop so you can watch it move.</p>
-          <pre>npm run lifecycle:serve              <span class="c"># http://localhost:4321</span>
-npm run lifecycle:serve <span class="p">--</span> --demo     <span class="c"># also drives a paced demo loop</span></pre>
+          <h3>Open the desktop app</h3>
+          <p>The desktop app boots the lifecycle server on a free port and opens a Chat &amp; Agent window that polls <code class="inl">/api/state</code> and re-renders in place. The engine also writes a static snapshot to <code class="inl">.powercodex/live/index.html</code>.</p>
         </li>
         <li>
-          <h3>Run the loop in a second terminal</h3>
-          <p>The open dashboard follows along live — stages light up, agent cards update, the activity feed streams newest-first.</p>
+          <h3>Run the loop in a terminal</h3>
+          <p>The desktop app follows along live — stages light up, agent cards update, the activity feed streams newest-first.</p>
           <pre>npm run lifecycle <span class="p">--</span> loop --rotations 3
 npm run lifecycle <span class="p">--</span> loop --rotations 2 --real   <span class="c"># real engines (needs tenant + rights)</span></pre>
         </li>
@@ -330,7 +328,7 @@ npm run lifecycle <span class="p">--</span> loop --rotations 2 --real   <span cl
 
     <!-- WHAT YOU WATCH -->
     <section class="rise d2">
-      <p class="kicker">On the dashboard</p>
+      <p class="kicker">In the desktop app</p>
       <h2>What you're watching</h2>
       <div class="grid" style="margin-top:16px">
         <div class="card"><h3>Intake &amp; rights</h3><p>The goal, the MVP, the goal&#8596;MVP compliance meter, and the live <code class="inl">Approved_rights/</code> flags.</p></div>
@@ -353,7 +351,7 @@ npm run lifecycle <span class="p">--</span> loop --rotations 2 --real   <span cl
           <tbody>
             <tr><td><code class="inl">Approved_rights/</code> consent gate</td><td><span class="tag real">real</span></td></tr>
             <tr><td>Append-only status bus</td><td><span class="tag real">real</span></td></tr>
-            <tr><td>Live dashboard server + <code class="inl">/api/state</code></td><td><span class="tag real">real</span></td></tr>
+            <tr><td>Desktop app + lifecycle server + <code class="inl">/api/state</code></td><td><span class="tag real">real</span></td></tr>
             <tr><td>Static dashboard snapshot</td><td><span class="tag real">real</span></td></tr>
             <tr><td>Loop orchestrator + guardrails</td><td><span class="tag real">real</span></td></tr>
             <tr><td>Build Executor &amp; E2E Tester engines</td><td><span class="tag sim">adapters</span></td></tr>

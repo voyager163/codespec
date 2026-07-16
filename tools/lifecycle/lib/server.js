@@ -22,7 +22,6 @@ const publish = require('./publish');
 const e2e = require('./e2e');
 const { verifyBuild } = require('./codegen');
 
-const CLIENT = path.join(__dirname, '..', 'assets', 'dashboard.html');
 const GUIDE = path.join(__dirname, '..', 'assets', 'user-guide.html');
 const CHAT = path.join(__dirname, '..', 'assets', 'chat.html');
 
@@ -510,9 +509,11 @@ function serve(root, opts = {}) {
         res.end('Plan not found');
         return;
       }
+      // Root serves the maker chat — the one product surface. (The old browser
+      // live-monitor dashboard was removed; the desktop app loads /chat directly.)
       if (!req.url || req.url === '/' || req.url.startsWith('/index') || req.url.startsWith('/?')) {
         res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-        res.end(fs.readFileSync(CLIENT, 'utf8'));
+        res.end(fs.readFileSync(CHAT, 'utf8'));
         return;
       }
       res.writeHead(404, { 'content-type': 'text/plain' });
@@ -531,34 +532,14 @@ function serve(root, opts = {}) {
   server.listen(port, '127.0.0.1', () => {
     const actual = server.address().port;
     const url = `http://localhost:${actual}`;
-    console.log(`PowerCodex live dashboard → ${url}`);
-    console.log(`PowerCodex maker chat     → ${url}/chat  (Chat & Agent modes)`);
-    console.log('Monitoring .powercodex/live/status.json — open the URL and drive it from there.');
-    if (opts.open) openBrowser(url);
-    if (opts.demo) {
-      console.log('Demo mode: driving a paced simulated loop so the dashboard visibly moves…');
-      controller
-        .start({ rotations: opts.rotations || 3, delayMs: opts.delayMs || 850 })
-        .then(() => console.log('Demo loop finished — dashboard shows the final state.'))
-        .catch((error) => console.error('Demo loop error:', error.message));
-    }
+    console.log(`PowerCodex maker chat → ${url}  (Chat & Agent modes)`);
+    console.log('Monitoring .powercodex/live/status.json.');
   });
 
   return server;
 }
 
-function openBrowser(url) {
-  const { spawn } = require('node:child_process');
-  const cmd = process.platform === 'win32' ? 'cmd' : process.platform === 'darwin' ? 'open' : 'xdg-open';
-  const args = process.platform === 'win32' ? ['/c', 'start', '', url] : [url];
-  try {
-    spawn(cmd, args, { stdio: 'ignore', detached: true }).unref();
-  } catch {
-    /* opening is best-effort */
-  }
-}
-
-// True when an Origin header points at our own loopback server (the dashboard itself).
+// True when an Origin header points at our own loopback server (the app itself).
 // Used to reject forged cross-site requests to the mutating /api endpoints.
 function isLocalOrigin(origin) {
   try {

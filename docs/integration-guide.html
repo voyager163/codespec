@@ -146,8 +146,8 @@
       <header class="intro rise d1">
         <div class="eyebrow"><span class="dot"></span> Integration guide</div>
         <h1>Add the Lifecycle to an existing project</h1>
-        <p class="sub">A nine-step walkthrough to drop the PowerCodex autonomous lifecycle loop into a codebase you already have — so you get the consent-gated build/run/test/observe loop and the live dashboard without changing how your project is structured. Every step is copy-paste and reversible.</p>
-        <div class="callout good"><b>Zero dependencies.</b> The tool is plain Node — no install, no build step, no lockfile churn. Integration is copying a folder and adding four npm scripts.</div>
+        <p class="sub">A nine-step walkthrough to drop the PowerCodex autonomous lifecycle loop into a codebase you already have — so you get the consent-gated build/run/test/observe loop and the desktop app without changing how your project is structured. Every step is copy-paste and reversible.</p>
+        <div class="callout good"><b>Zero dependencies.</b> The tool is plain Node — no install, no build step, no lockfile churn. Integration is copying a folder and adding three npm scripts.</div>
       </header>
 
       <!-- STEP 1 -->
@@ -156,8 +156,8 @@
         <h2>What your project needs</h2>
         <ul class="clean">
           <li><b>Node.js 18+</b> — the tool uses <code class="inl">node:</code> core modules only (<code class="inl">fs</code>, <code class="inl">path</code>, <code class="inl">http</code>).</li>
-          <li><b>A <code class="inl">package.json</code></b> — so you can add the four npm scripts. Run <code class="inl">npm init -y</code> first if you don't have one.</li>
-          <li><b>A free port</b> — the dashboard server defaults to <code class="inl">4321</code>; override with <code class="inl">--port</code> if it's taken.</li>
+          <li><b>A <code class="inl">package.json</code></b> — so you can add the three npm scripts. Run <code class="inl">npm init -y</code> first if you don't have one.</li>
+          <li><b>A free port</b> — the desktop app boots the lifecycle server on a free port automatically.</li>
           <li><b>Optional · a Power Platform tenant</b> — only needed later for the <code class="inl">--real</code> engines. Everything runs in simulation without one.</li>
         </ul>
       </section>
@@ -176,9 +176,9 @@
 │   ├── loop.js      <span style="color:var(--faint)"># the 7-stage orchestrator</span><br/>
 │   ├── <span class="hl">engines.js</span>   <span style="color:var(--faint)"># the two engines (swap for real later)</span><br/>
 │   ├── rights.js    <span style="color:var(--faint)"># the consent gate</span><br/>
-│   ├── server.js    <span style="color:var(--faint)"># the live dashboard server</span><br/>
+│   ├── server.js    <span style="color:var(--faint)"># the lifecycle server (booted by the desktop app)</span><br/>
 │   ├── dashboard.js · bus.js · state.js · paths.js · selftest.js<br/>
-├── <span class="dir">assets/</span>dashboard.html<br/>
+├── <span class="dir">assets/</span>chat.html · user-guide.html<br/>
 └── README.md
           </div>
         </div>
@@ -191,10 +191,9 @@ cp -r tools/lifecycle <span class="n">/path/to/your-project/</span>tools/lifecyc
       <section id="step3" class="step rise d2">
         <div class="num"><span class="b">3</span> Add the npm scripts</div>
         <h2>Wire it into <code class="inl">package.json</code></h2>
-        <p>Add these four scripts. They're thin wrappers over the CLI so your team runs the loop the same way everywhere.</p>
+        <p>Add these three scripts. They're thin wrappers over the CLI so your team runs the loop the same way everywhere.</p>
         <pre><span class="k">"scripts"</span>: {
   <span class="s">"lifecycle"</span>: <span class="s">"node tools/lifecycle/bin/powercodex-lifecycle.js"</span>,
-  <span class="s">"lifecycle:serve"</span>: <span class="s">"node tools/lifecycle/bin/powercodex-lifecycle.js serve"</span>,
   <span class="s">"lifecycle:selftest"</span>: <span class="s">"node tools/lifecycle/bin/powercodex-lifecycle.js selftest"</span>,
   <span class="s">"lifecycle:init"</span>: <span class="s">"node tools/lifecycle/bin/powercodex-lifecycle.js init"</span>
 }</pre>
@@ -241,15 +240,14 @@ cp -r tools/lifecycle <span class="n">/path/to/your-project/</span>tools/lifecyc
       <!-- STEP 6 -->
       <section id="step6" class="step rise d2">
         <div class="num"><span class="b">6</span> Watch it run</div>
-        <h2>Two terminals: dashboard + loop</h2>
-        <p>This is the daily rhythm. Start the dashboard, leave it open, and drive the loop beside it.</p>
-        <h3>Terminal 1 — the live dashboard</h3>
-        <pre>npm run lifecycle:serve
-<span class="c"># → http://localhost:4321  (polls /api/state every 1.2s)</span></pre>
-        <h3>Terminal 2 — the loop</h3>
+        <h2>The desktop app + the loop</h2>
+        <p>This is the daily rhythm. Open the desktop app, then drive the loop beside it.</p>
+        <h3>The desktop app</h3>
+        <p>Boots the lifecycle server on a free port and opens a Chat &amp; Agent window that polls <code class="inl">/api/state</code> every 1.2s and re-renders in place.</p>
+        <h3>The loop</h3>
         <pre>npm run lifecycle -- loop --rotations 3
-<span class="c"># the open dashboard follows along live</span></pre>
-        <div class="callout">Want to see it move before pointing it at real work? <code class="inl">npm run lifecycle:serve -- --demo</code> drives a paced simulated loop so the dashboard visibly advances.</div>
+<span class="c"># the desktop app follows along live</span></pre>
+        <div class="callout">Want to see it move before pointing it at real work? The loop runs in simulation by default (no <code class="inl">--real</code>), so the app visibly advances without touching a tenant.</div>
       </section>
 
       <!-- STEP 7 -->
@@ -257,7 +255,7 @@ cp -r tools/lifecycle <span class="n">/path/to/your-project/</span>tools/lifecyc
         <div class="num"><span class="b">7</span> Point it at your goal</div>
         <h2>Give it the two inputs</h2>
         <p>The loop runs around a <b>goal</b> (what the app should do, in plain language) and an approved <b>MVP</b> (the first slice). It measures everything against them with a live goal&#8596;MVP compliance meter. As observations accumulate, each rotation's <b>Observe</b> stage authors defect / gap / improvement specs that feed the next <b>Intake</b> — that's the self-improving part.</p>
-        <p>To enhance an <i>existing</i> build, describe the goal as the next increment you want (the feature you're adding, the bug class you're hunting), let the loop plan and test against it, and read the authored specs as a prioritized worklist on the dashboard.</p>
+        <p>To enhance an <i>existing</i> build, describe the goal as the next increment you want (the feature you're adding, the bug class you're hunting), let the loop plan and test against it, and read the authored specs as a prioritized worklist in the desktop app.</p>
         <div class="callout good"><b>It composes with your existing setup.</b> No Dataverse? The Build Executor falls back to running your app locally via <code class="inl">npm run dev</code>. Dataverse connected? It uses <code class="inl">npx power-apps push</code> + the app link. You don't restructure anything.</div>
       </section>
 
@@ -265,7 +263,7 @@ cp -r tools/lifecycle <span class="n">/path/to/your-project/</span>tools/lifecyc
       <section id="step8" class="step rise d2">
         <div class="num"><span class="b">8</span> Go real</div>
         <h2>Swap two functions, change nothing else</h2>
-        <p>By default both engines run in <b>simulation</b> — they emit the real event stream with simulated outcomes, so the whole loop and dashboard work without a tenant. When you're ready for the real thing, edit <code class="inl">tools/lifecycle/lib/engines.js</code> and replace the bodies of two functions with your Playwright-for-MDM adapters:</p>
+        <p>By default both engines run in <b>simulation</b> — they emit the real event stream with simulated outcomes, so the whole loop and desktop app work without a tenant. When you're ready for the real thing, edit <code class="inl">tools/lifecycle/lib/engines.js</code> and replace the bodies of two functions with your Playwright-for-MDM adapters:</p>
         <ul class="clean">
           <li><code class="inl">buildExecutor()</code> — <b>Engine 1</b>: turns task contracts into portal assets via the managed Edge browser.</li>
           <li><code class="inl">e2eTester()</code> — <b>Engine 2</b>: runs end-to-end tests against the live app and drives the self-heal loop.</li>

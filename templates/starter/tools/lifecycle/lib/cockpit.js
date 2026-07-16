@@ -28,7 +28,6 @@ const COMMANDS = [
   { cmd: 'start', args: '[rotations]', desc: 'run the lifecycle loop' },
   { cmd: 'status', args: '', desc: 'goal / MVP / rights / rotation snapshot' },
   { cmd: 'rights', args: '[flag] [on|off]', desc: 'inspect or toggle the consent gate' },
-  { cmd: 'studio', args: '', desc: 'open the graphical Studio dashboard in a browser' },
   { cmd: 'reset', args: '', desc: 'clear the run state (status bus)' },
   { cmd: 'history', args: '', desc: 'show recent prompts' },
   { cmd: 'clear', args: '', desc: 'clear the screen' },
@@ -140,9 +139,6 @@ function createSession(root, opts = {}) {
         return { kind: 'command', name, sideEffect: 'rights', lines: [`✓ ${flag} = ${val} · written to Approved_rights/approval.json`] };
       }
 
-      case 'studio':
-        return { kind: 'command', name, sideEffect: 'studio', lines: ['launching the graphical Studio dashboard…'] };
-
       case 'reset':
         reset(root);
         return { kind: 'command', name, sideEffect: 'reset', lines: ['run state cleared (status bus reset).'] };
@@ -154,7 +150,7 @@ function createSession(root, opts = {}) {
         return { kind: 'command', name, sideEffect: 'clear', lines: [] };
 
       case 'quit':
-        return { kind: 'command', name, exit: true, lines: ['bye — the loop and dashboard keep their state on disk.'] };
+        return { kind: 'command', name, exit: true, lines: ['bye — the loop keeps its state on disk.'] };
 
       default:
         return { kind: 'command', name, lines: [`/${name} is not wired yet.`] };
@@ -323,22 +319,15 @@ function run(root, opts = {}) {
       banner();
     } else if (result.sideEffect === 'open-plan') {
       serveAndOpenPlan(root, result, opts);
-    } else if (result.sideEffect === 'studio') {
-      launchStudio(root, opts);
     }
   }
 }
 
-// Open a generated plan: spin up the dashboard server (which also serves /plans/*)
+// Open a generated plan: spin up the local server (which also serves /plans/*)
 // if needed, then open the browser at the plan URL.
 function serveAndOpenPlan(root, result, opts) {
   ensureServer(root, opts);
   openBrowser(result.url);
-}
-
-function launchStudio(root, opts) {
-  const url = ensureServer(root, opts);
-  openBrowser(url);
 }
 
 let _server = null;

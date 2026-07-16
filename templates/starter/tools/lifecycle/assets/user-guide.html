@@ -77,7 +77,7 @@
   <div class="top">
     <div class="in">
       <span class="mark">P</span><b>PowerCodex</b> <small>User Guide</small>
-      <a class="back" href="/" title="Return to the Studio dashboard">← Back to Studio</a>
+      <a class="back" href="/chat" title="Return to the app">← Back to the app</a>
     </div>
   </div>
 
@@ -95,8 +95,8 @@
       <p class="lead">Pick whichever feels comfortable. They control the exact same lifecycle underneath, so you can switch anytime.</p>
       <div class="grid">
         <div class="card">
-          <h3><span class="ic">🪟</span> Studio — this dashboard</h3>
-          <p>A guided, click-through screen. Everything is a button, and the stepper at the top keeps you oriented. Best if you'd rather not use a terminal.</p>
+          <h3><span class="ic">🪟</span> Desktop app — Chat &amp; Agent</h3>
+          <p>A guided, click-through window. Talk to the agent or click the controls, and the stepper at the top keeps you oriented. Best if you'd rather not use a terminal.</p>
         </div>
         <div class="card">
           <h3><span class="ic">⌨️</span> Cockpit — the terminal</h3>
@@ -108,7 +108,7 @@
     <!-- THE FLOW -->
     <section>
       <h2>The screen flow — five steps</h2>
-      <p class="lead">The Studio walks the lifecycle left-to-right. The <b>stepper</b> shows where you are; it lights up the live stage as the loop runs. Click any step to look around, or press <span class="chip acc">following live</span> to snap back to whatever the loop is doing now.</p>
+      <p class="lead">The desktop app walks the lifecycle left-to-right. The <b>stepper</b> shows where you are; it lights up the live stage as the loop runs. Click any step to look around, or press <span class="chip acc">following live</span> to snap back to whatever the loop is doing now.</p>
       <div class="grid">
         <div class="card"><div class="step">STEP 1</div><h3>Goal &amp; MVP</h3><p>Type what the app should do and the first slice to build. Set the goal↔MVP compliance, then <b>Save intake</b>.</p></div>
         <div class="card"><div class="step">STEP 2</div><h3>Plan &amp; approve</h3><p>Review the HTML plan the agent generated <b>before</b> anything builds. When it looks right, press <b>Approve</b>.</p></div>
@@ -160,9 +160,8 @@
         <tbody>
           <tr><td><code>/provider</code></td><td>Switch the AI — Claude Code, GitHub Copilot, or the built-in fallback.</td></tr>
           <tr><td><code>/start</code> · <code>/status</code></td><td>Run the lifecycle loop · show the goal / MVP / rights / rotation snapshot.</td></tr>
-          <tr><td><code>/rights build on</code></td><td>Toggle a consent flag (same gate as the Studio chips).</td></tr>
+          <tr><td><code>/rights build on</code></td><td>Toggle a consent flag (same gate as the desktop app chips).</td></tr>
           <tr><td><code>/plan open</code> · <code>/plan list</code></td><td>Open the latest generated plan in your browser · list them all.</td></tr>
-          <tr><td><code>/studio</code></td><td>Open this graphical dashboard in a browser.</td></tr>
           <tr><td><code>/help</code> · <code>/quit</code></td><td>List every command · leave the cockpit.</td></tr>
         </tbody>
       </table>
@@ -174,13 +173,13 @@
       <ul class="clean">
         <li><b>Nothing is moving?</b> The loop only runs when you press <b>▶ Start loop</b> (Step 3) — or it finished. Press <b>↺ Reset</b> and start again.</li>
         <li><b>Lost your place?</b> Press <span class="chip acc">following live</span> in the Lifecycle-flow bar to jump to whatever the loop is doing now.</li>
-        <li><b>"Lost connection"?</b> The dashboard server stopped. Restart it with <code>npm run lifecycle:serve -- --open</code>.</li>
-        <li><b>Want to see it move first?</b> Run <code>npm run lifecycle:serve -- --demo</code> for a paced simulated loop.</li>
+        <li><b>"Lost connection"?</b> The lifecycle server stopped. Restart the desktop app to boot it again.</li>
+        <li><b>Want to see it move first?</b> Run <code>npm run lifecycle -- loop --rotations 3</code> for a paced simulated loop.</li>
       </ul>
-      <div class="callout"><span class="ic">💡</span><div>You can keep this guide open in a tab. Return to the live dashboard anytime with <b>← Back to Studio</b> at the top.</div></div>
+      <div class="callout"><span class="ic">💡</span><div>You can keep this guide open in a tab. Return to the app anytime with <b>← Back to the app</b> at the top.</div></div>
     </section>
 
-    <footer>PowerCodex · the autonomous app lifecycle, as files, with a live monitor. — <a href="/">Back to Studio</a></footer>
+    <footer>PowerCodex · the autonomous app lifecycle, as files, with a live monitor. — <a href="/chat">Back to the app</a></footer>
   </div>
 </body>
 </html>

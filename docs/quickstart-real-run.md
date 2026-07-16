@@ -21,9 +21,8 @@ Writes `.powercodex/digest.json` (routes, components, data calls — each citing
 ## 2. Derive, review, and freeze the spec
 ```bash
 npm run lifecycle -- stories            # user stories grounded in your code
-npm run lifecycle:serve -- --open       # Studio → Plan step
 ```
-In the Studio: edit any story → **Refine from my edits** → **Approve & freeze**. A frozen spec (`.powercodex/freeze.json`) is the benchmark the loop builds against and **never rewrites** until you **Unlock for major change**.
+In the desktop app: edit any story → **Refine from my edits** → **Approve & freeze**. A frozen spec (`.powercodex/freeze.json`) is the benchmark the loop builds against and **never rewrites** until you **Unlock for major change**.
 
 ## 3. Pick the Edge profile the real engines will always use
 ```bash
@@ -45,7 +44,7 @@ npm run lifecycle -- loop --real --app-url https://<your-app> --env <environment
 - `--app-url` — the live app the e2e engine smoke-tests (a Power Apps play URL, or a local dev server).
 - `--env` — your Power Platform environment, so Engine 1 lands directly in that environment's Tables/Flows.
 
-Watch it live: keep `npm run lifecycle:serve` open in another terminal — the dashboard follows along, including the engine banner and the loop strip.
+Watch it live in the desktop app — it follows along, including the engine banner and the loop strip.
 
 ---
 

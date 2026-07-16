@@ -17,7 +17,6 @@
     "format:check": "prettier --check .",
     "preview": "vite preview",
     "lifecycle": "node tools/lifecycle/bin/powercodex-lifecycle.js",
-    "lifecycle:serve": "node tools/lifecycle/bin/powercodex-lifecycle.js serve",
     "lifecycle:selftest": "node tools/lifecycle/bin/powercodex-lifecycle.js selftest",
     "cockpit": "node tools/lifecycle/bin/powercodex-lifecycle.js cockpit",
     "mdm:auth": "tsx automation/shared/auth.setup.ts",

@@ -130,19 +130,18 @@ A generated PowerCodex app includes:
 - all OPSX prompt files for GitHub Copilot under `.github/prompts/`;
 - matching OpenSpec skill folders under `.github/skills/`;
 - project-local guidance for exploration, proposal, implementation, verification, syncing, and archiving;
-- the **PowerCodex Lifecycle** tool under `tools/lifecycle/` with a live monitoring dashboard.
+- the **PowerCodex Lifecycle** tool under `tools/lifecycle/`.
 
-### Live lifecycle dashboard
+### Lifecycle loop
 
-Every generated app ships a zero-dependency live dashboard that monitors the autonomous loop (Intake → Plan → Approve → Build → Run → Test → Observe) and lets you control it:
+Every generated app ships a zero-dependency lifecycle engine that runs the autonomous loop (Intake → Plan → Approve → Build → Run → Test → Observe):
 
 ```bash
-npm run lifecycle:serve            # http://localhost:4321 — keep it open
-npm run lifecycle -- loop          # run the loop; the dashboard follows live
+npm run lifecycle -- loop          # run the loop
 npm run lifecycle:selftest         # run the product against itself (asserts it works)
 ```
 
-It shows intake (goal + MVP + compliance), the `Approved_rights/` gate, per-agent progress, a live activity feed, test/MVP coverage, observations, and `Learning_Experience` lessons — all read from an append-only status bus. The build/test engines run in simulation until you wire real Playwright-for-MDM adapters (see `tools/lifecycle/README.md`). Any process can post progress with `npm run lifecycle -- emit <agent> "<message>"`.
+It tracks intake (goal + MVP + compliance), the `Approved_rights/` gate, per-agent progress, a live activity feed, test/MVP coverage, observations, and `Learning_Experience` lessons — all read from an append-only status bus. The maker-facing UI is the **PowerCodex desktop app** (`desktop/`), a Chat & Agent window that drives this same engine. The build/test engines run in simulation until you wire real Playwright-for-MDM adapters (see `tools/lifecycle/README.md`). Any process can post progress with `npm run lifecycle -- emit <agent> "<message>"`.
 
 One repo setting must be enabled manually: go to Settings > Code security and turn on Secret Scanning and Push Protection. These are GHAS features but have no workflow file; GitHub runs them natively on every push.
 

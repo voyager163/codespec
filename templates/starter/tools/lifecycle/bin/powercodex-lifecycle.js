@@ -6,7 +6,6 @@ const { render } = require('../lib/dashboard');
 const { ensureRights, load: loadRights, setProfile } = require('../lib/rights');
 const edgeProfiles = require('../lib/edge-profiles');
 const { selftest } = require('../lib/selftest');
-const { serve } = require('../lib/server');
 const { emit } = require('../lib/bus');
 const { proposeMvp } = require('../lib/mvp');
 const { reflect } = require('../lib/reflect');
@@ -40,7 +39,6 @@ Commands:
   provider <list>           list available AI providers (claude-code · github-copilot · simulated)
   plan <list|open|register> view or record generated HTML plans
   profiles [use <sel>]      list signed-in Edge profiles; pick the one --real runs always attach to
-  serve [options]           start the live dashboard server and monitor progress live
   loop [options]            run the lifecycle loop (Intake→Plan→…→Observe)
   emit <agent> <message>    append one event to the live board (any process can call this)
   mvp [--goal "<text>"]     propose an HTML MVP from the goal (.powercodex/mvp/preview.html)
@@ -50,17 +48,10 @@ Commands:
   dashboard                 re-render the static dashboard snapshot from the status bus
   selftest                  run the product against itself and assert it works
 
-serve also accepts --open to launch the browser automatically.
-
 emit options:
   --level <info|good|warn|bad>   event level (default info)
   --stage <0-7>                  lifecycle stage
   --rotation <n>                 rotation number
-
-serve options:
-  --port <n>                port (default 4321)
-  --demo                    drive a paced simulated loop so the dashboard visibly moves
-  --rotations <n>           rotations for --demo (default 3)
 
 loop options:
   --rotations <n>           number of loop rotations (default 1)
@@ -69,9 +60,7 @@ loop options:
                             project + Playwright installed · npm i -D playwright).
                             Falls back to simulation with a recommendation otherwise.
   --app-url <url>           the live app URL the real e2e engine should smoke-test
-  --env <environmentId>     Power Platform environment for Engine 1 to enter (maker surfaces)
-
-Open http://localhost:4321 (serve) — it polls /api/state and updates live.`);
+  --env <environmentId>     Power Platform environment for Engine 1 to enter (maker surfaces)`);
 }
 
 async function main() {
@@ -137,18 +126,6 @@ async function main() {
       }
       break;
     }
-    case 'serve': {
-      serve(root, {
-        port: Number.parseInt(flag('port'), 10) || 4321,
-        demo: flag('demo') === true,
-        open: flag('open') === true,
-        rotations: Number.parseInt(flag('rotations'), 10) || 3,
-        // --real makes the served chat actually build (code-gen + build verify), like the
-        // desktop app. Without it the dashboard/chat run the safe simulated loop.
-        simulate: flag('real') !== true,
-      });
-      break; // server keeps the process alive
-    }
     case 'workspace': {
       const sub = rest[0];
       if (sub === 'init') {
@@ -201,7 +178,7 @@ async function main() {
       ensureRights(root);
       const out = render(root);
       console.log('Initialized .powercodex/live/ and Approved_rights/approval.json');
-      console.log('Dashboard:', out, '· for live monitoring run: powercodex-lifecycle serve');
+      console.log('Static monitor snapshot:', out);
       break;
     }
     case 'profiles': {

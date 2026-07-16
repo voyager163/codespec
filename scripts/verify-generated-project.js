@@ -43,7 +43,7 @@ try {
   // PowerCodex Lifecycle tool + automation scaffold ship in generated projects.
   assertFile(path.join(projectPath, 'tools', 'lifecycle', 'bin', 'powercodex-lifecycle.js'));
   assertFile(path.join(projectPath, 'tools', 'lifecycle', 'package.json'));
-  assertFile(path.join(projectPath, 'tools', 'lifecycle', 'assets', 'dashboard.html'));
+  assertFile(path.join(projectPath, 'tools', 'lifecycle', 'assets', 'chat.html'));
   assertDirectory(path.join(projectPath, 'automation', 'shared'));
   assertDirectory(path.join(projectPath, 'automation', 'build-executor'));
   assertDirectory(path.join(projectPath, 'automation', 'e2e-suite'));
@@ -73,7 +73,6 @@ try {
   assertPackageScript(generatedPackage, 'e2e');
   assertPackageScript(generatedPackage, 'format');
   assertPackageScript(generatedPackage, 'format:check');
-  assertPackageScript(generatedPackage, 'lifecycle:serve');
   assertPackageScript(generatedPackage, 'lifecycle:selftest');
 
   assertPackageScriptValue(generatedPackage, 'lint', /--max-warnings 0/);

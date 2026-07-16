@@ -6,17 +6,16 @@ The autonomous app-lifecycle loop from the [master plan](../../docs/plans/powerc
 Intake → Plan → Approve → Build → Run → Test → Observe → (loop)
 ```
 
-around two inputs — a **goal** and an approved **MVP** — and streams everything to two interchangeable surfaces: an always-on **graphical Studio dashboard** and a **real terminal cockpit (TUI)**. Same engine underneath — pick your comfort level.
+around two inputs — a **goal** and an approved **MVP** — and drives everything from two interchangeable surfaces: the **PowerCodex desktop app** (a Chat & Agent window) and a **real terminal cockpit (TUI)**. Same engine underneath — pick your comfort level.
 
 ## Two surfaces, one engine
 
 ```bash
 npm run cockpit                    # the real terminal cockpit (TUI)
 npm run cockpit -- --provider github-copilot   # talk to a specific AI
-npm run lifecycle:serve -- --open  # the graphical Studio dashboard in a browser
 ```
 
-The **Cockpit** is a real terminal interface: type a request to talk to your AI, or `/` for slash commands (Tab completes, ↑/↓ recalls history, Ctrl-C interrupts a generation). Commands: `/provider` (switch AI), `/plan open·list`, `/start`, `/status`, `/rights`, `/studio`, `/help`. The **Studio** is the same data as a clickable dashboard with a Plans panel — friendlier for anyone who'd rather not live in a terminal.
+The **Cockpit** is a real terminal interface: type a request to talk to your AI, or `/` for slash commands (Tab completes, ↑/↓ recalls history, Ctrl-C interrupts a generation). Commands: `/provider` (switch AI), `/plan open·list`, `/start`, `/status`, `/rights`, `/help`. The **desktop app** ([`desktop/`](../../desktop/)) is the same engine behind a Chat & Agent window — friendlier for anyone who'd rather not live in a terminal; it boots the lifecycle server in-process and opens the chat UI.
 
 ### Bring your own AI
 
@@ -30,7 +29,7 @@ Each provider is an adapter (`lib/providers/*.js`) exposing one streaming interf
 
 ### Generated plans, viewable on demand
 
-When the agent finishes an HTML plan it's recorded in `.powercodex/plans/index.json`. `/plan open` (cockpit) or the **Generated plans** panel (Studio) serves and opens it in your browser — no hunting for files.
+When the agent finishes an HTML plan it's recorded in `.powercodex/plans/index.json`. `/plan open` (cockpit) or the **Generated plans** panel in the desktop app serves and opens it in your browser — no hunting for files.
 
 ### Drop it into any project
 
@@ -51,16 +50,11 @@ npm run lifecycle -- stories            # 2. derive user stories (each cites its
 npm run lifecycle -- mvp                # 3. MVP grounded in your real surfaces (goal-only fallback when no digest)
 ```
 
-Then review → refine → **freeze**: in the Studio **Plan** step you edit any story, click **Refine from my edits** (the AI improves from your changes rather than regenerating), then **Approve & freeze**. A frozen artifact (`status: "frozen"` in `.powercodex/freeze.json`) is the benchmark the loop builds against — it is read but **never rewritten** until you **Unlock for major change**. Two extra compliance meters show **stories↔code** (are the stories grounded in the digest) and **MVP↔stories** (does the MVP serve the reviewed stories).
+Then review → refine → **freeze**: in the desktop app you edit any story, click **Refine from my edits** (the AI improves from your changes rather than regenerating), then **Approve & freeze**. A frozen artifact (`status: "frozen"` in `.powercodex/freeze.json`) is the benchmark the loop builds against — it is read but **never rewritten** until you **Unlock for major change**. Two extra compliance meters show **stories↔code** (are the stories grounded in the digest) and **MVP↔stories** (does the MVP serve the reviewed stories).
 
-## Live monitoring (the dashboard)
+## Live monitoring (the desktop app)
 
-```bash
-npm run lifecycle:serve            # http://localhost:4321 — leave it open
-npm run lifecycle:serve -- --demo  # also drives a paced loop so you can watch it move
-```
-
-A zero-dependency Node server serves the dashboard and a `/api/state` endpoint; the page polls every 1.2s and re-renders in place (no flicker, no browser `file://` limits). It shows the whole system at once:
+Watch the loop from the **desktop app** ([`desktop/`](../../desktop/)): it boots the lifecycle server in-process and opens a Chat & Agent window that polls `/api/state` and re-renders in place. The engine also writes a static snapshot to `.powercodex/live/index.html` (regenerated on every event; re-render on demand with `npm run lifecycle -- dashboard`). Either way you see the whole system at once:
 
 - **Intake & rights** — the goal, the MVP, the goal↔MVP compliance meter, and the `Approved_rights/` flags (build / push / auto-respec / auto-fix)
 - **Loop strip** — the 7 stages with the current one live, plus an overall progress bar
@@ -70,7 +64,7 @@ A zero-dependency Node server serves the dashboard and a `/api/state` endpoint; 
 - **Specs authored from observation** — defect / gap / improvement cards
 - **Learning_Experience** — lessons read from the `Learning_Experience/` log
 
-Run the loop in another terminal (`npm run lifecycle -- loop --rotations 3`) and the open dashboard follows along live.
+Run the loop in a terminal (`npm run lifecycle -- loop --rotations 3`) and the desktop app follows along live.
 
 ## What's real here vs. simulated
 
@@ -78,7 +72,7 @@ Run the loop in another terminal (`npm run lifecycle -- loop --rotations 3`) and
 | --- | --- |
 | `Approved_rights/` consent gate | **real** — read before build/push, blocks when a flag is false |
 | Append-only status bus (`.powercodex/live/status.json`) | **real** |
-| Live dashboard server (`serve` → `http://localhost:4321` + `/api/state`) | **real** |
+| Desktop app + lifecycle server (`/api/state`) | **real** |
 | Static dashboard snapshot (`.powercodex/live/index.html`) | **real**, regenerated on every event |
 | Loop orchestrator + guardrails (rights gate, no-progress detector) | **real** |
 | E2E tester (Engine 2) + managed-Edge profile verify | **real-capable** — drives a managed Edge over CDP via the vendored Playwright-for-MDM engine; runs a real smoke test (page/console/network errors). Simulates when Playwright is absent. |
@@ -105,7 +99,7 @@ npm run lifecycle -- loop --real --app-url https://<your-app> --env <environment
 
 `profiles use` writes `browserProfile` into `Approved_rights/`, so every real run (build entry + e2e runner) attaches to the profile you signed in with — no re-picking. See [docs/quickstart-real-run.md](../../docs/quickstart-real-run.md) for the full first-run walkthrough.
 
-`resolveEngines()` ([`lib/engines.js`](lib/engines.js)) picks the engine bundle at run time. Real runs need three things: `--real`, a **browser-based** project (Power Platform tenant, or web routes/components/dev-server — read from the digest), and Playwright installed. If any is missing it degrades **gracefully to simulation** — and, when the project is browser-based but Playwright is absent, it **recommends `npm i -D playwright`** (in the import output, the dashboard banner, and `/api/state`). A non-browser project (a library/CLI) just simulates quietly, with no nag. The npm package itself stays **zero-dependency**: Playwright is opt-in.
+`resolveEngines()` ([`lib/engines.js`](lib/engines.js)) picks the engine bundle at run time. Real runs need three things: `--real`, a **browser-based** project (Power Platform tenant, or web routes/components/dev-server — read from the digest), and Playwright installed. If any is missing it degrades **gracefully to simulation** — and, when the project is browser-based but Playwright is absent, it **recommends `npm i -D playwright`** (in the import output and `/api/state`). A non-browser project (a library/CLI) just simulates quietly, with no nag. The npm package itself stays **zero-dependency**: Playwright is opt-in.
 
 Engine 1 (the build executor) now **really enters Power Platform**: in real mode it attaches and navigates to the maker surface for each task ([`lib/maker-recipes.js`](lib/maker-recipes.js) maps task → URL), verifying it loaded. The field-by-field authoring (actually create the table/column/flow) is the remaining "front-end" automation — each recipe carries a `todo` for it — and is built against a live tenant as a deliberate next step. Pass `--env <environmentId>` to land directly in your environment's Tables/Flows list.
 
@@ -113,8 +107,8 @@ Engine 1 (the build executor) now **really enters Power Platform**: in real mode
 
 ```bash
 # from a project root
-npm run lifecycle:serve -- --open         # start the live dashboard and open the browser
-npm run lifecycle -- loop --rotations 2   # run the loop; the open dashboard follows live
+npm run lifecycle -- loop --rotations 2   # run the loop; watch it in the desktop app
+npm run lifecycle -- dashboard            # re-render the static snapshot (.powercodex/live/index.html)
 npm run lifecycle -- mvp --goal "..."     # propose an HTML MVP from a goal
 npm run lifecycle -- reflect "lesson" --severity major --what "..." --how "..."
 npm run lifecycle -- emit claude "did X" --level good   # post progress to the board
@@ -122,7 +116,7 @@ npm run lifecycle -- init                 # create .powercodex/live + Approved_r
 npm run lifecycle:selftest                # run the product against itself and assert it works
 ```
 
-Add `--real` to `loop` to drive the real MDM browser engine (requires a browser-based project, `npm i -D playwright`, granted `Approved_rights/` flags, and `--app-url` for the tester; it degrades to simulation with a recommendation otherwise). The dashboard also exposes these as buttons: Start/Pause/Approve/Reset, **Propose MVP**, **Reflect**, plus editable goal/MVP intake with a **real goal↔MVP compliance** meter (flags drift + missing terms), an **Insights** panel (rework rate, self-heals, lessons, mistakes-per-rotation), and a **notifications** banner for pending approvals.
+Add `--real` to `loop` to drive the real MDM browser engine (requires a browser-based project, `npm i -D playwright`, granted `Approved_rights/` flags, and `--app-url` for the tester; it degrades to simulation with a recommendation otherwise). The desktop app's Chat & Agent UI also surfaces these: Start/Pause/Approve/Reset, **Propose MVP**, **Reflect**, plus editable goal/MVP intake with a **real goal↔MVP compliance** meter (flags drift + missing terms), an **Insights** panel (rework rate, self-heals, lessons, mistakes-per-rotation), and a **notifications** banner for pending approvals.
 
 ## Workspace — learn across many projects
 
@@ -136,7 +130,7 @@ npm run lifecycle -- workspace register ./field-ops-app
 npm run lifecycle -- workspace list        # projects + shared lesson count
 ```
 
-`workspace init` drops a `.powercodex-workspace.json` marker and a shared `Learning_Experience/` at the workspace root. From then on, any project under it resolves `reflect` writes and Insights/lesson reads to that shared brain (a project outside a workspace just uses its own local `Learning_Experience/`, unchanged). The dashboard shows a workspace badge with the shared lesson count.
+`workspace init` drops a `.powercodex-workspace.json` marker and a shared `Learning_Experience/` at the workspace root. From then on, any project under it resolves `reflect` writes and Insights/lesson reads to that shared brain (a project outside a workspace just uses its own local `Learning_Experience/`, unchanged). The desktop app shows a workspace badge with the shared lesson count.
 
 > Recommended layout: sibling folders, each its own git repo, opened as a multi-root workspace — **not** one git repo nested inside another.
 
