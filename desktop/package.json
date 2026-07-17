@@ -9,6 +9,7 @@
   "scripts": {
     "sync": "node scripts/sync-lifecycle.js",
     "start": "npm run sync && electron .",
+    "test:e2e": "npm run sync && node scripts/e2e-smoke.mjs",
     "build": "node scripts/build-exe.js nsis",
     "dist": "node scripts/build-exe.js portable",
     "dist:installer": "node scripts/build-exe.js nsis",
@@ -20,16 +21,28 @@
   },
   "devDependencies": {
     "electron": "^43.1.0",
-    "electron-builder": "^25.1.8"
+    "electron-builder": "^25.1.8",
+    "playwright-core": "^1.61.1"
   },
   "build": {
     "appId": "com.powercodex.desktop",
     "productName": "PowerCodex",
-    "directories": { "output": "dist", "buildResources": "build" },
-    "files": ["main.js", "preload.js", "lib/**/*", "vendor/**/*", "package.json"],
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "lib/**/*",
+      "vendor/**/*",
+      "package.json"
+    ],
     "afterSign": "build/notarize.js",
     "win": {
-      "target": ["portable"]
+      "target": [
+        "portable"
+      ]
     },
     "portable": {
       "artifactName": "PowerCodex.exe"
@@ -46,7 +59,9 @@
       "artifactName": "PowerCodex-Setup.exe"
     },
     "mac": {
-      "target": ["dmg"],
+      "target": [
+        "dmg"
+      ],
       "category": "public.app-category.developer-tools",
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
